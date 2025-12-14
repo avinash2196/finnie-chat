@@ -1,11 +1,7 @@
 import os
 from pathlib import Path
-from fastapi import FastAPI
-from pydantic import BaseModel
-from app.guardrails import input_guardrails, output_guardrails
-from app.agents.orchestrator import handle_message
 
-# Load environment variables from .env file (no external dependency)
+# Load environment variables from .env file FIRST (no external dependency)
 def load_env():
     env_file = Path(__file__).parent.parent / ".env"
     if env_file.exists():
@@ -17,6 +13,11 @@ def load_env():
                     os.environ[key.strip()] = value.strip()
 
 load_env()
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+from app.guardrails import input_guardrails, output_guardrails
+from app.agents.orchestrator import handle_message
 
 app = FastAPI()
 
