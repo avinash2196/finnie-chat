@@ -1,0 +1,13 @@
+A stock represents partial ownership in a company.
+
+When you buy a stock, you own a small piece of that business.
+If the company performs well, the stock price may go up.
+If the company performs poorly, the stock price may go down.
+
+Stocks are traded on stock exchanges such as the New York Stock Exchange (NYSE) or Nasdaq.
+
+Stocks can provide higher returns over time compared to savings accounts,
+but they also come with higher risk because prices can fluctuate daily.
+
+Example:
+If you buy shares of Apple (AAPL), you become a partial owner of Apple Inc.
