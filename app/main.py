@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from app.guardrails import input_guardrails, output_guardrails
 from app.agents.orchestrator import handle_message
+from app.llm import get_gateway_metrics
 
 app = FastAPI()
 
@@ -38,3 +39,15 @@ def chat(req: ChatRequest):
         "intent": intent,
         "risk": risk
     }
+
+
+@app.get("/health")
+def health():
+    """Health check endpoint."""
+    return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics():
+    """Get gateway metrics (cache hit rate, failures, etc.)."""
+    return get_gateway_metrics()

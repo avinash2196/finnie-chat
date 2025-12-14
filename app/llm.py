@@ -1,22 +1,27 @@
-from openai import OpenAI
+"""
+LLM client using AI Gateway for intelligent routing, caching, and failover.
+"""
 
-# Lazy-load client to allow .env to be loaded first
-_client = None
+from app.gateway import get_gateway
 
-def get_client():
-    global _client
-    if _client is None:
-        _client = OpenAI()
-    return _client
 
 def call_llm(system_prompt: str, user_prompt: str, temperature=0):
-    client = get_client()
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        temperature=temperature,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-    )
-    return response.choices[0].message.content
+    """
+    Call LLM through the gateway with intelligent failover and caching.
+    
+    Args:
+        system_prompt: System prompt
+        user_prompt: User prompt
+        temperature: Sampling temperature (0=deterministic, 1=creative)
+        
+    Returns:
+        LLM response string
+    """
+    gateway = get_gateway()
+    return gateway.call_llm(system_prompt, user_prompt, temperature)
+
+
+def get_gateway_metrics():
+    """Get gateway performance metrics."""
+    gateway = get_gateway()
+    return gateway.get_metrics()
