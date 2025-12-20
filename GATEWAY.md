@@ -7,6 +7,7 @@ The AI Gateway provides intelligent LLM request routing with multi-provider supp
 ## Key Features
 
 - **Multi-Provider Support**: OpenAI, Azure OpenAI, Anthropic
+ - **Multi-Provider Support**: OpenAI, Gemini, Anthropic
 - **Intelligent Failover**: Automatic fallback to secondary providers on failure
 - **Circuit Breaker**: Prevents cascading failures by temporarily disabling failed providers
 - **Request Caching**: TTL-based caching with configurable expiry (default 3600s)
@@ -23,9 +24,9 @@ Set in `.env`:
 # Primary provider (OpenAI)
 OPENAI_API_KEY=sk-proj-...
 
-# Optional: Azure OpenAI fallback
-AZURE_OPENAI_API_KEY=your-azure-key
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+# Optional: Gemini fallback (example)
+GEMINI_API_KEY=your-gemini-key
+GEMINI_ENDPOINT=https://your-gemini-endpoint.example.com
 
 # Optional: Anthropic additional fallback
 ANTHROPIC_API_KEY=sk-ant-...
@@ -328,9 +329,9 @@ if metrics['failures'] > 5:
 └─────────────────────────────────────────┘
          ↙        ↓        ↘
    ┌─────────┐ ┌────────┐ ┌──────────┐
-   │ OpenAI  │ │ Azure  │ │Anthropic │
-   │(Priority│ │OpenAI  │ │(Fallback)│
-   │  1)     │ │(Fallback)│          │
+    │ OpenAI  │ │ Gemini │ │Anthropic │
+    │(Priority│ │(Fallback)│ │(Fallback)│
+    │  1)     │ │         │ │          │
    └─────────┘ └────────┘ └──────────┘
 ```
 

@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class ProviderType(Enum):
     """Supported LLM providers."""
     OPENAI = "openai"
-    AZURE_OPENAI = "azure_openai"
     ANTHROPIC = "anthropic"
+    GEMINI = "gemini"
 
 
 @dataclass
@@ -148,25 +148,104 @@ class AIGateway:
         )
         return response.choices[0].message.content
 
-    def _get_azure_openai_response(self, config: LLMConfig, system: str, user: str, temperature: float) -> str:
-        """Call Azure OpenAI API."""
-        from openai import AzureOpenAI
+    def _get_gemini_response(self, config: LLMConfig, system: str, user: str, temperature: float) -> str:
+        """Call Gemini (or other REST-compatible) endpoint.
 
-        client = AzureOpenAI(
-            api_key=config.api_key,
-            api_version="2024-02-15-preview",
-            azure_endpoint=config.base_url
-        )
-        response = client.chat.completions.create(
-            model=config.model,
-            temperature=temperature,
-            timeout=config.timeout_seconds,
-            messages=[
+        Prefer using the official Google GenAI client (`google.generativeai`) when
+        available — it accepts an API key via `genai.configure(api_key=...)` —
+        otherwise fall back to a raw HTTP POST to `config.base_url`.
+        """
+        # First try the official client if installed
+        try:
+            import google.generativeai as genai  # type: ignore
+
+            # Configure per-call so we don't rely on global state elsewhere
+            if config.api_key:
+                try:
+                    genai.configure(api_key=config.api_key)
+                except Exception:
+                    # Some genai versions ignore repeated configure calls; ignore errors
+                    pass
+
+            # Attempt a messages-style call; adapt if the library expects different args
+            try:
+                resp = genai.generate(
+                    model=config.model,
+                    messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+                    temperature=temperature,
+                    timeout=config.timeout_seconds,
+                )
+            except TypeError:
+                # Older/newer genai may use `prompt` or different params; fall back to simple prompt
+                prompt = f"{system}\n\n{user}"
+                resp = genai.generate(model=config.model, prompt=prompt, temperature=temperature)
+
+            # Try several common response shapes
+            # 1) object with .text
+            if hasattr(resp, "text") and resp.text:
+                return resp.text
+
+            # 2) dict-like with 'candidates' or 'output'
+            if isinstance(resp, dict):
+                if "candidates" in resp and resp["candidates"]:
+                    return resp["candidates"][0].get("content") or resp["candidates"][0].get("display")
+                if "output" in resp:
+                    out = resp["output"]
+                    if isinstance(out, list) and out:
+                        return out[0].get("content") if isinstance(out[0], dict) else str(out[0])
+                    return str(out)
+
+            # 3) fallback to stringification
+            return str(resp)
+
+        except Exception as e:
+            logger.info("genai client not available or failed; falling back to HTTP POST (%s)", e)
+
+        # Fallback: raw HTTP POST to configured base_url
+        import requests
+
+        if not config.base_url:
+            raise ValueError("Gemini provider requires a base_url to be configured")
+
+        # If the endpoint already contains an API key query param, avoid sending Authorization
+        send_auth = bool(config.api_key) and ("?key=" not in (config.base_url or ""))
+
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if send_auth:
+            headers["Authorization"] = f"Bearer {config.api_key}"
+
+        payload = {
+            "model": config.model,
+            "temperature": temperature,
+            "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user}
             ]
-        )
-        return response.choices[0].message.content
+        }
+
+        resp = requests.post(config.base_url, json=payload, headers=headers, timeout=config.timeout_seconds)
+        resp.raise_for_status()
+        data = resp.json()
+
+        # Attempt to adapt to common response shapes
+        if isinstance(data, dict):
+            # OpenAI-like shape
+            choices = data.get("choices")
+            if choices and len(choices) > 0:
+                return choices[0].get("message", {}).get("content") or choices[0].get("text")
+            # Vertex/Gemini style
+            if "candidates" in data:
+                cand = data["candidates"]
+                if cand and len(cand) > 0:
+                    # candidates items may have 'content' or 'display'
+                    c = cand[0]
+                    if isinstance(c, dict):
+                        return c.get("content") or c.get("display") or str(c)
+                    return str(c)
+
+        raise ValueError("Unexpected Gemini response format")
 
     def _get_anthropic_response(self, config: LLMConfig, system: str, user: str, temperature: float) -> str:
         """Call Anthropic API."""
@@ -225,8 +304,8 @@ class AIGateway:
 
                 if provider_config.provider == ProviderType.OPENAI:
                     response = self._get_openai_response(provider_config, system, user, temperature)
-                elif provider_config.provider == ProviderType.AZURE_OPENAI:
-                    response = self._get_azure_openai_response(provider_config, system, user, temperature)
+                elif provider_config.provider == ProviderType.GEMINI:
+                    response = self._get_gemini_response(provider_config, system, user, temperature)
                 elif provider_config.provider == ProviderType.ANTHROPIC:
                     response = self._get_anthropic_response(provider_config, system, user, temperature)
                 else:
@@ -287,15 +366,15 @@ def get_gateway() -> AIGateway:
                 priority=1
             ))
         
-        # Optional: Add Azure OpenAI as fallback
-        azure_key = os.getenv("AZURE_OPENAI_API_KEY")
-        azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        if azure_key and azure_endpoint:
+        # Optional: Add Gemini as fallback (set GEMINI_API_KEY and GEMINI_ENDPOINT)
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        gemini_endpoint = os.getenv("GEMINI_ENDPOINT")
+        if gemini_key and gemini_endpoint:
             _gateway.add_provider(LLMConfig(
-                provider=ProviderType.AZURE_OPENAI,
-                api_key=azure_key,
-                model="gpt-4",
-                base_url=azure_endpoint,
+                provider=ProviderType.GEMINI,
+                api_key=gemini_key,
+                model=os.getenv("GEMINI_MODEL", "gemini-proto"),
+                base_url=gemini_endpoint,
                 priority=0  # Lower priority (fallback)
             ))
         
