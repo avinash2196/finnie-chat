@@ -54,9 +54,57 @@ Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $heade
 # Run all tests
 .\venv\Scripts\python.exe -m pytest tests/ -v
 
+# Run memory tests
+.\venv\Scripts\python.exe -m pytest tests/test_memory.py -v
+
 # Run market MCP tests only
 .\venv\Scripts\python.exe -m pytest tests/test_market.py -v
 ```
+
+## Conversation Memory
+
+This project includes a **conversation memory system** that maintains chat history and context across turns.
+
+### Features
+
+- **Per-conversation history**: Tracks all messages in a conversation session
+- **Message metadata**: Stores intent and risk classification with each message
+- **Context-aware responses**: LLM agents use recent conversation history for coherent answers
+- **Automatic persistence**: Optionally saves conversations to disk (`chroma/conversations/`)
+- **Message pruning**: Keeps only recent messages (default: 100 per conversation) to manage memory
+- **Query interface**: Easy retrieval of messages and formatted context for LLM
+
+### Usage Example
+
+```powershell
+# First request (creates new conversation)
+$body = @{
+    "message"="What is a bond?"
+} | ConvertTo-Json
+$response = Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
+$conversationId = $response.conversation_id
+
+# Follow-up request (uses same conversation for context)
+$body = @{
+    "message"="How do they work?"
+    "conversation_id"=$conversationId
+} | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
+```
+
+The orchestrator automatically uses recent conversation history to provide coherent, context-aware responses.
+
+### Memory Storage
+
+- **In-memory**: Conversions are stored in RAM during app runtime
+- **File persistence** (optional): Conversations saved to `chroma/conversations/` as JSON files
+- **Global singleton**: Single memory instance shared across all requests via `get_memory()`
+
+### Configuration
+
+- Max messages per conversation: 100 (configurable in `app/memory.py`)
+- Persist directory: `chroma/conversations/` (loaded on app startup)
+- Auto-pruning: Old messages dropped when limit exceeded (keeps most recent)
 
 ## MCP Servers
 
@@ -75,6 +123,7 @@ Provides real-time stock data:
 - `.env` — Contains `OPENAI_API_KEY` (not committed)
 - `data/finance_kb.txt` — Knowledge base for RAG retrieval
 - `chroma/embeddings.pkl` — Persisted TF-IDF embeddings
+- `chroma/conversations/` — Persisted conversation history (JSON files)
 
 ## Notes
 
@@ -119,3 +168,57 @@ To push to a remote:
 git remote add origin <your-repo-url>
 git push -u origin main
 ```
+
+## AI Gateway
+
+This project now includes an AI Gateway that centralizes LLM requests for reliability, cost control, and observability.
+
+- File: `app/gateway.py`
+- Features: multi-provider routing (OpenAI, Gemini, Anthropic), request caching, circuit breaker, priority-based failover, metrics
+- Docs: see `GATEWAY.md` for detailed configuration and best practices
+
+### Environment variables
+
+Add provider keys to your `.env` to enable providers:
+
+```powershell
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=your-gemini-key
+GEMINI_ENDPOINT=https://your-gemini-endpoint.example.com
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Key endpoints
+
+- `GET /health` — basic health check
+- `GET /metrics` — gateway metrics: `total_requests`, `cache_hits`, `cache_hit_rate_percent`, `failures`, `providers_active`
+
+Example metrics call (PowerShell):
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/metrics" -Method GET | ConvertTo-Json -Depth 3
+```
+
+### How to call the gateway (programmatic)
+
+All agent LLM calls use the gateway automatically. You can also call it directly:
+
+```python
+from app.llm import call_llm, get_gateway_metrics
+
+resp = call_llm(
+	system_prompt="You are a helpful assistant.",
+	user_prompt="Explain bond pricing",
+	temperature=0.2
+)
+
+metrics = get_gateway_metrics()
+print(metrics)
+```
+
+### Best practices
+
+- Provide multiple providers (primary + fallback) via environment variables
+- Use caching for repeated prompts (education agent) and short TTLs for fresh data (market agent)
+- Monitor `/metrics` and tune circuit breaker thresholds and provider priority based on observed failures and latency
+

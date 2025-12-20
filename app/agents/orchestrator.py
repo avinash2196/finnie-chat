@@ -1,4 +1,4 @@
-import json
+﻿import json
 from app.llm import call_llm
 from app.intent import classify_intent
 from app.agents.educator import run as educator_run
@@ -6,25 +6,26 @@ from app.agents.market import run as market_run
 from app.agents.compliance import run as compliance_run
 
 
-# -----------------------------
 # LLM PLANNER PROMPT
-# -----------------------------
+# -------------------------
 PLANNER_PROMPT = """
 You are an AI orchestrator for a financial education assistant.
 
 Your job:
 - Decide which agents must be called to answer the user question safely.
+- Consider conversation history for context.
 
 Available agents:
-- EducatorAgent → explains financial concepts using trusted knowledge (RAG)
-- MarketAgent → fetches live market data (MCP tools)
-- ComplianceAgent → final safety and disclaimer check (must always be last)
+- EducatorAgent  explains financial concepts using trusted knowledge (RAG)
+- MarketAgent  fetches live market data (MCP tools)
+- ComplianceAgent  final safety and disclaimer check (must always be last)
 
 Rules:
-- For ASK_CONCEPT → EducatorAgent is REQUIRED.
-- For ASK_MARKET → MarketAgent is REQUIRED, EducatorAgent is OPTIONAL.
+- For ASK_CONCEPT  EducatorAgent is REQUIRED.
+- For ASK_MARKET  MarketAgent is REQUIRED, EducatorAgent is OPTIONAL.
 - Do NOT use EducatorAgent if the user is asking only for current price or daily movement.
 - ComplianceAgent must always be last.
+- Use conversation history to provide context-aware responses.
 
 Respond ONLY in valid JSON:
 {
@@ -33,21 +34,25 @@ Respond ONLY in valid JSON:
 """
 
 
-# -----------------------------
 # MAIN ORCHESTRATION FUNCTION
-# -----------------------------
-def handle_message(message: str):
+# --------------------------------
+def handle_message(message: str, conversation_context: str = ""):
     """
-    Full agentic orchestration for Chat Tab
+    Full agentic orchestration for Chat Tab with conversation memory support.
+    
+    Args:
+        message: Current user message
+        conversation_context: Recent conversation history for context-aware responses
     """
 
-    # 1️⃣ Intent + Risk classification (LLM-based)
+    # 1 Intent + Risk classification (LLM-based)
     intent, risk = classify_intent(message)
 
-    # 2️⃣ Ask LLM to plan which agents to use
+    # 2 Ask LLM to plan which agents to use (with context)
+    context_info = f"Conversation history:\n{conversation_context}\n\n" if conversation_context else ""
     plan_json = call_llm(
         system_prompt=PLANNER_PROMPT,
-        user_prompt=f"User message: {message}\nIntent: {intent}",
+        user_prompt=f"{context_info}User message: {message}\nIntent: {intent}",
         temperature=0
     )
 
@@ -57,7 +62,7 @@ def handle_message(message: str):
         # Fail safe: default to Educator + Compliance
         plan = ["EducatorAgent", "ComplianceAgent"]
 
-    # 3️⃣ Execute agents
+    # 3 Execute agents
     context = {}
 
     for step in plan:
@@ -71,11 +76,10 @@ def handle_message(message: str):
     if intent == "ASK_CONCEPT":
         if not context.get("educator"):
             return (
-                "I don’t have enough trusted information to answer that right now.",
+                "I don't have enough trusted information to answer that right now.",
                 intent,
                 risk
-                )
-
+            )
 
     # 5️⃣ LLM SYNTHESIS (STRICTLY GROUNDED)
     synthesis_prompt = f"""
@@ -86,13 +90,17 @@ You MUST follow these rules:
 - Do NOT add new concepts.
 - Do NOT generalize.
 - Do NOT use outside knowledge.
-- If information is missing, say: "I don’t have enough information."
+- If information is missing, say: "I don't have enough information."
+- Consider conversation history to provide coherent, context-aware responses.
+
+Conversation history:
+{conversation_context or "(No prior conversation)"}
 
 Trusted educator information:
-{context.get("educator")}
+{context.get("educator") or "(No educator context)"}
 
 Market data:
-{context.get("market")}
+{context.get("market") or "(No market data)"}
 
 User question:
 {message}
@@ -106,8 +114,7 @@ Provide a clear, beginner-friendly explanation.
         temperature=0.3
     )
 
-    # 6️⃣ Compliance Agent (always last)
+    # 6 Compliance Agent (always last)
     final_response = compliance_run(draft_response, risk)
-
 
     return final_response, intent, risk
