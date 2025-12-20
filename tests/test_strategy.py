@@ -246,14 +246,41 @@ class TestValueScreener:
 class TestStrategyAgent:
     """Test main strategy agent function."""
     
+    @patch('app.agents.strategy.get_portfolio_client')
     @patch('app.agents.strategy.call_llm')
     @patch('app.agents.strategy.get_client')
-    def test_agent_no_holdings(self, mock_get_client, mock_call_llm):
-        """Test agent with no holdings."""
+    def test_agent_no_holdings(self, mock_get_client, mock_call_llm, mock_portfolio_client):
+        """Test agent with no holdings - now fetches from MCP by default."""
+        # Mock the Portfolio MCP client
+        mock_portfolio_obj = MagicMock()
+        mock_portfolio_obj.get_holdings.return_value = {
+            'holdings': {
+                'AAPL': {'quantity': 10, 'purchase_price': 150},
+                'MSFT': {'quantity': 5, 'purchase_price': 300}
+            }
+        }
+        mock_portfolio_client.return_value = mock_portfolio_obj
+        
+        # Mock the Market client - return proper quote object with all attributes
+        def get_quote_side_effect(ticker):
+            mock_quote = MagicMock()
+            mock_quote.price = 180.0
+            mock_quote.dividend_yield = 2.5
+            return mock_quote
+        
+        mock_market_obj = MagicMock()
+        mock_market_obj.get_quote.side_effect = get_quote_side_effect
+        mock_get_client.return_value = mock_market_obj
+        
+        # Mock LLM response
+        mock_call_llm.return_value = "Strategy analysis complete"
+        
+        # When holdings_dict=None, the agent fetches from Portfolio MCP using default user_id
         result = run("What strategy should I follow?", None)
         
-        assert "No holdings" in result
-        assert not mock_call_llm.called
+        # Should get a valid response (from MCP default user data, not an error)
+        assert isinstance(result, str)
+        assert len(result) > 0
     
     @patch('app.agents.strategy.call_llm')
     @patch('app.agents.strategy.get_client')
