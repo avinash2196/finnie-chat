@@ -1,12 +1,33 @@
-# Finnie-Chat: Current Architecture & Data Flow
+# Finnie-Chat: Architecture & Data Flow
 
 ## System Overview
 
-Finnie-Chat is a financial AI assistant that processes user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, specialized agents, and safety guardrails.
+Finnie-Chat is a sophisticated financial AI system with 6 specialized agents that process user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, portfolio analysis, market data, and safety guardrails.
 
 ---
 
-## Complete Request Flow
+## Complete Request Flow (Updated with All Agents)
+
+```
+User Query
+   │
+   ▼ Intent Classification + Risk Assessment
+   │
+   ▼ Orchestrator Routes to Appropriate Agent(s)
+   │
+   ├─ [Educator Agent] ◄─ RAG (TF-IDF) Knowledge Base
+   ├─ [Market Agent] ◄─ Market MCP Server (yFinance)  
+   ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server
+   ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server
+   ├─ [Strategy Agent] ◄─ Portfolio MCP Server
+   └─ [Compliance Agent] ◄─ Safety Rules
+   │
+   ▼ LLM Synthesis Layer
+   │
+   ▼ Output Guardrails + Compliance
+   │
+   ▼ Final Response + Memory Storage
+```
 
 ```
 User Query

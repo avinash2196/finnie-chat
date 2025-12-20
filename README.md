@@ -1,13 +1,43 @@
-# finnie-chat
+﻿# finnie-chat
 
-Local FastAPI-based LLM orchestration assistant with MCP servers for market data and RAG-based education.
+Local FastAPI-based financial AI assistant with 6 specialized agents, portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, and multi-provider AI Gateway.
+
+## Overview
+
+finnie-chat is a sophisticated financial AI system that combines:
+- **6 Specialized Agents** for education, market analysis, risk profiling, portfolio coaching, strategy selection, and compliance
+- **Agentic Orchestration** with intelligent routing and context awareness
+- **Conversation Memory** with persistent storage (JSON)
+- **Multi-provider LLM Gateway** (OpenAI primary, Gemini/Anthropic fallback) with caching
+- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (hardcoded, database-ready)
+- **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval
+- **Guardrails** for input validation and compliance filtering
 
 ## Architecture
 
-- **LLM Orchestration**: Routes queries by intent (market, education, compliance)
-- **MCP Market Server**: Real-time stock quotes via yfinance with caching
-- **RAG Engine**: TF-IDF-based retrieval over finance knowledge base
-- **Guardrails**: Input validation, output compliance filtering
+```
+User Request
+    │
+    ├─ Conversation Memory (context retrieval)
+    │
+    ├─ Intent Classification (determine domain)
+    │
+    └─ Orchestrator (agent routing)
+        │
+        ├─ [Educator Agent] ◄─ RAG Engine
+        ├─ [Market Agent] ◄─ Market MCP Server (yFinance)
+        ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server
+        ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server
+        ├─ [Strategy Agent] ◄─ Portfolio MCP Server
+        └─ [Compliance Agent] ◄─ Safety Rules
+        │
+        └─ AI Gateway (Multi-provider LLM routing)
+            ├─ OpenAI (primary)
+            ├─ Gemini (fallback)
+            └─ Anthropic (fallback)
+            │
+            └─ Response + Memory (store in conversation history)
+```
 
 ## Quick Start (PowerShell)
 
@@ -21,31 +51,21 @@ python -m venv venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env with your OpenAI API key
+# Create .env with your LLM API keys
 echo "OPENAI_API_KEY=sk-proj-..." > .env
+echo "GEMINI_API_KEY=your-gemini-key" >> .env
+echo "GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini-proto:generate" >> .env
 ```
 
 ### Run Server
 
 ```powershell
-# Start FastAPI server (includes MCP market server)
+# Start FastAPI server with hot-reload
 .\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 
 # Server runs on http://127.0.0.1:8000
-# Interactive docs available at http://127.0.0.1:8000/docs
-```
-
-### Example Requests
-
-```powershell
-# Market query
-$headers = @{"Content-Type"="application/json"}
-$body = @{"message"="What is SPY stock price?"} | ConvertTo-Json
-Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
-
-# Education query
-$body = @{"message"="Explain bond pricing"} | ConvertTo-Json
-Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
+# Interactive API docs: http://127.0.0.1:8000/docs
+# ReDoc: http://127.0.0.1:8000/redoc
 ```
 
 ### Run Tests
@@ -54,171 +74,633 @@ Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $heade
 # Run all tests
 .\venv\Scripts\python.exe -m pytest tests/ -v
 
-# Run memory tests
-.\venv\Scripts\python.exe -m pytest tests/test_memory.py -v
+# Run specific test suites
+.\venv\Scripts\python.exe -m pytest tests/test_memory.py -v              # Memory (13 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_market.py -v              # Market MCP (8 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_gateway.py -v             # Gateway (13 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py -v       # Risk Profiler Agent (11 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_portfolio_coach.py -v     # Portfolio Coach Agent (23 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_strategy.py -v            # Strategy Agent (20 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_portfolio_mcp.py -v       # Portfolio MCP Server (45 tests)
 
-# Run market MCP tests only
-.\venv\Scripts\python.exe -m pytest tests/test_market.py -v
+# Total: 133+ tests across all modules
 ```
 
-## Conversation Memory
+## Agents
 
-This project includes a **conversation memory system** that maintains chat history and context across turns.
+The system includes 6 specialized agents for different financial tasks:
 
-### Features
+### 1. Educator Agent
+**Purpose:** Explain financial concepts using trusted knowledge base
 
-- **Per-conversation history**: Tracks all messages in a conversation session
-- **Message metadata**: Stores intent and risk classification with each message
-- **Context-aware responses**: LLM agents use recent conversation history for coherent answers
-- **Automatic persistence**: Optionally saves conversations to disk (`chroma/conversations/`)
-- **Message pruning**: Keeps only recent messages (default: 100 per conversation) to manage memory
-- **Query interface**: Easy retrieval of messages and formatted context for LLM
+**Module:** `app/agents/educator.py`
 
-### Usage Example
+**Capabilities:**
+- Concept explanation with examples
+- Knowledge base retrieval via RAG/TF-IDF
+- Beginner-friendly language
+
+**Example:**
+```
+User: "What is a bond?"
+Agent: "A bond is a fixed-income security where you lend money..."
+```
+
+### 2. Market Agent
+**Purpose:** Provide real-time stock prices and market data
+
+**Module:** `app/agents/market.py`
+
+**Data Source:** Market MCP Server (yFinance)
+
+**Capabilities:**
+- Current stock prices
+- Percentage change
+- Historical data (when requested)
+- Multi-ticker support
+
+**Example:**
+```
+User: "What is the price of AAPL?"
+Agent: "AAPL is trading at $180.45 (+2.5%)"
+```
+
+### 3. Risk Profiler Agent
+**Purpose:** Analyze portfolio risk and volatility
+
+**Module:** `app/agents/risk_profiler.py`
+
+**Data Source:** Portfolio MCP Server
+
+**Capabilities:**
+- Portfolio volatility calculation
+- Sharpe ratio computation
+- Risk assessment
+- LLM-powered risk explanation
+
+**Example:**
+```
+User: "How risky is my portfolio?"
+Agent: "Your portfolio has moderate volatility at 18.5%..."
+```
+
+### 4. Portfolio Coach Agent
+**Purpose:** Analyze portfolio diversification and allocation
+
+**Module:** `app/agents/portfolio_coach.py`
+
+**Data Source:** Portfolio MCP Server
+
+**Capabilities:**
+- Allocation analysis (% per holding)
+- Concentration detection (>40% single position)
+- Diversification scoring (0-100 scale)
+- Rebalancing recommendations
+
+**Example:**
+```
+User: "Is my portfolio well-diversified?"
+Agent: "Your portfolio has a diversification score of 75..."
+```
+
+### 5. Strategy Agent
+**Purpose:** Identify investment opportunities based on strategy type
+
+**Module:** `app/agents/strategy.py`
+
+**Data Source:** Portfolio MCP Server
+
+**Capabilities:**
+- Dividend screening & income optimization
+- Growth stock identification (top performers)
+- Value investing opportunities (bargains)
+- Balanced multi-strategy analysis
+
+**Example:**
+```
+User: "What are my growth opportunities?"
+Agent: "Top performers: MSFT (+50%), AAPL (+20%)..."
+```
+
+### 6. Compliance Agent
+**Purpose:** Apply risk-based safety guardrails
+
+**Module:** `app/agents/compliance.py`
+
+**Capabilities:**
+- Risk-based disclaimers
+- Advice filtering (blocks HIGH risk)
+- Regulatory language enforcement
+- PII detection and blocking
+
+**Example:**
+```
+User: "Should I buy this stock?"
+Agent: [Blocks advice for HIGH risk queries]
+```
+
+Maintains chat history and context across message turns.
+
+#### Key Capabilities
+
+- **Per-conversation tracking**: Each conversation gets a unique ID
+- **Message metadata**: Intent and risk classification stored with each message
+- **Context-aware responses**: Recent conversation history auto-passed to LLM agents
+- **Automatic persistence**: Conversations saved to `chroma/conversations/` (JSON format)
+- **Memory management**: Auto-prunes old messages (keeps 100 most recent per conversation)
+- **Singleton pattern**: Single memory instance shared across all requests
+
+#### Usage Example
 
 ```powershell
-# First request (creates new conversation)
-$body = @{
-    "message"="What is a bond?"
-} | ConvertTo-Json
+# First message (creates conversation, returns conversation_id)
+$headers = @{"Content-Type"="application/json"}
+$body = @{"message"="What is a bond?"} | ConvertTo-Json
 $response = Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
-$conversationId = $response.conversation_id
+$convId = $response.conversation_id
 
-# Follow-up request (uses same conversation for context)
+Write-Host "Conversation ID: $convId"
+Write-Host "Response: $($response.reply)"
+
+# Follow-up message (uses same conversation for context)
 $body = @{
     "message"="How do they work?"
-    "conversation_id"=$conversationId
+    "conversation_id"=$convId
 } | ConvertTo-Json
+$response2 = Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
+Write-Host "Follow-up Response: $($response2.reply)"
+```
+
+#### Response Example
+
+```json
+{
+  "reply": "A bond is a fixed-income security...",
+  "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "intent": "ASK_CONCEPT",
+  "risk": "LOW"
+}
+```
+
+#### Memory Configuration
+
+In `app/memory.py`:
+
+```python
+# Max messages per conversation (older messages auto-pruned)
+max_messages_per_conversation=100
+
+# Persistence directory (optional file-based storage)
+persist_dir="chroma/conversations"
+```
+
+#### API Reference
+
+```python
+from app.memory import get_memory
+
+memory = get_memory()
+
+# Add message to conversation
+memory.add_message(
+    conversation_id="uuid",
+    role="user",
+    content="What is inflation?",
+    intent="ASK_CONCEPT",
+    risk="LOW"
+)
+
+# Get recent messages (formatted for LLM context)
+context = memory.get_context(conversation_id, limit=10)
+
+# Clear conversation history
+memory.clear_conversation(conversation_id)
+
+# Delete entire conversation
+memory.delete_conversation(conversation_id)
+
+# List all conversations
+conversations = memory.list_conversations()
+```
+
+### 2. AI Gateway
+
+Multi-provider LLM routing with intelligent failover, caching, and resilience.
+
+#### Providers Supported
+
+- **OpenAI** (primary)  GPT-4, GPT-4o-mini, etc.
+- **Gemini** (fallback)  Google'"'"'s Gemini models via `google.generativeai`
+- **Anthropic** (fallback)  Claude models
+
+#### Key Features
+
+- **Multi-provider failover**: Automatically tries next provider on failure
+- **Request caching**: TTL-based cache (3600s default) reduces API calls
+- **Circuit breaker**: Temporarily disables failed providers to prevent cascading failures
+- **Priority-based routing**: Higher priority providers attempted first
+- **Metrics tracking**: Cache hits, failures, active providers
+- **Dual support for Gemini**: Uses official GenAI client OR HTTP endpoints
+
+#### Configuration
+
+Set provider API keys in `.env`:
+
+```bash
+# Required
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Optional: Gemini fallback (choose one method below)
+# Method 1: Via google.generativeai client
+GEMINI_API_KEY=your-gemini-api-key
+
+# Method 2: Via HTTP endpoint + access token
+GEMINI_API_KEY=your-access-token
+GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini-pro:generate
+
+# Optional: Anthropic
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+#### Endpoints
+
+```powershell
+# Health check
+Invoke-RestMethod -Uri "http://localhost:8000/health" -Method GET
+
+# Gateway metrics
+Invoke-RestMethod -Uri "http://localhost:8000/metrics" -Method GET
+```
+
+#### Metrics Response
+
+```json
+{
+  "total_requests": 42,
+  "cache_hits": 15,
+  "cache_hit_rate_percent": 35.71,
+  "failures": 2,
+  "providers_active": 2
+}
+```
+
+#### Programmatic Usage
+
+```python
+from app.llm import call_llm, get_gateway_metrics
+
+# Call LLM via gateway (auto-routes to available provider)
+response = call_llm(
+    system_prompt="You are a financial expert.",
+    user_prompt="Explain bond pricing.",
+    temperature=0.3
+)
+
+# Get gateway metrics
+metrics = get_gateway_metrics()
+print(f"Cache hit rate: {metrics['"'"'cache_hit_rate_percent'"'"']}%")
+print(f"Active providers: {metrics['"'"'providers_active'"'"']}")
+```
+
+#### Request Flow
+
+```
+User Request
+    
+Cache Check  Cache Hit  Return cached response
+     (miss)
+Circuit Breaker Check
+    
+Try Primary Provider (highest priority)
+     (success)  Cache response  Return
+     (failure)  Record failure
+Try Secondary Provider
+     (success)  Cache response  Return
+     (failure)  Record failure
+All providers failed  Raise exception
+```
+
+#### Best Practices
+
+- Always configure a primary (OpenAI) and at least one fallback (Gemini or Anthropic)
+- Use shorter TTLs for market data (60s) and longer for education content (3600s)
+- Monitor `/metrics` endpoint regularly
+- Adjust circuit breaker thresholds based on provider reliability
+- For Gemini: Use GenAI client if installed, falls back to HTTP endpoint gracefully
+
+### 3. MCP Servers
+
+#### Market MCP Server
+Real-time stock quotes via yfinance with MCP-style tools and client wrapper.
+
+**Features:**
+- **Live market data**: Fetches current price, change %, currency, timestamp
+- **30-second TTL caching**: Reduces API calls for repeated queries
+- **Automatic retry**: Graceful fallback on API failures
+
+**Usage:**
+```python
+from app.mcp.market import get_client
+
+client = get_client()
+quote = client.get_quote("AAPL")
+print(f"AAPL: ${quote.price} (change: {quote.change_percent}%)")
+```
+
+#### Portfolio MCP Server
+Portfolio data management with user holdings, transactions, performance tracking, and dividend history.
+
+**Features:**
+- **Holdings management**: Current positions with gain/loss calculations
+- **Transaction tracking**: Buy, sell, dividend, and transfer events
+- **Performance metrics**: Price history, dividend yields, 52-week data
+- **User profiles**: Risk tolerance, investment goals, constraints
+- **Dividend tracking**: Period-based aggregation and forecasting
+
+**Demo Data Included:**
+- Sample user (user_123) with 5-stock portfolio (~$77K value)
+- Historical transactions and dividend records
+- Performance data with price history
+
+**Usage:**
+```python
+from app.mcp.portfolio import get_portfolio_client
+
+client = get_portfolio_client("user_123")
+holdings = client.get_holdings()
+profile = client.get_profile()
+transactions = client.get_transactions()
+dividends = client.get_dividends()
+```
+
+**Database Ready:**
+- Hardcoded data now (for development/demo)
+- Will connect to PostgreSQL in Phase 2
+- SQLAlchemy ORM models ready for implementation
+
+### 4. RAG Engine
+
+TF-IDF-based retrieval over trusted finance knowledge base.
+
+#### Key Decisions
+
+- **TF-IDF** instead of transformers/embeddings  avoids native C++ dependencies
+- **Pickle persistence**  lightweight storage at `chroma/embeddings.pkl`
+- **Knowledge base**  `data/finance_kb.txt` (can be expanded)
+
+#### Usage
+
+Automatically invoked for education queries:
+
+```powershell
+$body = @{"message"="Explain what a stock is"} | ConvertTo-Json
 Invoke-RestMethod -Uri "http://localhost:8000/chat" -Method POST -Headers $headers -Body $body
 ```
 
-The orchestrator automatically uses recent conversation history to provide coherent, context-aware responses.
+The educator agent uses RAG to retrieve relevant content from the knowledge base.
 
-### Memory Storage
+### 5. Guardrails
 
-- **In-memory**: Conversions are stored in RAM during app runtime
-- **File persistence** (optional): Conversations saved to `chroma/conversations/` as JSON files
-- **Global singleton**: Single memory instance shared across all requests via `get_memory()`
+Input validation and output compliance filtering.
 
-### Configuration
-
-- Max messages per conversation: 100 (configurable in `app/memory.py`)
-- Persist directory: `chroma/conversations/` (loaded on app startup)
-- Auto-pruning: Old messages dropped when limit exceeded (keeps most recent)
-
-## MCP Servers
-
-### Market MCP Server (`app/mcp/market_server.py`)
-
-Provides real-time stock data:
-
-- **Tool**: `get_quote(ticker: str)` → Returns price, change%, currency, timestamp
-- **Caching**: 30-second TTL per ticker
-- **Error Handling**: Graceful fallback on yfinance failures
-
-**Usage**: Automatically invoked by market agent when user asks about stocks.
-
-## Configuration
-
-- `.env` — Contains `OPENAI_API_KEY` (not committed)
-- `data/finance_kb.txt` — Knowledge base for RAG retrieval
-- `chroma/embeddings.pkl` — Persisted TF-IDF embeddings
-- `chroma/conversations/` — Persisted conversation history (JSON files)
-
-## Notes
-
-- Project uses TF-IDF for RAG (lightweight, no native dependencies)
-- To upgrade to semantic embeddings: install `torch`, `sentence-transformers`, and VC++ redistributable
-- Git repository initialized; ready for remote push
+- **Input guardrails**: Detects and blocks harmful queries
+- **Output guardrails**: Filters LLM responses for compliance
+- **Risk classification**: Flags high-risk queries for compliance review
 
 ## Project Structure
 
 ```
 finnie-chat/
-├── app/
-│   ├── main.py              # FastAPI entrypoint
-│   ├── llm.py               # OpenAI client (lazy-loaded)
-│   ├── intent.py            # Intent classification
-│   ├── guardrails.py        # Input/output validation
-│   ├── agents/              # Agent implementations
-│   │   ├── orchestrator.py  # Main dispatch logic
-│   │   ├── market.py        # Stock market agent (uses MCP)
-│   │   ├── educator.py      # Education agent (uses RAG)
-│   │   └── compliance.py    # Compliance filtering
-│   ├── mcp/                 # MCP servers & clients
-│   │   ├── market_server.py # Market data MCP server
-│   │   └── market.py        # Market client wrapper
-│   └── rag/                 # RAG pipeline
-│       ├── store.py         # TF-IDF vector store
-│       └── ingest.py        # Knowledge base ingestion
-├── data/
-│   └── finance_kb.txt       # Finance knowledge base
-├── tests/
-│   ├── conftest.py          # Pytest fixtures
-│   └── test_market.py       # Market MCP tests
-├── .env                     # Environment variables (not committed)
-├── .gitignore
-├── README.md
-└── ARCHITECTURE.md          # Detailed architecture docs
+ app/
+    main.py                 # FastAPI entrypoint with /chat, /health, /metrics
+    gateway.py              # Multi-provider LLM gateway (OpenAI, Gemini, Anthropic)
+    llm.py                  # LLM client interface (uses gateway)
+    memory.py               # Conversation memory with persistence
+    intent.py               # Intent classification
+    guardrails.py           # Input/output validation
+    agents/
+       orchestrator.py      # Agent orchestration with context awareness
+       educator.py          # Education agent (uses RAG retrieval)
+       market.py            # Market data agent (uses Market MCP)
+       risk_profiler.py     # Risk analysis agent (uses Portfolio MCP)
+       portfolio_coach.py   # Allocation & diversification agent
+       strategy.py          # Investment strategy agent (dividend/growth/value)
+       compliance.py        # Compliance filtering & safety guardrails
+    mcp/
+       market_server.py     # Market MCP server (GetQuoteTool via yFinance)
+       market.py            # Market client wrapper with 30s caching
+       portfolio.py         # Portfolio MCP server (holdings, transactions, etc)
+    rag/
+        store.py            # TF-IDF vector store
+        ingest.py           # Knowledge base ingestion script
+ data/
+    finance_kb.txt          # Finance knowledge base (text)
+ chroma/
+    embeddings.pkl          # Persisted TF-IDF embeddings
+    conversations/          # Persisted conversation histories (JSON)
+ tests/
+    conftest.py             # Pytest fixtures
+    test_memory.py          # Memory system tests (13 tests)
+    test_market.py          # Market MCP tests (8 tests)
+    test_gateway.py         # Gateway tests (13 tests)
+    test_risk_profiler.py   # Risk Profiler Agent tests (11 tests)
+    test_portfolio_coach.py # Portfolio Coach Agent tests (23 tests)
+    test_strategy.py        # Strategy Agent tests (20 tests)
+    test_portfolio_mcp.py   # Portfolio MCP Server tests (45 tests)
+ .env                        # Environment variables (not committed)
+ .gitignore
+ requirements.txt
+ README.md                   # This file
+ ARCHITECTURE.md             # Detailed architecture documentation
+ GATEWAY.md                  # Detailed gateway documentation
 ```
 
-To push to a remote:
+## Configuration
 
-```powershell
-git remote add origin <your-repo-url>
-git push -u origin main
-```
+### Environment Variables (.env)
 
-## AI Gateway
+```bash
+# Required: Primary LLM provider
+OPENAI_API_KEY=sk-proj-...
 
-This project now includes an AI Gateway that centralizes LLM requests for reliability, cost control, and observability.
+# Optional: Gemini fallback (choose one method below)
+# Method 1: Via google.generativeai client
+GEMINI_API_KEY=your-api-key
 
-- File: `app/gateway.py`
-- Features: multi-provider routing (OpenAI, Gemini, Anthropic), request caching, circuit breaker, priority-based failover, metrics
-- Docs: see `GATEWAY.md` for detailed configuration and best practices
+# Method 2: Via HTTP endpoint + access token
+GEMINI_API_KEY=your-access-token
+GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini-pro:generate
 
-### Environment variables
-
-Add provider keys to your `.env` to enable providers:
-
-```powershell
-OPENAI_API_KEY=sk-...
-GEMINI_API_KEY=your-gemini-key
-GEMINI_ENDPOINT=https://your-gemini-endpoint.example.com
+# Optional: Anthropic fallback
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Key endpoints
+### Storage Locations
 
-- `GET /health` — basic health check
-- `GET /metrics` — gateway metrics: `total_requests`, `cache_hits`, `cache_hit_rate_percent`, `failures`, `providers_active`
+| Path | Purpose | Format |
+|------|---------|--------|
+| `.env` | API keys and configuration | Text (key=value) |
+| `data/finance_kb.txt` | Finance knowledge base | Text |
+| `chroma/embeddings.pkl` | TF-IDF embeddings (cached) | Binary pickle |
+| `chroma/conversations/` | Conversation histories | JSON files |
 
-Example metrics call (PowerShell):
+## API Reference
+
+### POST /chat
+
+**Request:**
+```json
+{
+  "message": "What is a bond?",
+  "conversation_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response:**
+```json
+{
+  "reply": "A bond is a fixed-income security...",
+  "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "intent": "ASK_CONCEPT",
+  "risk": "LOW"
+}
+```
+
+### GET /health
+
+**Response:**
+```json
+{
+  "status": "ok"
+}
+```
+
+### GET /metrics
+
+**Response:**
+```json
+{
+  "total_requests": 42,
+  "cache_hits": 15,
+  "cache_hit_rate_percent": 35.71,
+  "failures": 2,
+  "providers_active": 2
+}
+```
+
+## Testing
+
+All test suites are automated with pytest:
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/metrics" -Method GET | ConvertTo-Json -Depth 3
+# Run all tests with coverage
+.\venv\Scripts\python.exe -m pytest tests/ -v --cov=app
+
+# Run specific test suite
+.\venv\Scripts\python.exe -m pytest tests/test_memory.py -v
+.\venv\Scripts\python.exe -m pytest tests/test_market.py -v
+.\venv\Scripts\python.exe -m pytest tests/test_gateway.py -v
+
+# Run with verbose output
+.\venv\Scripts\python.exe -m pytest tests/ -vv
 ```
 
-### How to call the gateway (programmatic)
+## Deployment
 
-All agent LLM calls use the gateway automatically. You can also call it directly:
+### Local Development
 
-```python
-from app.llm import call_llm, get_gateway_metrics
-
-resp = call_llm(
-	system_prompt="You are a helpful assistant.",
-	user_prompt="Explain bond pricing",
-	temperature=0.2
-)
-
-metrics = get_gateway_metrics()
-print(metrics)
+```powershell
+.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
-### Best practices
+### Production
 
-- Provide multiple providers (primary + fallback) via environment variables
-- Use caching for repeated prompts (education agent) and short TTLs for fresh data (market agent)
-- Monitor `/metrics` and tune circuit breaker thresholds and provider priority based on observed failures and latency
+```powershell
+# Use gunicorn (install: pip install gunicorn)
+gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000
+```
 
+## Key Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `fastapi` | Web framework |
+| `uvicorn` | ASGI server |
+| `openai` | OpenAI API client |
+| `google-generativeai` | Google Gemini client (optional) |
+| `anthropic` | Anthropic Claude client (optional) |
+| `yfinance` | Stock data API |
+| `scikit-learn` | TF-IDF vectorization |
+| `pytest` | Testing framework |
+
+## Known Limitations & Future Enhancements
+
+### Current Limitations
+
+1. **Single-user**: No built-in authentication or multi-user isolation
+2. **In-memory + file storage**: For scalable deployments, consider database (PostgreSQL, MongoDB)
+3. **Gemini HTTP mode**: Requires proper endpoint + token configuration
+4. **TF-IDF RAG**: Lighter than transformers but less semantic
+
+### Planned Enhancements
+
+- [ ] User authentication and session management
+- [ ] Database-backed conversation storage
+- [ ] Advanced RAG with semantic embeddings (with optional torch)
+- [ ] Streaming responses for long-form content
+- [ ] Rate limiting and quota management
+- [ ] Audit logging and compliance reporting
+- [ ] Multi-language support
+
+## Troubleshooting
+
+### Issue: "All LLM providers failed"
+
+**Cause**: No valid provider configured or all providers down
+
+**Solution**:
+```powershell
+# Check /metrics endpoint
+Invoke-RestMethod -Uri "http://localhost:8000/metrics" -Method GET
+
+# Verify .env has at least OPENAI_API_KEY set
+cat .env | Select-String "OPENAI_API_KEY"
+```
+
+### Issue: Low cache hit rate
+
+**Cause**: Unique queries, short TTL, or caching disabled
+
+**Solution**:
+- Reuse common system prompts
+- Increase cache TTL in `app/gateway.py`
+- Monitor with `/metrics` endpoint
+
+### Issue: Conversation not persisting
+
+**Cause**: `chroma/conversations/` directory missing or permissions denied
+
+**Solution**:
+```powershell
+# Create directory if missing
+New-Item -ItemType Directory -Path "chroma/conversations" -Force
+
+# Check file permissions
+Get-Item "chroma/conversations" | Format-List
+```
+
+## Contributing
+
+1. Create a branch: `git checkout -b feature/my-feature`
+2. Make changes and test: `pytest tests/`
+3. Commit: `git commit -m "Add my feature"`
+4. Push: `git push origin feature/my-feature`
+5. Create a Pull Request
+
+## License
+
+MIT License  see LICENSE file for details
+
+## Support
+
+For issues, questions, or feature requests, open an issue on GitHub or contact the maintainers.
