@@ -1,6 +1,7 @@
 """Portfolio coach for holdings analysis and allocation optimization."""
 
 from app.mcp.market import get_client
+from app.mcp.portfolio import get_portfolio_client
 from app.llm import call_llm
 import logging
 
@@ -132,16 +133,27 @@ def calculate_diversification_score(allocation):
     return round(diversification_score, 2)
 
 
-def run(user_message: str, holdings_dict: dict = None):
+def run(user_message: str, holdings_dict: dict = None, user_id: str = "user_123"):
     """Main portfolio coach agent.
     
     Args:
         user_message: User query or request
-        holdings_dict: Portfolio holdings
+        holdings_dict: Portfolio holdings (deprecated, use user_id instead)
+        user_id: User identifier to fetch portfolio from MCP
     
     Returns:
         str: LLM-generated recommendations
     """
+    # If holdings_dict not provided, fetch from Portfolio MCP
+    if holdings_dict is None:
+        try:
+            portfolio_client = get_portfolio_client(user_id)
+            portfolio_result = portfolio_client.get_holdings()
+            holdings_dict = portfolio_result.get('holdings', {})
+        except Exception as e:
+            logger.error(f"Error fetching portfolio from MCP: {e}")
+            return f"Unable to fetch portfolio data: {e}"
+    
     if not holdings_dict:
         return "No holdings to analyze. Please provide your portfolio holdings."
     

@@ -1,6 +1,7 @@
 """Risk profiler for portfolio analysis."""
 
 from app.mcp.market import get_client
+from app.mcp.portfolio import get_portfolio_client
 from app.llm import call_llm
 import numpy as np
 import logging
@@ -75,18 +76,62 @@ def calculate_portfolio_metrics(holdings_dict):
         }
 
 
-def run(user_message: str, holdings_dict: dict = None):
+def run(user_message: str, holdings_dict: dict = None, user_id: str = "user_123"):
     """Main risk profiler agent.
     
     Args:
         user_message: User's query
-        holdings_dict: Portfolio holdings to analyze
+        holdings_dict: Portfolio holdings to analyze (deprecated, use user_id instead)
+        user_id: User identifier to fetch portfolio from MCP
     
     Returns:
         Risk analysis explanation from LLM
     """
+    # If holdings_dict not provided, fetch from Portfolio MCP
+    if holdings_dict is None:
+        try:
+            portfolio_client = get_portfolio_client(user_id)
+            portfolio_result = portfolio_client.get_holdings()
+            holdings_dict = portfolio_result.get('holdings', {})
+        except Exception as e:
+            logger.error(f"Error fetching portfolio from MCP: {e}")
+            return f"Unable to fetch portfolio data: {e}"
+    
     if not holdings_dict:
         return "No holdings to analyze. Please provide portfolio data."
+    
+    metrics = calculate_portfolio_metrics(holdings_dict)
+    
+    # Check for errors
+    if metrics.get('error'):
+        return f"Error analyzing portfolio: {metrics['error']}"
+    
+    # Use LLM to explain metrics
+    try:
+        explanation = call_llm(
+            system_prompt="You are a risk assessment expert. Explain portfolio metrics clearly and simply.",
+            user_prompt=f"""
+Analyze these portfolio metrics and explain what they mean:
+
+Portfolio Metrics:
+- Volatility: {metrics['volatility']}%
+- Expected Return: {metrics['avg_return']}%
+- Sharpe Ratio: {metrics['sharpe_ratio']}
+
+Holdings analyzed: {list(holdings_dict.keys())}
+
+Question: {user_message}
+
+Provide a clear, beginner-friendly explanation of what these metrics tell us about portfolio risk.
+            """,
+            temperature=0.3
+        )
+        return explanation
+    
+    except Exception as e:
+        logger.error(f"Error in risk profiler LLM: {e}")
+        return f"Risk Profile - Volatility: {metrics['volatility']}%, Return: {metrics['avg_return']}%, Sharpe Ratio: {metrics['sharpe_ratio']}"
+
     
     metrics = calculate_portfolio_metrics(holdings_dict)
     
