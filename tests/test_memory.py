@@ -169,6 +169,10 @@ class TestGlobalMemory:
     def test_global_memory_persists_across_calls(self):
         """Test that global memory maintains state."""
         memory = get_memory()
+        # Clear any existing test data to avoid interference from prior runs
+        if "global-test" in memory.list_conversations():
+            memory.delete_conversation("global-test")
+        
         memory.add_message("global-test", "user", "Persistent message")
         
         # Get memory again and verify message is there
