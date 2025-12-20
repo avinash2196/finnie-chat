@@ -1,0 +1,651 @@
+openapi: 3.0.3
+info:
+  title: External Portfolio API
+  description: |
+    Contract for an external portfolio management service.
+    This API provides read/write access to user portfolios, holdings, transactions, and performance data.
+    
+    **Usage**: A fintech AI assistant calls this API to fetch real portfolio data for analysis,
+    screening, and recommendations. The external service is the source of truth.
+    
+    **Authentication**: Bearer token (API key) in the Authorization header.
+    
+    **Rate Limits**: 100 requests/minute per API key. Responses include `X-RateLimit-*` headers.
+    
+  version: 1.0.0
+  contact:
+    name: Portfolio API Support
+    email: api-support@portfolio-provider.com
+
+servers:
+  - url: https://api.portfolio-provider.com/v1
+    description: Production
+  - url: http://localhost:8001/v1
+    description: Local mock server (for testing)
+
+security:
+  - BearerAuth: []
+
+paths:
+  /users/{user_id}/holdings:
+    get:
+      summary: Get user's current holdings
+      description: |
+        Returns all current positions (stocks, bonds, cash, etc) for a user.
+        Each holding includes quantity, purchase price, current price, and unrealized gain/loss.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Unique user identifier
+          schema:
+            type: string
+            example: "user_123"
+        - name: include_performance
+          in: query
+          required: false
+          description: If true, include current_price and performance metrics
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Holdings retrieved successfully
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Max requests per minute
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Remaining requests this minute
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoldingsResponse'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{user_id}/profile:
+    get:
+      summary: Get user's profile and risk settings
+      description: |
+        Returns user profile including risk tolerance, investment goals, constraints, and preferences.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{user_id}/transactions:
+    get:
+      summary: Get user's transaction history
+      description: |
+        Returns a paginated list of transactions (buys, sells, dividends, transfers).
+        Supports filtering by date range and transaction type.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          required: false
+          description: Filter transactions on or after this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: false
+          description: Filter transactions on or before this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: type
+          in: query
+          required: false
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [buy, sell, dividend, transfer]
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: Results per page (max 100)
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{user_id}/performance:
+    get:
+      summary: Get user's portfolio performance and metrics
+      description: |
+        Returns performance data: current prices, price history, dividend yield, 52-week high/low, returns.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ticker
+          in: query
+          required: false
+          description: If provided, return performance for only this ticker
+          schema:
+            type: string
+        - name: days
+          in: query
+          required: false
+          description: Number of days of price history to return
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Performance data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{user_id}/transactions/record:
+    post:
+      summary: Record a new transaction
+      description: |
+        Record a buy, sell, dividend, or transfer transaction.
+        Returns the recorded transaction with assigned ID and timestamp.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '201':
+          description: Transaction recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid request (missing fields, invalid type, etc)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API key as Bearer token.
+        Example: `Authorization: Bearer sk_live_abc123...`
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code (e.g., 'invalid_request', 'unauthorized', 'not_found', 'rate_limit_exceeded')
+        message:
+          type: string
+          description: Human-readable error message
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+
+    Holding:
+      type: object
+      required:
+        - ticker
+        - quantity
+        - purchase_price
+        - current_price
+        - purchase_date
+      properties:
+        ticker:
+          type: string
+          description: Stock ticker symbol
+          example: "AAPL"
+        quantity:
+          type: number
+          description: Number of shares held
+          example: 100
+        purchase_price:
+          type: number
+          format: double
+          description: Average cost per share (weighted by volume)
+          example: 150.00
+        current_price:
+          type: number
+          format: double
+          description: Current market price
+          example: 180.00
+        purchase_date:
+          type: string
+          format: date
+          description: Date of earliest purchase
+          example: "2024-01-15"
+        current_value:
+          type: number
+          format: double
+          description: quantity * current_price
+          example: 18000.00
+        gain_loss:
+          type: number
+          format: double
+          description: Unrealized gain/loss in dollars
+          example: 3000.00
+        gain_loss_pct:
+          type: number
+          format: double
+          description: Unrealized gain/loss as percentage
+          example: 20.0
+
+    HoldingsResponse:
+      type: object
+      required:
+        - user_id
+        - holdings
+        - total_portfolio_value
+        - timestamp
+      properties:
+        user_id:
+          type: string
+        holdings:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Holding'
+          description: Map of ticker -> holding details
+        total_shares_value:
+          type: number
+          format: double
+          description: Sum of all stock/security positions
+          example: 50000.00
+        total_cash:
+          type: number
+          format: double
+          description: Cash balance
+          example: 10000.00
+        total_portfolio_value:
+          type: number
+          format: double
+          description: total_shares_value + total_cash
+          example: 60000.00
+        timestamp:
+          type: string
+          format: date-time
+          description: As-of timestamp (when data was retrieved)
+
+    ProfileResponse:
+      type: object
+      required:
+        - user_id
+        - profile
+      properties:
+        user_id:
+          type: string
+        profile:
+          type: object
+          properties:
+            name:
+              type: string
+              example: "John Investor"
+            email:
+              type: string
+              format: email
+            risk_tolerance:
+              type: string
+              enum: [conservative, moderate, aggressive]
+              description: User's risk tolerance
+            investment_horizon:
+              type: string
+              enum: [short_term, medium_term, long_term]
+              description: Investment time horizon
+            annual_income:
+              type: number
+              format: double
+              example: 120000
+            investment_goals:
+              type: array
+              items:
+                type: string
+              description: User's investment goals (e.g., 'retirement', 'education', 'wealth_building')
+              example: ["retirement", "wealth_building"]
+            max_single_position:
+              type: number
+              description: Maximum allowed % in a single position
+              example: 40
+            min_cash_reserve:
+              type: number
+              description: Minimum % to keep in cash
+              example: 10
+            preferred_sectors:
+              type: array
+              items:
+                type: string
+              example: ["technology", "healthcare", "finance"]
+            avoid_sectors:
+              type: array
+              items:
+                type: string
+              example: ["utilities"]
+            created_at:
+              type: string
+              format: date
+            last_updated:
+              type: string
+              format: date
+
+    Transaction:
+      type: object
+      required:
+        - id
+        - date
+        - type
+        - ticker
+        - quantity
+        - price
+        - amount
+      properties:
+        id:
+          type: string
+          description: Unique transaction ID (assigned by server)
+          example: "txn_12345"
+        date:
+          type: string
+          format: date
+          description: Transaction date
+        type:
+          type: string
+          enum: [buy, sell, dividend, transfer]
+        ticker:
+          type: string
+          description: Stock ticker or asset identifier
+          example: "AAPL"
+        quantity:
+          type: number
+          description: Quantity (shares for buy/sell, amount for dividend/transfer)
+          example: 100
+        price:
+          type: number
+          format: double
+          description: Price per share (or unit price)
+          example: 150.00
+        amount:
+          type: number
+          format: double
+          description: Total amount (quantity * price)
+          example: 15000.00
+        notes:
+          type: string
+          description: Optional transaction notes
+          example: "Regular rebalancing"
+
+    TransactionsResponse:
+      type: object
+      required:
+        - user_id
+        - transactions
+        - pagination
+      properties:
+        user_id:
+          type: string
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 50
+            total:
+              type: integer
+              description: Total number of transactions matching filters
+              example: 237
+            pages:
+              type: integer
+              description: Total number of pages
+              example: 5
+
+    Performance:
+      type: object
+      properties:
+        ticker:
+          type: string
+          example: "AAPL"
+        current_price:
+          type: number
+          format: double
+        prices_last_n_days:
+          type: array
+          items:
+            type: number
+            format: double
+          description: Array of closing prices for the last N days
+          example: [150, 155, 160, 158, 162]
+        dividend_yield:
+          type: number
+          format: double
+          description: Annual dividend yield as percentage
+          example: 0.5
+        week_52_high:
+          type: number
+          format: double
+          description: 52-week high price
+        week_52_low:
+          type: number
+          format: double
+          description: 52-week low price
+        ytd_return:
+          type: number
+          format: double
+          description: Year-to-date return as percentage
+
+    PerformanceResponse:
+      type: object
+      required:
+        - user_id
+        - performance
+      properties:
+        user_id:
+          type: string
+        performance:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Performance'
+          description: Map of ticker -> performance data
+        timestamp:
+          type: string
+          format: date-time
+
+    TransactionRequest:
+      type: object
+      required:
+        - type
+        - ticker
+        - quantity
+        - price
+      properties:
+        type:
+          type: string
+          enum: [buy, sell, dividend, transfer]
+          description: Type of transaction
+        ticker:
+          type: string
+          description: Stock ticker or asset identifier
+          example: "AAPL"
+        quantity:
+          type: number
+          description: Quantity (shares for buy/sell, amount for dividend/transfer)
+          example: 50
+        price:
+          type: number
+          format: double
+          description: Price per share (or unit price)
+          example: 180.00
+        date:
+          type: string
+          format: date
+          description: Optional transaction date (default: today)
+        notes:
+          type: string
+          description: Optional notes
+          example: "Rebalancing buy"
+
+    TransactionResponse:
+      type: object
+      required:
+        - user_id
+        - transaction
+      properties:
+        user_id:
+          type: string
+        transaction:
+          $ref: '#/components/schemas/Transaction'
+        timestamp:
+          type: string
+          format: date-time

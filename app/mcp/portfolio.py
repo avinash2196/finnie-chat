@@ -585,13 +585,29 @@ class PortfolioClient:
         return record_transaction(self.user_id, ticker, "dividend", 1, amount, notes)
 
 
+import os
+
+
 def get_portfolio_client(user_id: str = "user_123") -> PortfolioClient:
     """Factory function to get a portfolio client for a user.
-    
-    Args:
-        user_id: User identifier (default: demo user)
-    
-    Returns:
-        PortfolioClient instance
+
+    This factory supports multiple backends via the `PORTFOLIO_BACKEND` env var:
+      - `mock` (default): returns the internal `PortfolioClient` backed by mock data
+      - `external`: returns an `ExternalPortfolioClient` (skeleton adapter)
+
+    The external adapter lives in `app.mcp.adapters.external_portfolio` and is
+    intentionally a lightweight skeleton until an external service is configured.
     """
+    backend = os.getenv("PORTFOLIO_BACKEND", "mock").lower()
+
+    if backend == "external":
+        try:
+            from app.mcp.adapters.external_portfolio import ExternalPortfolioClient
+            return ExternalPortfolioClient(user_id)
+        except Exception as e:
+            logger.error(f"Failed to load ExternalPortfolioClient: {e}")
+            # Fall back to mock client to keep system operational
+            return PortfolioClient(user_id)
+
+    # Default: mock/internal client
     return PortfolioClient(user_id)
