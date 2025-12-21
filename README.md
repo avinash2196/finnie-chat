@@ -39,6 +39,16 @@ User Request
             └─ Response + Memory (store in conversation history)
 ```
 
+## Data Persistence & Database (Parked)
+
+Note: the project currently uses the Portfolio MCP abstraction for all portfolio data. We intentionally *do not* run a persistent database by default — portfolio data is provided by the mock MCP implementation and can be swapped to an external API or a database-backed adapter later. Database work is parked until there's a clear need for persistent snapshots, analytics or regulatory/audit requirements.
+
+Why this approach:
+- Single integration point: agents call `get_portfolio_client()` and do not depend on the storage backend.
+- Allows integration with custody/brokerage systems or a future DB with minimal code changes.
+- Reduces early infra and sync complexity.
+
+
 ## Quick Start (PowerShell)
 
 ### Setup

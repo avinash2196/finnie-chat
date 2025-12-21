@@ -178,6 +178,9 @@ CREATE TABLE user_profiles (
 );
 ```
 
+> NOTE: Database implementation is currently **parked**. The system uses the Portfolio MCP abstraction (mock by default) so we can integrate with an external portfolio provider or a database-backed adapter later with minimal changes.
+
+
 #### Testing Additions
 ```
 Add 15+ tests:
