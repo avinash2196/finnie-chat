@@ -1,5 +1,16 @@
 # 🚀 Quick Start Guide - Finnie Chat
 
+## Prerequisites
+
+Before running the application, ensure the database is initialized:
+
+```powershell
+cd C:\Users\avina\Codes\finnie-chat
+.\venv\Scripts\python.exe -c "from app.database import init_db; init_db()"
+```
+
+You should see: `Database initialized successfully!`
+
 ## Running the Application
 
 The Finnie Chat system consists of two parts that need to run simultaneously:
@@ -95,9 +106,17 @@ To stop either service:
 ## System Status
 
 ### ✅ What's Complete
-- Backend: 6 agents + gateway + 183 tests ✅
+- Backend: 6 agents + gateway + 218 tests ✅
+- Database: SQLAlchemy models + sync system ✅ 🆕
+- Portfolio: Mock/Robinhood/Fidelity providers ✅ 🆕
+- Background Sync: Hourly auto-sync ✅ 🆕
+- REST API: 10+ endpoints for portfolio ops ✅ 🆕
 - Frontend: Chat tab fully functional ✅
 - Integration: Chat → Backend communication ✅
+
+### ⚠️ What's In Progress
+- Portfolio UI: Backend ready, frontend pending
+- Market Tab: Sample data displayed
 - Placeholder tabs: Portfolio & Market ready for Phase 3 & 4 ✅
 
 ### 📅 What's Next (Phase 3 - Weeks 6-8)

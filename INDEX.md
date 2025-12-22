@@ -6,13 +6,28 @@
 **File:** `EXECUTIVE_SUMMARY.md`
 
 Quick overview of:
-- Current project status (60-70% complete)
+- Current project status (70% complete)
 - What's built vs. what's missing
-- Timeline to MVP (5-6 weeks)
+- Timeline to MVP (3-4 weeks remaining)
 - Immediate next steps
 - Key decisions needed
 
-**Decision Point:** Choose frontend framework (Streamlit vs React)
+**Decision Point:** Choose frontend enhancement approach
+
+---
+
+### 1.5️⃣ NEW: Database Integration Guide (10 min read)
+**File:** `DATABASE_GUIDE.md`
+
+Comprehensive database documentation:
+- Database models and schema
+- Provider pattern (Mock/Robinhood/Fidelity)
+- REST API endpoints (10+)
+- Background sync scheduler
+- Quick start examples
+- Migration from mock data
+
+**Best For:** Understanding portfolio data persistence and external API integration
 
 ---
 
@@ -34,7 +49,8 @@ Detailed breakdown of:
 **File:** `ROADMAP.md`
 
 Week-by-week plan including:
-- Current status with progress bars
+- Current status with progress bars (70% overall)
+- Database integration ✅ COMPLETE
 - 5 phases with detailed tasks
 - Code examples for key components
 - Feature completeness matrix

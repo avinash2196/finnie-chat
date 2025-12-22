@@ -22,7 +22,10 @@ User Query
    ├─ [Strategy Agent] ◄─ Portfolio MCP Server
    └─ [Compliance Agent] ◄─ Safety Rules
 
-   > Data layer notes: portfolio data is accessed via the MCP abstraction. A database integration was considered but is currently parked; the MCP can be switched to an external provider or a DB-backed adapter later. This keeps agents decoupled from storage implementation.
+   > Data layer: Portfolio data is now persisted in SQLAlchemy database (SQLite/PostgreSQL).
+   > Provider pattern allows syncing from Mock, Robinhood, or Fidelity sources.
+   > Background scheduler automatically syncs portfolios hourly.
+   > MCP servers use database as backing store, maintaining abstraction for agents.
    │
    ▼ LLM Synthesis Layer
    │

@@ -1,17 +1,20 @@
 ﻿# finnie-chat
 
-Local FastAPI-based financial AI assistant with 6 specialized agents, portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, and multi-provider AI Gateway.
+Local FastAPI-based financial AI assistant with 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, and multi-provider AI Gateway.
 
 ## Overview
 
 finnie-chat is a sophisticated financial AI system that combines:
 - **6 Specialized Agents** for education, market analysis, risk profiling, portfolio coaching, strategy selection, and compliance
 - **Agentic Orchestration** with intelligent routing and context awareness
+- **Database Integration** with SQLAlchemy (SQLite/PostgreSQL) for portfolio persistence
+- **Multi-Provider Portfolio Sync** (Mock, Robinhood, Fidelity) with background scheduler
 - **Conversation Memory** with persistent storage (JSON)
 - **Multi-provider LLM Gateway** (OpenAI primary, Gemini/Anthropic fallback) with caching
-- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (hardcoded, database-ready)
-- **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval
+- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed)
+- **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval with verification
 - **Guardrails** for input validation and compliance filtering
+- **REST API** with 10+ endpoints for portfolio management
 
 ## Architecture
 
@@ -24,7 +27,7 @@ User Request
     │
     └─ Orchestrator (agent routing)
         │
-        ├─ [Educator Agent] ◄─ RAG Engine
+        ├─ [Educator Agent] ◄─ RAG Engine + Verification
         ├─ [Market Agent] ◄─ Market MCP Server (yFinance)
         ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server
         ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server
@@ -37,16 +40,47 @@ User Request
             └─ Anthropic (fallback)
             │
             └─ Response + Memory (store in conversation history)
+
+Database Layer (SQLAlchemy)
+    │
+    ├─ User Management
+    ├─ Portfolio Holdings
+    ├─ Transaction History
+    ├─ Portfolio Snapshots
+    └─ Sync Logs
+        │
+        └─ Provider Pattern (Multi-source sync)
+            ├─ Mock Provider (development)
+            ├─ Robinhood Provider (external API)
+            └─ Fidelity Provider (external API)
 ```
 
-## Data Persistence & Database (Parked)
+## Database Integration ✅
 
-Note: the project currently uses the Portfolio MCP abstraction for all portfolio data. We intentionally *do not* run a persistent database by default — portfolio data is provided by the mock MCP implementation and can be swapped to an external API or a database-backed adapter later. Database work is parked until there's a clear need for persistent snapshots, analytics or regulatory/audit requirements.
+**Fully Implemented** - The project now includes comprehensive database integration:
 
-Why this approach:
-- Single integration point: agents call `get_portfolio_client()` and do not depend on the storage backend.
-- Allows integration with custody/brokerage systems or a future DB with minimal code changes.
-- Reduces early infra and sync complexity.
+### Features
+- **SQLAlchemy ORM** with SQLite (dev) and PostgreSQL (production) support
+- **5 Database Models**: User, Holding, Transaction, PortfolioSnapshot, SyncLog
+- **Provider Pattern**: Easily switch between Mock, Robinhood, Fidelity data sources
+- **Background Sync**: Automatic hourly portfolio synchronization
+- **Transaction History**: Complete audit trail of all BUY/SELL/DIVIDEND activities
+- **Portfolio Snapshots**: Historical performance tracking and analytics
+- **REST API**: 10+ endpoints for complete portfolio CRUD operations
+
+### Quick Database Start
+```powershell
+# Initialize database
+python -c "from app.database import init_db; init_db()"
+
+# Run demo
+python demo_database.py
+
+# Sync portfolio from mock provider
+curl -X POST http://localhost:8000/users/{user_id}/sync -d '{"provider":"mock"}'
+```
+
+See [DATABASE_GUIDE.md](DATABASE_GUIDE.md) for complete documentation.
 
 
 ## Quick Start (PowerShell)

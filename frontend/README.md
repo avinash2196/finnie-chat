@@ -31,10 +31,19 @@ The app will open automatically in your browser at http://localhost:8501
 - Example prompts for quick start
 
 ### 📊 Portfolio Tab
-- **Status:** 🚧 Placeholder (Phase 3)
-- Preview of upcoming portfolio tracking
-- Sample holdings and allocation charts
-- Will include: holdings management, diversification analysis, risk metrics
+- **Status:** 🚧 Backend Complete, Frontend In Progress
+- **Backend Features (Ready):** 🆕
+  - Database with 5 models (User, Holding, Transaction, Snapshot, SyncLog)
+  - Provider pattern (Mock/Robinhood/Fidelity sync)
+  - Background scheduler (hourly auto-sync)
+  - 10+ REST API endpoints
+  - 35 comprehensive tests (all passing)
+- **Frontend TODO:**
+  - Connect to `/users/{id}/portfolio` endpoint
+  - Display real holdings data
+  - Show transaction history
+  - Visualize asset allocation
+  - Add manual sync button
 
 ### 📈 Market Tab
 - **Status:** 🚧 Placeholder (Phase 4)
