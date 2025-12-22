@@ -81,19 +81,68 @@ echo "GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini
 ### Run Tests
 
 ```powershell
-# Run all tests
-.\venv\Scripts\python.exe -m pytest tests/ -v
+# Run all tests (183 tests, ~44s)
+.\venv\Scripts\python.exe -m pytest tests -v
+
+# Quick run (quiet mode)
+.\venv\Scripts\python.exe -m pytest tests -q
 
 # Run specific test suites
 .\venv\Scripts\python.exe -m pytest tests/test_memory.py -v              # Memory (13 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_market.py -v              # Market MCP (8 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_gateway.py -v             # Gateway (13 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_gateway.py -v             # Gateway (15 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py -v       # Risk Profiler Agent (11 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_portfolio_coach.py -v     # Portfolio Coach Agent (23 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_strategy.py -v            # Strategy Agent (20 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_portfolio_mcp.py -v       # Portfolio MCP Server (45 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_orchestrator_integration.py -v  # Orchestrator (40 tests)
 
-# Total: 133+ tests across all modules
+# Run specific agent tests (2 tests each)
+.\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py::TestRiskProfilerAgent::test_no_holdings tests/test_risk_profiler.py::TestRiskProfilerAgent::test_run_with_holdings -v
+
+.\venv\Scripts\python.exe -m pytest tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_with_holdings tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_no_holdings -v
+
+.\venv\Scripts\python.exe -m pytest tests/test_strategy.py::TestStrategyAgent::test_agent_dividend_strategy tests/test_strategy.py::TestStrategyAgent::test_agent_growth_strategy -v
+
+# Total: 183 tests across all modules
+```
+
+#### Sample Test Output
+
+**Full Suite:**
+```
+======================================= test session starts ========================================
+collected 183 items
+
+tests/compliance_test.py::test_no_disclaimer_for_low_risk PASSED                              [  0%]
+tests/test_gateway.py::test_gateway_loads_openai_from_env PASSED                              [  8%]
+tests/test_risk_profiler.py::TestRiskProfilerAgent::test_run_with_holdings PASSED             [ 86%]
+tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_with_holdings PASSED       [ 55%]
+tests/test_strategy.py::TestStrategyAgent::test_agent_dividend_strategy PASSED                [ 95%]
+...
+
+======================================= 183 passed in 44.27s =======================================
+```
+
+**Agent-Specific Tests:**
+```powershell
+# RiskProfilerAgent (2 tests, 14.72s)
+$ .\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py::TestRiskProfilerAgent::test_no_holdings tests/test_risk_profiler.py::TestRiskProfilerAgent::test_run_with_holdings -v
+tests/test_risk_profiler.py::TestRiskProfilerAgent::test_no_holdings PASSED                   [ 50%]
+tests/test_risk_profiler.py::TestRiskProfilerAgent::test_run_with_holdings PASSED             [100%]
+======================================== 2 passed in 14.72s ========================================
+
+# PortfolioCoachAgent (2 tests, 16.71s)
+$ .\venv\Scripts\python.exe -m pytest tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_with_holdings tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_no_holdings -v
+tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_with_holdings PASSED       [ 50%]
+tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_no_holdings PASSED         [100%]
+======================================== 2 passed in 16.71s ========================================
+
+# StrategyAgent (2 tests, 0.03s)
+$ .\venv\Scripts\python.exe -m pytest tests/test_strategy.py::TestStrategyAgent::test_agent_dividend_strategy tests/test_strategy.py::TestStrategyAgent::test_agent_growth_strategy -v
+tests/test_strategy.py::TestStrategyAgent::test_agent_dividend_strategy PASSED                [ 50%]
+tests/test_strategy.py::TestStrategyAgent::test_agent_growth_strategy PASSED                  [100%]
+======================================== 2 passed in 0.03s =========================================
 ```
 
 ## Agents

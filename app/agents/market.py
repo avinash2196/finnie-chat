@@ -27,17 +27,51 @@ _client = get_client()
 
 def extract_ticker(query: str):
     """Extract stock ticker from user query using LLM."""
-    result = call_llm(
-        system_prompt=TICKER_EXTRACT_PROMPT,
-        user_prompt=query,
-        temperature=0
-    )
-
     try:
+        result = call_llm(
+            system_prompt=TICKER_EXTRACT_PROMPT,
+            user_prompt=query,
+            temperature=0
+        )
+
         parsed = json.loads(result)
-        return parsed.get("ticker")
+        ticker = parsed.get("ticker")
+        if ticker:
+            return ticker
     except Exception:
-        return None
+        pass
+
+    # Heuristic fallback when LLM is unavailable
+    m = query.lower()
+    common = {
+        "apple": "AAPL",
+        "aapl": "AAPL",
+        "tesla": "TSLA",
+        "tsla": "TSLA",
+        "google": "GOOGL",
+        "alphabet": "GOOGL",
+        "microsoft": "MSFT",
+        "msft": "MSFT",
+        "amazon": "AMZN",
+        "amzn": "AMZN",
+        "nvidia": "NVDA",
+        "nvda": "NVDA",
+        "s&p": "SPY",
+        "s&p 500": "SPY",
+        "sp500": "SPY",
+        "s&p500": "SPY",
+        "spy": "SPY",
+    }
+    for key, ticker in common.items():
+        if key in m:
+            return ticker
+
+    # Try grabbing the first uppercase token as a last resort
+    for token in query.replace("?", "").replace(",", " ").split():
+        if token.isupper() and 1 <= len(token) <= 5:
+            return token
+
+    return None
 
 
 def run(query: str):

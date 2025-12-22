@@ -1,18 +1,7 @@
-import os
-from pathlib import Path
+from app.env import load_env_once
 
-# Load environment variables from .env file FIRST (no external dependency)
-def load_env():
-    env_file = Path(__file__).parent.parent / ".env"
-    if env_file.exists():
-        with open(env_file) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#"):
-                    key, _, value = line.partition("=")
-                    os.environ[key.strip()] = value.strip()
-
-load_env()
+# Ensure .env is loaded before other imports need the keys
+load_env_once()
 
 from fastapi import FastAPI
 from pydantic import BaseModel

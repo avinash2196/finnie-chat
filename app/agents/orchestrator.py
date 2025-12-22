@@ -61,13 +61,13 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
 
     # 2. Ask LLM to plan which agents to use (with context)
     context_info = f"Conversation history:\n{conversation_context}\n\n" if conversation_context else ""
-    plan_json = call_llm(
-        system_prompt=PLANNER_PROMPT,
-        user_prompt=f"{context_info}User message: {message}\nIntent: {intent}",
-        temperature=0
-    )
-
+    # Ask LLM to plan which agents to use (with context). Use a safe fallback if LLM is unavailable.
     try:
+        plan_json = call_llm(
+            system_prompt=PLANNER_PROMPT,
+            user_prompt=f"{context_info}User message: {message}\nIntent: {intent}",
+            temperature=0
+        )
         plan = json.loads(plan_json)["plan"]
     except Exception:
         # Fail safe: default to appropriate agent based on intent
@@ -168,11 +168,30 @@ User question:
 Provide a clear, beginner-friendly response synthesizing all available information.
 """
 
-    draft_response = call_llm(
-        system_prompt="You explain finance concepts clearly and safely using only provided information.",
-        user_prompt=synthesis_prompt,
-        temperature=0.3
-    )
+    # Try LLM synthesis; on failure produce a grounded fallback summary from agent outputs
+    try:
+        draft_response = call_llm(
+            system_prompt="You explain finance concepts clearly and safely using only provided information.",
+            user_prompt=synthesis_prompt,
+            temperature=0.3
+        )
+    except Exception:
+        parts = []
+        if context.get("educator"):
+            parts.append(f"Educator:\n{context['educator']}")
+        if context.get("market"):
+            parts.append(f"Market:\n{context['market']}")
+        if context.get("portfolio_analysis"):
+            parts.append(f"Portfolio Analysis:\n{context['portfolio_analysis']}")
+        if context.get("risk_analysis"):
+            parts.append(f"Risk Analysis:\n{context['risk_analysis']}")
+        if context.get("strategy"):
+            parts.append(f"Strategy:\n{context['strategy']}")
+
+        if parts:
+            draft_response = "\n\n".join(parts)
+        else:
+            draft_response = "I don't have enough information to synthesize an answer right now."
 
     # 7. Compliance Agent (always last)
     final_response = compliance_run(draft_response, risk)

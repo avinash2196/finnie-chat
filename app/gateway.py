@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
+from app.env import load_env_once
+
 logger = logging.getLogger(__name__)
 
 
@@ -354,6 +356,8 @@ def get_gateway() -> AIGateway:
     """Get or create the AI gateway."""
     global _gateway
     if _gateway is None:
+        # Ensure environment variables from .env are loaded before reading keys
+        load_env_once()
         _gateway = AIGateway(cache_enabled=True)
         
         # Load providers from environment
