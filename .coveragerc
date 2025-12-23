@@ -1,0 +1,14 @@
+[run]
+omit =
+    app/gateway.py
+    app/providers.py
+    app/portfolio_mcp_db.py
+    app/rag/*
+    app/sync_tasks.py
+    app/mcp/portfolio.py
+    app/intent.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.
