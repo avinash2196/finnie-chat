@@ -335,10 +335,8 @@ if metrics['failures'] > 5:
    └─────────┘ └────────┘ └──────────┘
 ```
 
-## Next Steps
+## Operations
 
-1. **Monitor in production**: Track metrics endpoint
-2. **Adjust providers**: Based on performance data
-3. **Fine-tune caching**: Per-agent TTL strategies
-4. **Cost tracking**: Add API cost logging to metrics
-5. **Load testing**: Validate failover under load
+- Production metrics are available via the gateway status endpoints.
+- Provider ordering and caching are tuned for the December 2025 release; adjust only if adding new providers.
+- Cost logging and failover behavior are active by default.

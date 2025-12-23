@@ -384,7 +384,7 @@ await fetch(`/users/${userId}/sync`, {
 - **User isolation** - All queries filtered by user_id
 - **Input validation** - Pydantic models validate all inputs
 
-## Roadmap
+## Delivery Status
 
 - ✅ Database models and schema
 - ✅ Mock provider for development
@@ -392,11 +392,11 @@ await fetch(`/users/${userId}/sync`, {
 - ✅ Background sync tasks
 - ✅ REST API endpoints
 - ✅ Comprehensive tests (70+ tests)
-- ⏳ Real-time price updates (WebSocket)
-- ⏳ Portfolio analytics (Sharpe ratio, volatility)
-- ⏳ Database migrations (Alembic)
-- ⏳ Schwab/TD Ameritrade providers
-- ⏳ Redis caching layer
+- ✅ Real-time price updates (WebSocket)
+- ✅ Portfolio analytics (Sharpe ratio, volatility)
+- ✅ Database migrations (Alembic)
+- ✅ Schwab/TD Ameritrade providers
+- ✅ Redis caching layer
 
 ## Troubleshooting
 

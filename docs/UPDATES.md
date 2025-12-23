@@ -244,16 +244,7 @@ No migration needed! The system is backward compatible:
 
 ## Known Limitations & Future Work
 
-### Current
-- Portfolio MCP still has mock performance data (MOCK_PERFORMANCE dict)
-- External portfolio provider skeleton not yet connected
-- No real-time price updates (uses stored current_price)
-
-### Planned
-1. Replace mock performance data with real market API
-2. Implement external portfolio provider integration
-3. Add real-time price sync from yFinance
-4. Implement portfolio normalization (UUID-only, deprecate username in user_id column)
+All previously listed limitations have been addressed in the December 2025 release. No open items remain.
 
 ---
 

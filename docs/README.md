@@ -14,23 +14,32 @@ System design and technical architecture documents.
 ### 🚀 `implementation/`
 Guides for implementing and extending the system.
 
+### 🚀 `implementation/`
+Guides for operating and extending the delivered system.
+
 - **IMPLEMENTATION_GUIDE.md** — Step-by-step implementation instructions
 - **QUICK_START.md** — Fast startup guide for developers
-- **ROADMAP.md** — Future development roadmap and milestones
+- **ROADMAP.md** — Archived roadmap (project delivered)
 
 ### 📋 `planning/`
 Initial planning documents and requirements.
 
-- **REQUIREMENTS_ANALYSIS.md** — Complete requirements analysis and gap assessment
+### 📋 `planning/`
+Archived planning documents and requirements (all gaps closed).
+
+- **REQUIREMENTS_ANALYSIS.md** — Historical requirements analysis (completed)
 - **high-architecture.md** — High-level system design overview
 - **chat-bot.md** — Chatbot planning and design
+**Plan future iterations?** → [implementation/ROADMAP.md](implementation/ROADMAP.md) (archived)
 - **portfolio.md** — Portfolio feature planning
 - **market-trend.md** — Market trends feature planning
+6. **Historical Roadmap:** [implementation/ROADMAP.md](implementation/ROADMAP.md)
 - **diagram.md** — System diagrams and visualizations
 - **DELIVERABLES.md** — Project deliverables and milestones
-
-### 🧪 `testing/`
-Test documentation and results.
+### **Project Managers**
+- [summaries/EXECUTIVE_SUMMARY.md](summaries/EXECUTIVE_SUMMARY.md)
+- [planning/REQUIREMENTS_ANALYSIS.md](planning/REQUIREMENTS_ANALYSIS.md) (archived)
+- [implementation/ROADMAP.md](implementation/ROADMAP.md) (archived)
 
 - **TEST_COVERAGE.md** — Comprehensive test coverage report (183 tests)
 - **TEST_IMPLEMENTATION_SUMMARY.md** — Test implementation guide

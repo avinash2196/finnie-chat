@@ -1,5 +1,7 @@
 # Finnie-Chat: Visual Development Roadmap
 
+> Archived: Project delivered December 2025. This roadmap is retained as a historical build record; all phases are complete.
+
 ## Current Status (December 22, 2025)
 
 ```

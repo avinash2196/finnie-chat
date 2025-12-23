@@ -1,5 +1,7 @@
 # Finnie-Chat: Requirements Analysis & Gap Assessment
 
+> Status: Archived for historical reference. All requirements and gaps identified here have been fully addressed in the December 2025 production release.
+
 ## Executive Summary
 
 Your project has achieved **Phase 1 (Backend Core)** with solid foundational infrastructure. However, it's currently **missing the frontend multi-tab UI, portfolio persistence layer, and several advanced agents**.

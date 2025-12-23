@@ -246,12 +246,12 @@ LANGSMITH_PROJECT=finnie-chat
 
 ---
 
-## 🚀 Next Steps
+## 🚀 Operations Checklist
 
 1. **Install dependencies:** `pip install -r requirements.txt`
-2. **Optional:** Configure Arize/LangSmith credentials in `.env`
-3. **Start app:** `.\start.bat`
-4. **Verify:** Visit `http://localhost:8000/observability/status`
-5. **Monitor:** View data in Arize and LangSmith dashboards
+2. **Configure (optional):** Arize/LangSmith credentials in `.env`
+3. **Start app:** `\.\start.bat`
+4. **Verify:** `http://localhost:8000/observability/status`
+5. **Monitor:** Arize and LangSmith dashboards
 
-**Note:** Observability is **optional** — the app works perfectly without credentials configured!
+Observability is fully integrated; credentials simply enable external dashboards.
