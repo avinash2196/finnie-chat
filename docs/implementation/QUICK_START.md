@@ -1,5 +1,12 @@
 # 🚀 Quick Start Guide - Finnie Chat
 
+## Get the code
+
+```powershell
+git clone https://github.com/avinash2196/finnie-chat.git
+cd finnie-chat
+```
+
 ## Prerequisites
 
 Before running the application, ensure the database is initialized:
@@ -55,7 +62,6 @@ cd C:\Users\avina\Codes\finnie-chat
 You should see:
 ```
 Local URL: http://localhost:8501
-Network URL: http://192.168.86.213:8501
 ```
 
 ✅ **Frontend is ready** when you see these messages. A browser window will automatically open.
@@ -129,11 +135,7 @@ To stop either service:
 - REST API: 18+ endpoints (portfolio, analytics, market, strategy) ✅
 - Frontend: Chat, Portfolio, Market Trends ✅
 
-### ⚠️ What's In Progress
-- Polishing UI and documentation
-- Optional authentication and deployment
-
-### 📅 What's Next
+### 📅 Optional Enhancements
 - PostgreSQL database (optional)
 - Docker + deployment
 - Monitoring and auth

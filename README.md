@@ -141,7 +141,13 @@ See [docs/architecture/OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) for
 
 ## Quick Start
 
+### Get the code
+```powershell
+git clone https://github.com/avinash2196/finnie-chat.git
+cd finnie-chat
+```
 
+### Setup
 ```powershell
 # Create and activate virtual environment
 python -m venv venv
