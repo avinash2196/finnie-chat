@@ -3,6 +3,7 @@ Manual sync test hitting the providers sync logic.
 Skipped by default; enable with RUN_MANUAL_TESTS=1.
 """
 import os
+import uuid
 import pytest
 import asyncio
 
@@ -20,7 +21,14 @@ async def test_sync_manual():
     init_db()
     db = SessionLocal()
     try:
-        user = User(email="synctest@example.com", username="sync_test", risk_tolerance="MEDIUM")
+        unique_suffix = uuid.uuid4().hex[:8]
+        email = f"synctest_{unique_suffix}@example.com"
+        username = f"sync_test_{unique_suffix}"
+
+        # Clean any prior user with same generated username (belt-and-suspenders)
+        db.query(User).filter(User.username == username).delete()
+
+        user = User(email=email, username=username, risk_tolerance="MEDIUM")
         db.add(user)
         db.commit()
         db.refresh(user)
