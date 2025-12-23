@@ -5,7 +5,7 @@ Provides typed access to market quotes via the MCP server.
 
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Dict
 from app.mcp.market_server import get_server as get_market_server
 
 
@@ -22,32 +22,25 @@ class MarketQuote:
 
 
 class MarketClient:
-    """Client for market data with caching."""
+    """Client for market data with short-TTL in-memory caching and batch fetch support."""
 
-    def __init__(self, ttl_seconds: int = 30):
+    def __init__(self, ttl_seconds: int = 5):
         """Initialize market client.
-        
+
         Args:
-            ttl_seconds: Cache TTL for quotes in seconds.
+            ttl_seconds: Cache TTL for quotes in seconds (default short TTL).
         """
         self._server = get_market_server()
-        self._cache = {}
+        self._cache: Dict[str, Dict] = {}
         self._ttl = ttl_seconds
 
     def _is_fresh(self, key: str) -> bool:
         """Check if cache entry is fresh."""
         entry = self._cache.get(key)
-        return entry and (time.time() - entry["ts"] < self._ttl)
+        return bool(entry and (time.time() - entry.get("ts", 0) < self._ttl))
 
     def get_quote(self, ticker: str) -> Optional[MarketQuote]:
-        """Fetch stock quote with caching.
-        
-        Args:
-            ticker: Stock ticker symbol.
-            
-        Returns:
-            MarketQuote or None if unavailable.
-        """
+        """Fetch a single stock quote with caching."""
         key = ticker.upper()
         if self._is_fresh(key):
             return self._cache[key]["quote"]
@@ -55,7 +48,7 @@ class MarketClient:
         try:
             result = self._server.call_tool("get_quote", {"ticker": ticker})
             quote = MarketQuote(
-                ticker=result["ticker"],
+                ticker=result.get("ticker", key),
                 price=result.get("price"),
                 currency=result.get("currency"),
                 change_pct=result.get("change_pct"),
@@ -73,6 +66,45 @@ class MarketClient:
                 timestamp=time.time(),
                 error=str(e)
             )
+
+    def get_quotes(self, tickers: List[str]) -> Dict[str, MarketQuote]:
+        """Fetch multiple quotes using cache where possible and batch for misses.
+
+        Returns a dict mapping UPPER ticker -> MarketQuote.
+        """
+        now = time.time()
+        result: Dict[str, MarketQuote] = {}
+        to_fetch: List[str] = []
+
+        # Use cache where fresh
+        for t in tickers:
+            key = t.upper()
+            if self._is_fresh(key):
+                result[key] = self._cache[key]["quote"]
+            else:
+                to_fetch.append(key)
+
+        if to_fetch:
+            try:
+                raw = self._server.call_tool("get_quotes", {"tickers": to_fetch})
+                # raw expected as mapping ticker->dict
+                for k, v in (raw or {}).items():
+                    quote = MarketQuote(
+                        ticker=k,
+                        price=v.get("price"),
+                        currency=v.get("currency"),
+                        change_pct=v.get("change_pct"),
+                        timestamp=time.time(),
+                        error=v.get("error")
+                    )
+                    self._cache[k] = {"ts": now, "quote": quote}
+                    result[k] = quote
+            except Exception as e:
+                # If batch fetch fails, populate errors for each requested ticker
+                for k in to_fetch:
+                    result[k] = MarketQuote(ticker=k, price=None, currency=None, change_pct=None, timestamp=time.time(), error=str(e))
+
+        return result
 
 
 # Singleton client instance

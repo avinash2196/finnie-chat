@@ -399,6 +399,19 @@ max_messages_per_conversation=100
 
 # Persistence directory (optional file-based storage)
 persist_dir="chroma/conversations"
+
+## Performance Benchmarks (recent)
+
+After recent backend improvements (short-TTL caching, batching + threadpooling of yfinance calls, aggregation cache and optional Redis), we ran integration benchmarks against the running `uvicorn` service. HTTP end-to-end results:
+
+- Small (3 tickers): p50 = 15 ms, p95 = 31 ms, avg = 37 ms
+- Medium (6 tickers): p50 = 15 ms, p95 = 32 ms, avg = 53 ms
+- Large (20 tickers): p50 = 15 ms, p95 = 31 ms, avg = 65 ms
+
+These numbers are from live HTTP benchmarks executed with `tools/benchmark_market_quote_http.py`. They represent a major improvement over the earlier sequential-yfinance behavior (previously ~1.8s for a 3-ticker request). See `PERFORMANCE_ROADMAP.md` for the full performance plan and progress updates.
+
+Benchmark runner: `tools/benchmark_market_quote_http.py` — outputs `benchmark_market_quote_http_results.json`.
+
 ```
 
 #### API Reference

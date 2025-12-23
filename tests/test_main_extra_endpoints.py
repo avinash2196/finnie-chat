@@ -217,9 +217,14 @@ def test_market_quote_endpoint_success(mock_get_market_data, client):
     assert data["count"] == 2
 
 
-@patch("app.main.get_market_data", side_effect=Exception("Data fetch failed"))
-def test_market_quote_endpoint_error(mock_get_market_data, client):
-    """Covers /market/quote exception path."""
+@pytest.mark.parametrize("raise_msg", ["Data fetch failed", "upstream error"])
+def test_market_quote_endpoint_error(monkeypatch, raise_msg, client):
+    """Covers /market/quote exception path by mocking get_client().get_quotes to raise."""
+    class BrokenClient:
+        def get_quotes(self, symbols):
+            raise Exception(raise_msg)
+
+    monkeypatch.setattr("app.main.get_client", lambda: BrokenClient())
     resp = client.post("/market/quote", json={"symbols": ["AAPL"]})
     assert resp.status_code == 200
     data = resp.json()

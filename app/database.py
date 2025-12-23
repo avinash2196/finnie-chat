@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 import uuid
 import os
+import logging
 
 # Database URL - use PostgreSQL in production, SQLite in development
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./finnie_chat.db")
@@ -128,7 +129,7 @@ class SyncLog(Base):
 def init_db():
     """Initialize database tables"""
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created")
+    logging.info("✅ Database tables created")
 
 
 def get_db():

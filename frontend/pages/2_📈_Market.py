@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import time
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -42,20 +43,33 @@ with st.sidebar:
         """)
 
 # Helper functions
-def fetch_market_data(symbols):
-    """Fetch real-time market data for multiple symbols"""
+def _manual_quotes_cache_get(symbols_tuple, ttl=5):
+    key = "_quotes:" + ",".join(symbols_tuple)
+    entry = st.session_state.get(key)
+    now = time.time()
+    if entry:
+        ts, value = entry
+        if now - ts < ttl:
+            return value, None
     try:
-        response = requests.post(
+        r = requests.post(
             f"{API_BASE_URL}/market/quote",
-            json={"symbols": symbols},
+            json={"symbols": list(symbols_tuple)},
             timeout=10
         )
-        if response.status_code == 200:
-            return response.json(), None
-        else:
-            return None, f"Error: {response.status_code}"
+        if r.status_code == 200:
+            data = r.json()
+            st.session_state[key] = (now, data)
+            return data, None
+        return None, f"Error: {r.status_code}"
     except Exception as e:
         return None, str(e)
+
+
+def fetch_market_data(symbols):
+    # normalize to tuple of upper symbols for cache key
+    key = tuple([s.upper() for s in symbols])
+    return _manual_quotes_cache_get(key, ttl=5)
 
 def run_screener(screener_type, params=None):
     """Run stock screener"""
@@ -86,6 +100,49 @@ def get_strategy_ideas(risk_level="MEDIUM"):
     except Exception as e:
         return None, str(e)
 
+
+# Manual short-lived cache helpers to avoid Streamlit showing cached-function run names
+def _manual_cache_get(key, ttl):
+    now = time.time()
+    entry = st.session_state.get(key)
+    if entry:
+        ts, value = entry
+        if now - ts < ttl:
+            return value
+    return None
+
+
+def get_top_movers_manual(ttl=10):
+    key = "_movers_cache"
+    cached = _manual_cache_get(key, ttl)
+    if cached is not None:
+        return cached, None
+    try:
+        r = requests.post(f"{API_BASE_URL}/market/movers", json={}, timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            st.session_state[key] = (time.time(), data)
+            return data, None
+        return None, f"Error: {r.status_code}"
+    except Exception as e:
+        return None, str(e)
+
+
+def get_sectors_manual(ttl=30):
+    key = "_sectors_cache"
+    cached = _manual_cache_get(key, ttl)
+    if cached is not None:
+        return cached, None
+    try:
+        r = requests.post(f"{API_BASE_URL}/market/sectors", timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            st.session_state[key] = (time.time(), data)
+            return data, None
+        return None, f"Error: {r.status_code}"
+    except Exception as e:
+        return None, str(e)
+
 # Main content
 if market_view == "Overview":
     st.subheader("📊 Market Overview")
@@ -98,13 +155,12 @@ if market_view == "Overview":
     index_names = ["S&P 500", "Dow Jones", "NASDAQ", "Russell 2000"]
     
     try:
-        response = requests.post(
-            f"{API_BASE_URL}/market/quote",
-            json={"symbols": index_symbols},
-            timeout=5
-        )
-        if response.status_code == 200:
-            data = response.json()
+        with st.spinner("Fetching latest index values..."):
+            data, err = fetch_market_data(index_symbols)
+        if err:
+            indices_data = [{"price": 0, "change": 0, "change_pct": 0} for _ in index_symbols]
+            st.warning("Unable to fetch real-time market data")
+        else:
             indices_data = []
             for symbol in index_symbols:
                 quote = data.get("quotes", {}).get(symbol, {})
@@ -113,12 +169,7 @@ if market_view == "Overview":
                     "change": quote.get("change") or 0,
                     "change_pct": quote.get("change_pct") or 0
                 })
-        else:
-            # Fallback to placeholder
-            indices_data = [{"price": 0, "change": 0, "change_pct": 0} for _ in index_symbols]
-            st.warning("Unable to fetch real-time market data")
     except Exception as e:
-        # Fallback to placeholder
         indices_data = [{"price": 0, "change": 0, "change_pct": 0} for _ in index_symbols]
         st.warning(f"Market data unavailable: {str(e)}")
     
@@ -140,9 +191,14 @@ if market_view == "Overview":
     # Top movers - request precomputed movers from backend
     st.markdown("#### 📈 Top Gainers & Losers")
     try:
-        resp = requests.post(f"{API_BASE_URL}/market/movers", json={}, timeout=8)
-        if resp.status_code == 200:
-            data = resp.json()
+        # fetch movers using manual short-lived cache (avoids showing internal function names)
+        with st.spinner("Fetching top movers..."):
+            data, err = get_top_movers_manual()
+        if err:
+            st.warning("Unable to fetch top movers from backend")
+            gainers = []
+            losers = []
+        else:
             gainers = data.get("top_gainers", [])
             losers = data.get("top_losers", [])
 
@@ -162,8 +218,7 @@ if market_view == "Overview":
                     st.dataframe(losers_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No losers available")
-        else:
-            st.warning("Unable to fetch top movers from backend")
+        
     except Exception as e:
         st.warning(f"Top movers unavailable: {str(e)}")
 
@@ -172,9 +227,12 @@ if market_view == "Overview":
     # Sector performance heatmap (request from backend)
     st.markdown("#### 🗺️ Sector Performance")
     try:
-        resp = requests.post(f"{API_BASE_URL}/market/sectors", timeout=8)
-        if resp.status_code == 200:
-            data = resp.json()
+        with st.spinner("Loading sector performance..."):
+            data, err = get_sectors_manual()
+        if err:
+            st.warning("Unable to fetch sector performance from backend")
+            sectors = []
+        else:
             sectors = data.get("sectors", [])
             if sectors:
                 sectors_df = pd.DataFrame([
@@ -194,8 +252,7 @@ if market_view == "Overview":
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No sector data available")
-        else:
-            st.warning("Unable to fetch sector performance from backend")
+        
     except Exception as e:
         st.warning(f"Sector data unavailable: {str(e)}")
 
@@ -277,6 +334,41 @@ elif market_view == "Strategy Ideas":
     )
     
     st.markdown("---")
+
+    # Symbol lookup with debounce (auto-fetch)
+    st.markdown("#### 🔎 Lookup Symbols")
+    col_a, col_b = st.columns([3,1])
+    with col_a:
+        symbol_query = st.text_input("Tickers (comma-separated)", key="symbol_query")
+    with col_b:
+        auto_fetch = st.checkbox("Auto fetch", value=True)
+        debounce_ms = st.number_input("Debounce ms", min_value=100, max_value=5000, value=500, step=100)
+
+    # Store change timestamp
+    if "symbol_changed_at" not in st.session_state:
+        st.session_state.symbol_changed_at = 0
+    if st.session_state.get("symbol_query", "") != symbol_query:
+        st.session_state.symbol_changed_at = time.time()
+
+    # If auto_fetch enabled and debounce passed, perform lookup
+    if auto_fetch and symbol_query:
+        elapsed = time.time() - st.session_state.symbol_changed_at
+        if elapsed * 1000 >= debounce_ms:
+            symbols = [s.strip().upper() for s in symbol_query.split(",") if s.strip()]
+            if symbols:
+                with st.spinner("Looking up tickers..."):
+                    data, err = fetch_market_data(symbols)
+                if err:
+                    st.error(f"Lookup failed: {err}")
+                else:
+                    quotes = data.get("quotes", {})
+                    df = pd.DataFrame([{
+                        "ticker": k,
+                        "price": v.get("price"),
+                        "change_pct": v.get("change_pct")
+                    } for k, v in quotes.items()])
+                    st.dataframe(df, use_container_width=True)
+    
     
     # Strategy categories
     strategy_cat = st.radio(

@@ -1,4 +1,5 @@
 import sys
+import logging
 from pathlib import Path
 
 # Add parent directory to path so 'app' module can be found
@@ -12,7 +13,7 @@ def ingest():
 
     chunks = [c.strip() for c in text.split("\n") if c.strip()]
     add_documents(chunks)
-    print(f"RAG ingestion completed: {len(chunks)} documents loaded")
+    logging.info("RAG ingestion completed: %d documents loaded", len(chunks))
 
 if __name__ == "__main__":
     ingest()

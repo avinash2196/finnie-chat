@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 from app.env import load_env_once
+from app.observability import track_llm_call
 
 logger = logging.getLogger(__name__)
 
@@ -136,19 +137,23 @@ class AIGateway:
 
     def _get_openai_response(self, config: LLMConfig, system: str, user: str, temperature: float) -> str:
         """Call OpenAI API."""
-        from openai import OpenAI
+        @track_llm_call("openai")
+        def _inner(config, system, user, temperature):
+            from openai import OpenAI
 
-        client = OpenAI(api_key=config.api_key)
-        response = client.chat.completions.create(
-            model=config.model,
-            temperature=temperature,
-            timeout=config.timeout_seconds,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user}
-            ]
-        )
-        return response.choices[0].message.content
+            client = OpenAI(api_key=config.api_key)
+            response = client.chat.completions.create(
+                model=config.model,
+                temperature=temperature,
+                timeout=config.timeout_seconds,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user}
+                ]
+            )
+            return response.choices[0].message.content
+
+        return _inner(config, system, user, temperature)
 
     def _get_gemini_response(self, config: LLMConfig, system: str, user: str, temperature: float) -> str:
         """Call Gemini (or other REST-compatible) endpoint.
@@ -158,112 +163,120 @@ class AIGateway:
         otherwise fall back to a raw HTTP POST to `config.base_url`.
         """
         # First try the official client if installed
-        try:
-            import google.generativeai as genai  # type: ignore
-
-            # Configure per-call so we don't rely on global state elsewhere
-            if config.api_key:
-                try:
-                    genai.configure(api_key=config.api_key)
-                except Exception:
-                    # Some genai versions ignore repeated configure calls; ignore errors
-                    pass
-
-            # Attempt a messages-style call; adapt if the library expects different args
+        @track_llm_call("gemini")
+        def _inner(config, system, user, temperature):
             try:
-                resp = genai.generate(
-                    model=config.model,
-                    messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-                    temperature=temperature,
-                    timeout=config.timeout_seconds,
-                )
-            except TypeError:
-                # Older/newer genai may use `prompt` or different params; fall back to simple prompt
-                prompt = f"{system}\n\n{user}"
-                resp = genai.generate(model=config.model, prompt=prompt, temperature=temperature)
+                import google.generativeai as genai  # type: ignore
 
-            # Try several common response shapes
-            # 1) object with .text
-            if hasattr(resp, "text") and resp.text:
-                return resp.text
+                # Configure per-call so we don't rely on global state elsewhere
+                if config.api_key:
+                    try:
+                        genai.configure(api_key=config.api_key)
+                    except Exception:
+                        # Some genai versions ignore repeated configure calls; ignore errors
+                        pass
 
-            # 2) dict-like with 'candidates' or 'output'
-            if isinstance(resp, dict):
-                if "candidates" in resp and resp["candidates"]:
-                    return resp["candidates"][0].get("content") or resp["candidates"][0].get("display")
-                if "output" in resp:
-                    out = resp["output"]
-                    if isinstance(out, list) and out:
-                        return out[0].get("content") if isinstance(out[0], dict) else str(out[0])
-                    return str(out)
+                # Attempt a messages-style call; adapt if the library expects different args
+                try:
+                    resp = genai.generate(
+                        model=config.model,
+                        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+                        temperature=temperature,
+                        timeout=config.timeout_seconds,
+                    )
+                except TypeError:
+                    # Older/newer genai may use `prompt` or different params; fall back to simple prompt
+                    prompt = f"{system}\n\n{user}"
+                    resp = genai.generate(model=config.model, prompt=prompt, temperature=temperature)
 
-            # 3) fallback to stringification
-            return str(resp)
+                # Try several common response shapes
+                # 1) object with .text
+                if hasattr(resp, "text") and resp.text:
+                    return resp.text
 
-        except Exception as e:
-            logger.info("genai client not available or failed; falling back to HTTP POST (%s)", e)
+                # 2) dict-like with 'candidates' or 'output'
+                if isinstance(resp, dict):
+                    if "candidates" in resp and resp["candidates"]:
+                        return resp["candidates"][0].get("content") or resp["candidates"][0].get("display")
+                    if "output" in resp:
+                        out = resp["output"]
+                        if isinstance(out, list) and out:
+                            return out[0].get("content") if isinstance(out[0], dict) else str(out[0])
+                        return str(out)
 
-        # Fallback: raw HTTP POST to configured base_url
-        import requests
+                # 3) fallback to stringification
+                return str(resp)
 
-        if not config.base_url:
-            raise ValueError("Gemini provider requires a base_url to be configured")
+            except Exception as e:
+                logger.info("genai client not available or failed; falling back to HTTP POST (%s)", e)
 
-        # If the endpoint already contains an API key query param, avoid sending Authorization
-        send_auth = bool(config.api_key) and ("?key=" not in (config.base_url or ""))
+            # Fallback: raw HTTP POST to configured base_url
+            import requests
 
-        headers = {
-            "Content-Type": "application/json",
-        }
-        if send_auth:
-            headers["Authorization"] = f"Bearer {config.api_key}"
+            if not config.base_url:
+                raise ValueError("Gemini provider requires a base_url to be configured")
 
-        payload = {
-            "model": config.model,
-            "temperature": temperature,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user}
-            ]
-        }
+            # If the endpoint already contains an API key query param, avoid sending Authorization
+            send_auth = bool(config.api_key) and ("?key=" not in (config.base_url or ""))
 
-        resp = requests.post(config.base_url, json=payload, headers=headers, timeout=config.timeout_seconds)
-        resp.raise_for_status()
-        data = resp.json()
+            headers = {
+                "Content-Type": "application/json",
+            }
+            if send_auth:
+                headers["Authorization"] = f"Bearer {config.api_key}"
 
-        # Attempt to adapt to common response shapes
-        if isinstance(data, dict):
-            # OpenAI-like shape
-            choices = data.get("choices")
-            if choices and len(choices) > 0:
-                return choices[0].get("message", {}).get("content") or choices[0].get("text")
-            # Vertex/Gemini style
-            if "candidates" in data:
-                cand = data["candidates"]
-                if cand and len(cand) > 0:
-                    # candidates items may have 'content' or 'display'
-                    c = cand[0]
-                    if isinstance(c, dict):
-                        return c.get("content") or c.get("display") or str(c)
-                    return str(c)
+            payload = {
+                "model": config.model,
+                "temperature": temperature,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user}
+                ]
+            }
 
-        raise ValueError("Unexpected Gemini response format")
+            resp = requests.post(config.base_url, json=payload, headers=headers, timeout=config.timeout_seconds)
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Attempt to adapt to common response shapes
+            if isinstance(data, dict):
+                # OpenAI-like shape
+                choices = data.get("choices")
+                if choices and len(choices) > 0:
+                    return choices[0].get("message", {}).get("content") or choices[0].get("text")
+                # Vertex/Gemini style
+                if "candidates" in data:
+                    cand = data["candidates"]
+                    if cand and len(cand) > 0:
+                        # candidates items may have 'content' or 'display'
+                        c = cand[0]
+                        if isinstance(c, dict):
+                            return c.get("content") or c.get("display") or str(c)
+                        return str(c)
+
+            raise ValueError("Unexpected Gemini response format")
+
+        return _inner(config, system, user, temperature)
 
     def _get_anthropic_response(self, config: LLMConfig, system: str, user: str, temperature: float) -> str:
         """Call Anthropic API."""
-        import anthropic
+        @track_llm_call("anthropic")
+        def _inner(config, system, user, temperature):
+            import anthropic
 
-        client = anthropic.Anthropic(api_key=config.api_key)
-        message = client.messages.create(
-            model=config.model,
-            max_tokens=2048,
-            temperature=temperature,
-            system=system,
-            messages=[
-                {"role": "user", "content": user}
-            ]
-        )
-        return message.content[0].text
+            client = anthropic.Anthropic(api_key=config.api_key)
+            message = client.messages.create(
+                model=config.model,
+                max_tokens=2048,
+                temperature=temperature,
+                system=system,
+                messages=[
+                    {"role": "user", "content": user}
+                ]
+            )
+            return message.content[0].text
+
+        return _inner(config, system, user, temperature)
 
     def call_llm(self, system: str, user: str, temperature: float = 0) -> str:
         """
