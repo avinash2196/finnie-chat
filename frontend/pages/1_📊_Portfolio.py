@@ -61,12 +61,12 @@ def fetch_allocation(user_id):
     except requests.exceptions.RequestException as e:
         return None, f"Backend connection error: {str(e)}"
 
-def create_user(user_id, email):
+def create_user(username, email):
     """Create a new user in the database"""
     try:
         response = requests.post(
             f"{API_BASE_URL}/users",
-            json={"user_id": user_id, "email": email},
+            json={"username": username, "email": email},
             timeout=5
         )
         return response.status_code == 200, response.json() if response.status_code == 200 else response.text
@@ -115,8 +115,9 @@ with st.sidebar:
     # User creation
     with st.expander("Create New User"):
         new_email = st.text_input("Email", value=f"{user_id}@example.com")
+        new_username = st.text_input("Username", value=user_id)
         if st.button("Create User"):
-            success, result = create_user(user_id, new_email)
+            success, result = create_user(new_username, new_email)
             if success:
                 st.success("✅ User created!")
                 st.rerun()

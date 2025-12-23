@@ -2,28 +2,43 @@
 
 ## Overview
 
-Finnie Chat now includes a complete database layer with:
-- **PostgreSQL/SQLite support** - Production-ready database with SQLite fallback for development
-- **External API integration** - Sync from Robinhood, Fidelity, or mock data
-- **Provider pattern** - Easily switch between data sources
-- **Background sync tasks** - Automatic portfolio updates
-- **Comprehensive REST API** - Full CRUD operations for portfolios
+Finnie Chat includes a complete database layer with:
+- **SQLite (dev) / PostgreSQL (prod)** — SQLAlchemy ORM with dual backend support
+- **Agent-driven Portfolio Access** — Agents query database via Portfolio MCP Server
+- **External API Integration** — Sync from Robinhood, Fidelity, or mock data
+- **Provider Pattern** — Easily switch between data sources
+- **Background Sync Tasks** — Automatic hourly portfolio updates
+- **Comprehensive REST API** — Full CRUD operations for portfolios
+- **Real User Context in Chat** — Portfolio agents see actual user holdings
+
+## What's New (Dec 2025)
+
+✅ **Portfolio MCP is Database-Backed** — No more mock data. The Portfolio MCP server now queries the real SQLite database for all user holdings, transactions, and profiles.
+
+✅ **Chat Agents See Real Portfolios** — The `/chat` endpoint now passes user_id to the orchestrator, enabling agents to access actual user holdings.
+
+✅ **UUID & Username Support** — All portfolio MCP functions support both lookup methods (by UUID or username).
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     FastAPI Application                      │
+│                  Chat / REST API Requests                    │
 ├─────────────────────────────────────────────────────────────┤
-│  Portfolio Endpoints  │  User Endpoints  │  Sync Endpoints  │
+│                   Orchestrator Layer                          │
+│  (Routes to Portfolio Coach, Risk Profiler, Strategy, etc.)  │
 ├─────────────────────────────────────────────────────────────┤
-│                    Database Layer (SQLAlchemy)               │
+│              Portfolio MCP Server (Database-Backed)           │
+│  ├─ get_user_holdings(user_id)  ◄─ Query Holding table      │
+│  ├─ get_user_profile(user_id)   ◄─ Query User table         │
+│  ├─ get_transaction_history()   ◄─ Query Transaction table  │
+│  └─ get_performance_metrics()   ◄─ Query PortfolioSnapshot  │
+├─────────────────────────────────────────────────────────────┤
+│                  SQLAlchemy ORM Layer                        │
 ├─────────────────────────────────────────────────────────────┤
 │  User │ Holding │ Transaction │ Snapshot │ SyncLog          │
 ├─────────────────────────────────────────────────────────────┤
-│              Provider Pattern (Mock/Real APIs)               │
-├─────────────────────────────────────────────────────────────┤
-│   MockProvider  │  RobinhoodProvider  │  FidelityProvider   │
+│                  SQLite / PostgreSQL                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -32,7 +47,7 @@ Finnie Chat now includes a complete database layer with:
 ### User
 - `id`: UUID primary key
 - `email`: Unique email address
-- `username`: Unique username
+- `username`: Unique username (also used for lookups in portfolio MCP)
 - `risk_tolerance`: LOW, MEDIUM, HIGH
 - `portfolio_value`: Cached total portfolio value
 - `robinhood_token`, `fidelity_token`: External API credentials
@@ -40,13 +55,14 @@ Finnie Chat now includes a complete database layer with:
 
 ### Holding
 - `id`: UUID primary key
-- `user_id`: Foreign key to User
+- `user_id`: Foreign key to User (UUID)
 - `ticker`: Stock symbol (AAPL, MSFT, etc.)
 - `quantity`: Number of shares
 - `purchase_price`: Original buy price
-- `current_price`: Latest market price
+- `current_price`: Latest market price (synced from providers)
 - `total_value`: quantity × current_price
 - `gain_loss`: (current_price - purchase_price) × quantity
+
 
 ### Transaction
 - `id`: UUID primary key

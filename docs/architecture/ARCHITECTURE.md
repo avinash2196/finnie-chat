@@ -4,28 +4,36 @@
 
 Finnie-Chat is a sophisticated financial AI system with an Orchestrator plus 6 specialized agents that process user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, portfolio analysis, market data, and safety guardrails.
 
+**Key Improvement (Dec 2025):** Portfolio MCP server is now fully database-backed. Agents see real user holdings, transactions, and profiles from SQLite/PostgreSQL.
+
 ---
 
-## Complete Request Flow (Updated with All Agents)
+## Complete Request Flow (Portfolio Data Integration)
 
 ```
-User Query
+User Query with User ID (e.g., /chat?user_id=user_002)
    │
    ▼ Intent Classification + Risk Assessment
    │
-   ▼ Orchestrator Routes to Appropriate Agent(s)
+   ▼ Orchestrator (passes user_id to agents)
    │
    ├─ [Educator Agent] ◄─ RAG (TF-IDF) Knowledge Base
    ├─ [Market Agent] ◄─ Market MCP Server (yFinance)  
-   ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server
-   ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server
-   ├─ [Strategy Agent] ◄─ Portfolio MCP Server
+   ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server ◄─ DATABASE
+   │                            • get_user_holdings(user_id)
+   │                            • Queries: User, Holding tables
+   │
+   ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server ◄─ DATABASE
+   │                             • get_user_profile(user_id)
+   │                             • get_transaction_history()
+   │
+   ├─ [Strategy Agent] ◄─ Portfolio MCP Server ◄─ DATABASE
+   │                       • Analyzes actual holdings
+   │                       • Identifies opportunities
+   │
    └─ [Compliance Agent] ◄─ Safety Rules
-
-   > Data layer: Portfolio data is now persisted in SQLAlchemy database (SQLite/PostgreSQL).
-   > Provider pattern allows syncing from Mock, Robinhood, or Fidelity sources.
-   > Background scheduler automatically syncs portfolios hourly.
-   > MCP servers use database as backing store, maintaining abstraction for agents.
+       • Risk-based disclaimers
+       • No duplicates (Dec 2025 fix)
    │
    ▼ LLM Synthesis Layer
    │
@@ -34,6 +42,36 @@ User Query
    ▼ Final Response + Memory Storage
 ```
 
+## Architecture Changes (Dec 2025)
+
+### Before (Mock Data)
+```python
+# Portfolio MCP used hardcoded data
+MOCK_HOLDINGS = {
+    "user_123": {  # Only this user had data
+        "AAPL": {...},
+        "MSFT": {...}
+    }
+}
+```
+
+### After (Database-Backed)
+```python
+# Portfolio MCP queries real database
+def get_user_holdings(user_id):
+    user = db.query(User).filter(
+        (User.id == user_id) | (User.username == user_id)
+    ).first()
+    
+    holdings = db.query(Holding).filter(
+        Holding.user_id == user.id
+    ).all()
+    
+    return format_holdings(holdings)
+```
+
+## Complete Request Flowchart
+
 ```
 User Query
    │
@@ -41,6 +79,9 @@ User Query
 ┌─────────────────────────────────────────┐
 │   Backend API (FastAPI)                 │
 │   POST /chat                            │
+│   ├─ message: "What stocks do I own?"   │
+│   ├─ user_id: "user_002"  ← NEW         │
+│   └─ conversation_id: "conv_123"        │
 └─────────────────────────────────────────┘
    │
    ▼
@@ -77,7 +118,8 @@ User Query
    │
    ▼
 ┌─────────────────────────────────────────┐
-│   ORCHESTRATOR                          │
+│   ORCHESTRATOR (now receives user_id)   │
+
 │   ────────────────────────────          │
 │   Module: app/agents/orchestrator.py    │
 │                                         │

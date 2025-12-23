@@ -184,69 +184,72 @@ MOCK_PERFORMANCE = {
 # ============================================================================
 
 def get_user_holdings(user_id: str) -> Dict:
-    """Get current holdings for a user.
+    """Get current holdings for a user from the database.
     
     Args:
-        user_id: Unique user identifier
+        user_id: Unique user identifier (UUID or username)
     
     Returns:
         dict with holdings data
     """
     try:
-        if user_id not in MOCK_HOLDINGS:
-            logger.warning(f"No holdings found for user {user_id}")
-            return {
-                "error": f"No holdings found for user {user_id}",
-                "user_id": user_id,
-                "holdings": {},
-                "total_shares_value": 0,
-                "total_cash": 0,
-                "total_portfolio_value": 0,
-                "timestamp": datetime.now().isoformat()
-            }
+        from app.database import SessionLocal, User, Holding
         
-        holdings = MOCK_HOLDINGS[user_id]
-        
-        # Calculate totals
-        total_shares_value = 0
-        total_cash = 0
-        performance = MOCK_PERFORMANCE.get(user_id, {})
-        
-        formatted_holdings = {}
-        for ticker, holding in holdings.items():
-            quantity = holding['quantity']
-            purchase_price = holding['purchase_price']
+        db = SessionLocal()
+        try:
+            # Resolve user by UUID or username
+            user = db.query(User).filter(
+                (User.id == user_id) | (User.username == user_id)
+            ).first()
             
-            if ticker == "CASH":
-                total_cash = quantity
-            else:
-                # Get current price from performance data
-                current_price = performance.get(ticker, {}).get('current_price', purchase_price)
-                current_value = quantity * current_price
-                gain_loss = (current_price - purchase_price) * quantity
-                gain_loss_pct = ((current_price - purchase_price) / purchase_price * 100) if purchase_price > 0 else 0
+            if not user:
+                logger.warning(f"No user found for {user_id}")
+                return {
+                    "error": f"User not found: {user_id}",
+                    "user_id": user_id,
+                    "holdings": {},
+                    "total_shares_value": 0.0,
+                    "total_cash": 0.0,
+                    "total_portfolio_value": 0.0,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Get holdings from database
+            holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
+            
+            total_shares_value = 0.0
+            formatted_holdings = {}
+            
+            for h in holdings:
+                current_price = h.current_price if h.current_price > 0 else h.purchase_price
+                current_value = h.quantity * current_price
+                gain_loss = (current_price - h.purchase_price) * h.quantity
+                gain_loss_pct = ((current_price - h.purchase_price) / h.purchase_price * 100) if h.purchase_price > 0 else 0
                 
                 total_shares_value += current_value
                 
-                formatted_holdings[ticker] = {
-                    "quantity": quantity,
-                    "purchase_price": round(purchase_price, 2),
+                formatted_holdings[h.ticker] = {
+                    "quantity": h.quantity,
+                    "purchase_price": round(h.purchase_price, 2),
                     "current_price": round(current_price, 2),
                     "current_value": round(current_value, 2),
                     "gain_loss": round(gain_loss, 2),
                     "gain_loss_pct": round(gain_loss_pct, 2),
-                    "purchase_date": holding['purchase_date']
+                    "purchase_date": h.purchase_date.isoformat() if h.purchase_date else None
                 }
-        
-        return {
-            "error": None,
-            "user_id": user_id,
-            "holdings": formatted_holdings,
-            "total_shares_value": round(total_shares_value, 2),
-            "total_cash": round(total_cash, 2),
-            "total_portfolio_value": round(total_shares_value + total_cash, 2),
-            "timestamp": datetime.now().isoformat()
-        }
+            
+            return {
+                "error": None,
+                "user_id": user.id,
+                "username": user.username,
+                "holdings": formatted_holdings,
+                "total_shares_value": round(total_shares_value, 2),
+                "total_cash": 0.0,
+                "total_portfolio_value": round(total_shares_value, 2),
+                "timestamp": datetime.now().isoformat()
+            }
+        finally:
+            db.close()
     
     except Exception as e:
         logger.error(f"Error getting holdings for user {user_id}: {e}")
@@ -260,30 +263,50 @@ def get_user_holdings(user_id: str) -> Dict:
 
 
 def get_user_profile(user_id: str) -> Dict:
-    """Get user profile including risk tolerance and investment goals.
+    """Get user profile including risk tolerance from database.
     
     Args:
-        user_id: Unique user identifier
+        user_id: Unique user identifier (UUID or username)
     
     Returns:
         dict with user profile data
     """
     try:
-        if user_id not in MOCK_USER_PROFILES:
-            logger.warning(f"No profile found for user {user_id}")
-            return {
-                "error": f"No profile found for user {user_id}",
-                "profile": None
+        from app.database import SessionLocal, User
+        
+        db = SessionLocal()
+        try:
+            # Resolve user by UUID or username
+            user = db.query(User).filter(
+                (User.id == user_id) | (User.username == user_id)
+            ).first()
+            
+            if not user:
+                logger.warning(f"User not found: {user_id}")
+                return {
+                    "error": f"User not found: {user_id}",
+                    "user_id": user_id,
+                    "profile": None
+                }
+            
+            profile = {
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "risk_tolerance": user.risk_tolerance or "MEDIUM",
+                "portfolio_value": user.portfolio_value or 0.0,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
             }
-        
-        profile = MOCK_USER_PROFILES[user_id]
-        
-        return {
-            "error": None,
-            "user_id": user_id,
-            "profile": profile,
-            "timestamp": datetime.now().isoformat()
-        }
+            
+            return {
+                "error": None,
+                "user_id": user.id,
+                "profile": profile,
+                "timestamp": datetime.now().isoformat()
+            }
+        finally:
+            db.close()
     
     except Exception as e:
         logger.error(f"Error getting profile for user {user_id}: {e}")
@@ -378,53 +401,75 @@ def record_transaction(user_id: str, ticker: str, transaction_type: str,
 
 def get_transaction_history(user_id: str, days: Optional[int] = None, 
                            transaction_type: Optional[str] = None) -> Dict:
-    """Get transaction history for a user.
+    """Get transaction history for a user from database.
     
     Args:
-        user_id: Unique user identifier
+        user_id: Unique user identifier (UUID or username)
         days: Optional - filter to last N days (None = all)
-        transaction_type: Optional - filter by type (buy, sell, dividend, etc)
+        transaction_type: Optional - filter by type (BUY, SELL, DIVIDEND, etc)
     
     Returns:
         dict with transactions
     """
     try:
-        if user_id not in MOCK_TRANSACTIONS:
-            logger.warning(f"No transactions found for user {user_id}")
+        from app.database import SessionLocal, User, Transaction
+        
+        db = SessionLocal()
+        try:
+            # Resolve user by UUID or username
+            user = db.query(User).filter(
+                (User.id == user_id) | (User.username == user_id)
+            ).first()
+            
+            if not user:
+                logger.warning(f"User not found: {user_id}")
+                return {
+                    "error": None,
+                    "user_id": user_id,
+                    "transactions": [],
+                    "total_transactions": 0
+                }
+            
+            # Build query
+            query = db.query(Transaction).filter(
+                (Transaction.user_id == user.id) | (Transaction.user_id == user.username)
+            )
+            
+            # Filter by date if specified
+            if days:
+                cutoff_date = datetime.now() - timedelta(days=days)
+                query = query.filter(Transaction.transaction_date >= cutoff_date)
+            
+            # Filter by type if specified
+            if transaction_type:
+                query = query.filter(Transaction.transaction_type == transaction_type.upper())
+            
+            # Sort by date descending (newest first)
+            transactions = query.order_by(Transaction.transaction_date.desc()).all()
+            
+            formatted = [
+                {
+                    "id": t.id,
+                    "date": t.transaction_date.isoformat() if t.transaction_date else None,
+                    "type": t.transaction_type,
+                    "ticker": t.ticker,
+                    "quantity": t.quantity,
+                    "price": t.price,
+                    "amount": t.total_amount,
+                    "notes": t.notes or ""
+                }
+                for t in transactions
+            ]
+            
             return {
                 "error": None,
-                "user_id": user_id,
-                "transactions": [],
-                "total_transactions": 0
+                "user_id": user.id,
+                "transactions": formatted,
+                "total_transactions": len(formatted),
+                "timestamp": datetime.now().isoformat()
             }
-        
-        transactions = MOCK_TRANSACTIONS[user_id]
-        
-        # Filter by date if specified
-        if days:
-            cutoff_date = datetime.now() - timedelta(days=days)
-            transactions = [
-                t for t in transactions
-                if datetime.strptime(t['date'], "%Y-%m-%d") >= cutoff_date
-            ]
-        
-        # Filter by type if specified
-        if transaction_type:
-            transactions = [
-                t for t in transactions
-                if t['type'] == transaction_type
-            ]
-        
-        # Sort by date descending (newest first)
-        transactions.sort(key=lambda x: x['date'], reverse=True)
-        
-        return {
-            "error": None,
-            "user_id": user_id,
-            "transactions": transactions,
-            "total_transactions": len(transactions),
-            "timestamp": datetime.now().isoformat()
-        }
+        finally:
+            db.close()
     
     except Exception as e:
         logger.error(f"Error getting transaction history for user {user_id}: {e}")

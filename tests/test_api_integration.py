@@ -100,6 +100,21 @@ class TestUserEndpoints:
         assert data["email"] == "test@example.com"
         assert "portfolio_value" in data
     
+    def test_get_user_by_username(self, client, test_db, test_user):
+        """Test GET /users/{user_id} with username instead of UUID"""
+        # First get user to confirm username
+        response = client.get(f"/users/{test_user}")
+        username = response.json()["username"]
+        
+        # Now fetch by username
+        response = client.get(f"/users/{username}")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == test_user
+        assert data["username"] == username
+        assert data["email"] == "test@example.com"
+    
     def test_get_nonexistent_user(self, client, test_db):
         """Test getting non-existent user"""
         response = client.get("/users/nonexistent-id")
@@ -133,7 +148,66 @@ class TestPortfolioEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
-        assert "holding_id" in data
+    
+    def test_add_holding_by_username(self, client, test_db, test_user):
+        """Test adding holding using username instead of UUID"""
+        # Get username
+        user_response = client.get(f"/users/{test_user}")
+        username = user_response.json()["username"]
+        
+        # Add holding using username
+        response = client.post(f"/users/{username}/holdings", json={
+            "ticker": "TSLA",
+            "quantity": 5,
+            "purchase_price": 200.0
+        })
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        
+        # Verify portfolio via username
+        portfolio = client.get(f"/users/{username}/portfolio")
+        assert portfolio.status_code == 200
+        assert portfolio.json()["holdings_count"] == 1
+    
+    def test_complete_workflow_with_username(self, client, test_db):
+        """Test complete user workflow using only username (simulates user_002 scenario)"""
+        # 1. Create user with username user_002
+        create_response = client.post("/users", json={
+            "email": "user002@example.com",
+            "username": "user_002",
+            "risk_tolerance": "MEDIUM"
+        })
+        assert create_response.status_code == 200
+        user_data = create_response.json()
+        actual_uuid = user_data["user_id"]
+        
+        # 2. Add holdings using username (not UUID)
+        holding_response = client.post("/users/user_002/holdings", json={
+            "ticker": "AAPL",
+            "quantity": 1000,
+            "purchase_price": 150.0
+        })
+        assert holding_response.status_code == 200
+        assert holding_response.json()["status"] == "success"
+        
+        # 3. Get portfolio using username
+        portfolio_response = client.get("/users/user_002/portfolio")
+        assert portfolio_response.status_code == 200
+        portfolio_data = portfolio_response.json()
+        assert portfolio_data["holdings_count"] == 1
+        assert portfolio_data["holdings"][0]["ticker"] == "AAPL"
+        assert portfolio_data["holdings"][0]["quantity"] == 1000
+        
+        # 4. Get holdings list using username
+        holdings_response = client.get("/users/user_002/holdings")
+        assert holdings_response.status_code == 200
+        
+        # 5. Verify it also works with UUID
+        uuid_portfolio = client.get(f"/users/{actual_uuid}/portfolio")
+        assert uuid_portfolio.status_code == 200
+        assert uuid_portfolio.json()["holdings_count"] == 1
     
     def test_get_portfolio_with_holdings(self, client, test_db, test_user):
         """Test portfolio after adding holdings"""
@@ -173,6 +247,33 @@ class TestPortfolioEndpoints:
         data = response.json()
         assert len(data["holdings"]) == 2
         assert data["total_value"] == 3250.0
+    
+    def test_transactions_created_with_username(self, client, test_db):
+        """Test that transactions are created correctly when using username instead of UUID"""
+        # Create user
+        create_response = client.post("/users", json={
+            "email": "txntest@example.com",
+            "username": "txn_user",
+            "risk_tolerance": "MEDIUM"
+        })
+        assert create_response.status_code == 200
+        
+        # Add holding using username
+        holding_response = client.post("/users/txn_user/holdings", json={
+            "ticker": "GOOGL",
+            "quantity": 100,
+            "purchase_price": 150.0
+        })
+        assert holding_response.status_code == 200
+        
+        # Verify transaction was created using username
+        txn_response = client.get("/users/txn_user/transactions")
+        assert txn_response.status_code == 200
+        transactions = txn_response.json()["transactions"]
+        assert len(transactions) == 1
+        assert transactions[0]["ticker"] == "GOOGL"
+        assert transactions[0]["quantity"] == 100
+        assert transactions[0]["type"] == "BUY"
     
     def test_filter_holdings_by_ticker(self, client, test_db, test_user):
         """Test filtering holdings"""

@@ -7,6 +7,7 @@ from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.guardrails import input_guardrails, output_guardrails
 from app.agents.orchestrator import handle_message
 from app.agents.market import get_market_data
@@ -59,6 +60,27 @@ class SyncRequest(BaseModel):
     api_token: Optional[str] = None
 
 
+# Helper function to resolve user by ID or username
+def get_user_by_id_or_username(user_id: str, db: Session) -> Optional[User]:
+    """
+    Resolve user by UUID or username for flexible API access.
+    
+    Allows frontend users to reference accounts using either:
+    - UUID (e.g., "abc123-def-456...") - auto-generated on user creation
+    - Username (e.g., "user_002") - user-friendly identifier
+    
+    This enables simpler frontend UX where users can type "user_002"
+    instead of remembering complex UUIDs.
+    """
+    # Try UUID first (most common case for existing implementations)
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        return user
+    # Fallback to username lookup
+    user = db.query(User).filter(User.username == user_id).first()
+    return user
+
+
 @app.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """Create new user"""
@@ -85,8 +107,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.get("/users/{user_id}")
 def get_user(user_id: str, db: Session = Depends(get_db)):
-    """Get user details"""
-    user = db.query(User).filter(User.id == user_id).first()
+    """Get user details (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
     
@@ -102,15 +124,15 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
 
 @app.get("/users/{user_id}/portfolio")
 def get_portfolio(user_id: str, db: Session = Depends(get_db)):
-    """Get user's complete portfolio"""
-    user = db.query(User).filter(User.id == user_id).first()
+    """Get user's complete portfolio (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
     
-    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     
     portfolio = {
-        "user_id": user_id,
+        "user_id": user.id,
         "total_value": sum(h.total_value for h in holdings),
         "total_gain_loss": sum(h.gain_loss for h in holdings),
         "holdings_count": len(holdings),
@@ -137,8 +159,8 @@ def get_portfolio(user_id: str, db: Session = Depends(get_db)):
 
 @app.post("/users/{user_id}/holdings")
 def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_db)):
-    """Add holding to portfolio"""
-    user = db.query(User).filter(User.id == user_id).first()
+    """Add holding to portfolio (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
     
@@ -146,7 +168,7 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
     ticker = holding.ticker.upper()
 
     # If holding exists, merge quantities using weighted average cost
-    existing = db.query(Holding).filter(Holding.user_id == user_id, Holding.ticker == ticker).first()
+    existing = db.query(Holding).filter(Holding.user_id == user.id, Holding.ticker == ticker).first()
     if existing:
         old_qty = existing.quantity
         new_qty = old_qty + holding.quantity
@@ -160,7 +182,7 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
         holding_record = existing
     else:
         holding_record = Holding(
-            user_id=user_id,
+            user_id=user.id,
             ticker=ticker,
             quantity=holding.quantity,
             purchase_price=holding.purchase_price,
@@ -173,7 +195,7 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
     
     # Add transaction record
     txn = Transaction(
-        user_id=user_id,
+        user_id=user.id,
         ticker=ticker,
         transaction_type="BUY",
         quantity=holding.quantity,
@@ -184,7 +206,7 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
     db.add(txn)
     
     # Update user portfolio value
-    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     user.portfolio_value = sum(h.total_value for h in holdings)
     user.updated_at = datetime.utcnow()
     
@@ -200,8 +222,12 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
 
 @app.get("/users/{user_id}/holdings")
 def list_holdings(user_id: str, ticker: Optional[str] = None, db: Session = Depends(get_db)):
-    """List holdings"""
-    query = db.query(Holding).filter(Holding.user_id == user_id)
+    """List holdings (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
+    
+    query = db.query(Holding).filter(Holding.user_id == user.id)
     if ticker:
         query = query.filter(Holding.ticker == ticker.upper())
     
@@ -227,8 +253,12 @@ def list_holdings(user_id: str, ticker: Optional[str] = None, db: Session = Depe
 
 @app.delete("/users/{user_id}/holdings/{holding_id}")
 def delete_holding(user_id: str, holding_id: str, db: Session = Depends(get_db)):
-    """Delete holding"""
-    holding = db.query(Holding).filter(Holding.id == holding_id, Holding.user_id == user_id).first()
+    """Delete holding (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
+    
+    holding = db.query(Holding).filter(Holding.id == holding_id, Holding.user_id == user.id).first()
     if not holding:
         return {"error": "Holding not found", "status": "error"}
     
@@ -240,13 +270,17 @@ def delete_holding(user_id: str, holding_id: str, db: Session = Depends(get_db))
 
 @app.get("/users/{user_id}/transactions")
 def list_transactions(user_id: str, days: int = 3650, db: Session = Depends(get_db)):
-    """List transactions"""
+    """List transactions (supports UUID or username)"""
     from datetime import timedelta
+    
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
     
     cutoff = datetime.utcnow() - timedelta(days=days)
     
     txns = db.query(Transaction).filter(
-        Transaction.user_id == user_id,
+        or_(Transaction.user_id == user.id, Transaction.user_id == user.username),
         Transaction.transaction_date >= cutoff
     ).order_by(Transaction.transaction_date.desc()).all()
     
@@ -269,8 +303,8 @@ def list_transactions(user_id: str, days: int = 3650, db: Session = Depends(get_
 
 @app.post("/users/{user_id}/sync")
 async def sync_portfolio(user_id: str, sync_req: SyncRequest, db: Session = Depends(get_db)):
-    """Sync portfolio from external source"""
-    user = db.query(User).filter(User.id == user_id).first()
+    """Sync portfolio from external source (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
     
@@ -285,23 +319,23 @@ async def sync_portfolio(user_id: str, sync_req: SyncRequest, db: Session = Depe
         db.commit()
     
     # Trigger sync
-    result = await SyncTaskRunner.sync_now(user_id, sync_req.provider, credentials)
+    result = await SyncTaskRunner.sync_now(user.id, sync_req.provider, credentials)
     
     return result
 
 
 @app.post("/users/{user_id}/snapshot")
 def create_snapshot(user_id: str, db: Session = Depends(get_db)):
-    """Create portfolio snapshot for analytics"""
-    user = db.query(User).filter(User.id == user_id).first()
+    """Create portfolio snapshot for analytics (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
     
-    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     total_value = sum(h.total_value for h in holdings)
     
     snapshot = PortfolioSnapshot(
-        user_id=user_id,
+        user_id=user.id,
         total_value=total_value
     )
     
@@ -318,8 +352,12 @@ def create_snapshot(user_id: str, db: Session = Depends(get_db)):
 
 @app.get("/users/{user_id}/allocation")
 def get_allocation(user_id: str, db: Session = Depends(get_db)):
-    """Get asset allocation breakdown"""
-    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    """Get asset allocation breakdown (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
+    
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     total_value = sum(h.total_value for h in holdings)
     
     if total_value == 0:
@@ -359,8 +397,8 @@ def chat(req: ChatRequest):
     memory = get_memory()
     context = memory.get_context(conversation_id, limit=10)
 
-    # Handle message with context
-    reply, intent, risk = handle_message(msg, conversation_context=context)
+    # Handle message with context and user_id for portfolio access
+    reply, intent, risk = handle_message(msg, conversation_context=context, user_id=req.user_id)
     reply = output_guardrails(reply, risk)
 
     # Store in conversation memory
@@ -396,19 +434,27 @@ def metrics():
 
 @app.post("/users/{user_id}/sync/prices")
 async def sync_prices(user_id: str, db: Session = Depends(get_db)):
-    """Quick price update for existing holdings"""
-    result = await SyncTaskRunner.sync_price_update(user_id)
+    """Quick price update for existing holdings (supports UUID or username)"""
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
+    
+    result = await SyncTaskRunner.sync_price_update(user.id)
     return result
 
 
 @app.get("/users/{user_id}/analytics")
 def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
-    """Get portfolio analytics including Sharpe ratio, volatility, diversification"""
+    """Get portfolio analytics including Sharpe ratio, volatility, diversification (supports UUID or username)"""
     import numpy as np
     
-    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
+    
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     snapshots = db.query(PortfolioSnapshot).filter(
-        PortfolioSnapshot.user_id == user_id
+        PortfolioSnapshot.user_id == user.id
     ).order_by(PortfolioSnapshot.snapshot_date.desc()).limit(30).all()
     
     if not holdings:
@@ -463,12 +509,16 @@ def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
 
 @app.get("/users/{user_id}/performance")
 def get_performance_history(user_id: str, days: int = 30, db: Session = Depends(get_db)):
-    """Get portfolio performance history"""
+    """Get portfolio performance history (supports UUID or username)"""
     from datetime import timedelta
+    
+    user = get_user_by_id_or_username(user_id, db)
+    if not user:
+        return {"error": "User not found", "status": "error"}
     
     cutoff = datetime.utcnow() - timedelta(days=days)
     snapshots = db.query(PortfolioSnapshot).filter(
-        PortfolioSnapshot.user_id == user_id,
+        PortfolioSnapshot.user_id == user.id,
         PortfolioSnapshot.snapshot_date >= cutoff
     ).order_by(PortfolioSnapshot.snapshot_date.asc()).all()
     
@@ -548,12 +598,17 @@ def get_market_quote(req: MarketQuoteRequest):
 
 @app.post("/market/screen")
 def run_screener(req: ScreenerRequest, db: Session = Depends(get_db)):
-    """Run stock screener"""
+    """Run stock screener (supports UUID or username in params)"""
     try:
         # Get user's holdings for context
-        user_id = req.params.get("user_id", "user_001")
-        holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
-        holdings_dict = {h.ticker: {"quantity": h.quantity, "purchase_price": h.purchase_price} for h in holdings}
+        user_id_param = req.params.get("user_id", "user_001")
+        user = get_user_by_id_or_username(user_id_param, db)
+        
+        if user:
+            holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
+            holdings_dict = {h.ticker: {"quantity": h.quantity, "purchase_price": h.purchase_price} for h in holdings}
+        else:
+            holdings_dict = {}
         
         if req.screener_type.lower() == "dividend":
             results = run_dividend_screener(holdings_dict)

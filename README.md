@@ -2,6 +2,16 @@
 
 Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, and comprehensive portfolio analytics.
 
+## Recent Updates (December 2025)
+
+✅ **Portfolio MCP Database Integration** — Replaced hardcoded mock data with real SQLite database queries. Portfolio MCP functions now fetch actual user holdings, transactions, and profiles directly from the database.
+
+✅ **Chat Portfolio Access** — Fixed `/chat` endpoint to pass `user_id` to orchestrator, enabling agents to access user portfolio data during conversations.
+
+✅ **Compliance Agent Deduplication** — Fixed duplicate disclaimer messages by checking if disclaimer already exists before appending.
+
+✅ **Test Coverage Expansion** — Added 26+ new tests: 11 for Portfolio MCP database integration, 10 for compliance agent, 5 for DeepEval portfolio chat scenarios.
+
 ## Overview
 
 finnie-chat is a sophisticated financial AI system that combines:
@@ -97,17 +107,16 @@ echo "GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini
 ### Run Tests
 
 ```powershell
-# Run all tests (183 tests, ~44s)
+# Run all tests (200+ tests)
 .\venv\Scripts\python.exe -m pytest tests -v
 
 # Quick run (quiet mode)
 .\venv\Scripts\python.exe -m pytest tests -q
 
-.\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py -v       # Risk Profiler Agent (11 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_portfolio_coach.py -v     # Portfolio Coach Agent (23 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_strategy.py -v            # Strategy Agent (20 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_portfolio_mcp.py -v       # Portfolio MCP Server (45 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_orchestrator_integration.py -v  # Orchestrator (40 tests)
+# Test specific modules
+.\venv\Scripts\python.exe -m pytest tests/test_portfolio_mcp_database.py -v       # Portfolio MCP Database Integration (11 tests)
+.\venv\Scripts\python.exe -m pytest tests/test_compliance_agent.py -v              # Compliance Agent Dedup (10 tests)
+.\venv\Scripts\python.exe -m pytest tests/deepeval/test_deepeval_portfolio_chat.py -v  # DeepEval Portfolio Chat (5 tests)
 
 # Run specific agent tests (2 tests each)
 .\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py::TestRiskProfilerAgent::test_no_holdings tests/test_risk_profiler.py::TestRiskProfilerAgent::test_run_with_holdings -v
