@@ -14,8 +14,8 @@ API_BASE_URL = "http://localhost:8000"
 if "user_id" not in st.session_state:
     st.session_state.user_id = "user_001"
 
-st.title("📈 Market Trends & Analysis")
-st.markdown("Discover market opportunities and investment ideas")
+st.title("📈 Market — Overview & Trends")
+st.markdown("Overview: fast market snapshot. Trends: deeper analysis and sector insights — all data is fetched live from the backend.")
 
 # Sidebar
 with st.sidebar:
@@ -93,80 +93,111 @@ if market_view == "Overview":
     # Major indices
     col1, col2, col3, col4 = st.columns(4)
     
-    # Mock data for indices
-    mock_indices = [
-        {"symbol": "^GSPC", "price": 4783.45, "change": 0.75, "change_pct": 0.016},
-        {"symbol": "^DJI", "price": 37305.16, "change": -45.23, "change_pct": -0.012},
-        {"symbol": "^IXIC", "price": 14813.92, "change": 123.45, "change_pct": 0.084},
-        {"symbol": "^RUT", "price": 2027.07, "change": 12.34, "change_pct": 0.061},
-    ]
+    # Fetch real-time indices data from backend
+    index_symbols = ["^GSPC", "^DJI", "^IXIC", "^RUT"]
     index_names = ["S&P 500", "Dow Jones", "NASDAQ", "Russell 2000"]
     
-    for col, idx_data, name in zip([col1, col2, col3, col4], mock_indices, index_names):
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/market/quote",
+            json={"symbols": index_symbols},
+            timeout=5
+        )
+        if response.status_code == 200:
+            data = response.json()
+            indices_data = []
+            for symbol in index_symbols:
+                quote = data.get("quotes", {}).get(symbol, {})
+                indices_data.append({
+                    "price": quote.get("price") or 0,
+                    "change": quote.get("change") or 0,
+                    "change_pct": quote.get("change_pct") or 0
+                })
+        else:
+            # Fallback to placeholder
+            indices_data = [{"price": 0, "change": 0, "change_pct": 0} for _ in index_symbols]
+            st.warning("Unable to fetch real-time market data")
+    except Exception as e:
+        # Fallback to placeholder
+        indices_data = [{"price": 0, "change": 0, "change_pct": 0} for _ in index_symbols]
+        st.warning(f"Market data unavailable: {str(e)}")
+    
+    for col, idx_data, name in zip([col1, col2, col3, col4], indices_data, index_names):
         with col:
             delta_color = "normal" if idx_data['change'] >= 0 else "inverse"
-            st.metric(
-                name,
-                f"${idx_data['price']:,.2f}",
-                f"{idx_data['change_pct']:+.2f}%",
-                delta_color=delta_color
-            )
+            if idx_data['price'] > 0:
+                st.metric(
+                    name,
+                    f"${idx_data['price']:,.2f}",
+                    f"{idx_data['change_pct']:+.2f}%",
+                    delta_color=delta_color
+                )
+            else:
+                st.metric(name, "N/A", "...")
     
     st.markdown("---")
-    
-    # Top movers
+
+    # Top movers - request precomputed movers from backend
     st.markdown("#### 📈 Top Gainers & Losers")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**Top Gainers**")
-        gainers = pd.DataFrame([
-            {"Ticker": "NVDA", "Price": "$495.22", "Change": "+8.5%"},
-            {"Ticker": "AMD", "Price": "$142.87", "Change": "+6.2%"},
-            {"Ticker": "TSLA", "Price": "$248.42", "Change": "+5.1%"},
-            {"Ticker": "META", "Price": "$362.54", "Change": "+4.8%"},
-            {"Ticker": "AMZN", "Price": "$151.94", "Change": "+3.9%"},
-        ])
-        st.dataframe(gainers, use_container_width=True, hide_index=True)
-    
-    with col2:
-        st.markdown("**Top Losers**")
-        losers = pd.DataFrame([
-            {"Ticker": "INTC", "Price": "$43.21", "Change": "-5.3%"},
-            {"Ticker": "BA", "Price": "$210.45", "Change": "-4.7%"},
-            {"Ticker": "DIS", "Price": "$92.18", "Change": "-3.2%"},
-            {"Ticker": "NFLX", "Price": "$478.33", "Change": "-2.8%"},
-            {"Ticker": "PYPL", "Price": "$62.52", "Change": "-2.1%"},
-        ])
-        st.dataframe(losers, use_container_width=True, hide_index=True)
-    
+    try:
+        resp = requests.post(f"{API_BASE_URL}/market/movers", json={}, timeout=8)
+        if resp.status_code == 200:
+            data = resp.json()
+            gainers = data.get("top_gainers", [])
+            losers = data.get("top_losers", [])
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Top Gainers**")
+                if gainers:
+                    gainers_df = pd.DataFrame(gainers)
+                    st.dataframe(gainers_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No gainers available")
+
+            with col2:
+                st.markdown("**Top Losers**")
+                if losers:
+                    losers_df = pd.DataFrame(losers)
+                    st.dataframe(losers_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No losers available")
+        else:
+            st.warning("Unable to fetch top movers from backend")
+    except Exception as e:
+        st.warning(f"Top movers unavailable: {str(e)}")
+
     st.markdown("---")
-    
-    # Sector performance heatmap
+
+    # Sector performance heatmap (request from backend)
     st.markdown("#### 🗺️ Sector Performance")
-    
-    sectors_data = {
-        'Sector': ['Technology', 'Healthcare', 'Financials', 'Energy', 'Industrials', 
-                   'Consumer Disc.', 'Materials', 'Real Estate', 'Utilities', 'Telecom'],
-        'Performance': [2.4, 1.2, -0.5, 3.1, 0.8, -1.2, 1.5, -0.8, 0.3, 0.6],
-        'Volume': [100, 85, 120, 95, 78, 88, 72, 65, 55, 60]
-    }
-    
-    sectors_df = pd.DataFrame(sectors_data)
-    
-    fig = px.treemap(
-        sectors_df,
-        path=['Sector'],
-        values='Volume',
-        color='Performance',
-        color_continuous_scale=['red', 'yellow', 'green'],
-        color_continuous_midpoint=0,
-        title='Sector Performance Heatmap'
-    )
-    
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    try:
+        resp = requests.post(f"{API_BASE_URL}/market/sectors", timeout=8)
+        if resp.status_code == 200:
+            data = resp.json()
+            sectors = data.get("sectors", [])
+            if sectors:
+                sectors_df = pd.DataFrame([
+                    {"Sector": s.get("sector"), "Performance": s.get("change_pct") or 0, "Volume": 1}
+                    for s in sectors
+                ])
+                fig = px.treemap(
+                    sectors_df,
+                    path=['Sector'],
+                    values='Volume',
+                    color='Performance',
+                    color_continuous_scale=['red', 'yellow', 'green'],
+                    color_continuous_midpoint=0,
+                    title='Sector Performance Heatmap'
+                )
+                fig.update_layout(height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No sector data available")
+        else:
+            st.warning("Unable to fetch sector performance from backend")
+    except Exception as e:
+        st.warning(f"Sector data unavailable: {str(e)}")
 
 elif market_view == "Screeners":
     st.subheader("🔍 Stock Screeners")
@@ -187,43 +218,54 @@ elif market_view == "Screeners":
     
     if st.button("🔍 Run Screener", type="primary"):
         with st.spinner("Scanning markets..."):
-            # Mock screener results
-            if screener_type == "Dividend Yield":
-                results = pd.DataFrame([
-                    {"Ticker": "VZ", "Price": "$38.45", "Div Yield": "6.8%", "P/E": "8.2", "Market Cap": "$161B"},
-                    {"Ticker": "T", "Price": "$15.92", "Div Yield": "6.5%", "P/E": "7.1", "Market Cap": "$114B"},
-                    {"Ticker": "MO", "Price": "$42.18", "Div Yield": "8.2%", "P/E": "9.4", "Market Cap": "$75B"},
-                    {"Ticker": "ABBV", "Price": "$158.43", "Div Yield": "3.9%", "P/E": "35.2", "Market Cap": "$280B"},
-                    {"Ticker": "PFE", "Price": "$28.92", "Div Yield": "5.8%", "P/E": "10.1", "Market Cap": "$163B"},
-                ])
-            elif screener_type == "Growth Stocks":
-                results = pd.DataFrame([
-                    {"Ticker": "NVDA", "Price": "$495.22", "Rev Growth": "126%", "EPS Growth": "288%", "Market Cap": "$1.22T"},
-                    {"Ticker": "AVGO", "Price": "$892.45", "Rev Growth": "47%", "EPS Growth": "65%", "Market Cap": "$413B"},
-                    {"Ticker": "AMD", "Price": "$142.87", "Rev Growth": "54%", "EPS Growth": "112%", "Market Cap": "$231B"},
-                    {"Ticker": "PLTR", "Price": "$18.45", "Rev Growth": "21%", "EPS Growth": "145%", "Market Cap": "$39B"},
-                    {"Ticker": "SNOW", "Price": "$182.34", "Rev Growth": "36%", "EPS Growth": "N/A", "Market Cap": "$57B"},
-                ])
-            else:
-                results = pd.DataFrame([
-                    {"Ticker": "BAC", "Price": "$32.45", "P/E": "10.2", "P/B": "1.1", "Market Cap": "$251B"},
-                    {"Ticker": "WFC", "Price": "$47.89", "P/E": "11.5", "P/B": "1.2", "Market Cap": "$172B"},
-                    {"Ticker": "C", "Price": "$51.23", "P/E": "9.8", "P/B": "0.7", "Market Cap": "$95B"},
-                    {"Ticker": "JPM", "Price": "$167.54", "P/E": "10.9", "P/B": "1.6", "Market Cap": "$482B"},
-                    {"Ticker": "GS", "Price": "$382.19", "P/E": "12.3", "P/B": "1.4", "Market Cap": "$128B"},
-                ])
+            # Map frontend names to backend screener types
+            screener_map = {
+                "Dividend Yield": "dividend",
+                "Growth Stocks": "growth",
+                "Value Stocks": "value",
+                "Momentum Plays": "value",  # Fallback to value
+                "High Volume": "growth"  # Fallback to growth
+            }
             
-            st.success(f"Found {len(results)} stocks matching criteria")
-            st.dataframe(results, use_container_width=True, hide_index=True)
-            
-            # Export option
-            csv = results.to_csv(index=False)
-            st.download_button(
-                label="📥 Download Results (CSV)",
-                data=csv,
-                file_name=f"{screener_type.lower().replace(' ', '_')}_screener.csv",
-                mime="text/csv"
-            )
+            try:
+                # Get user ID from session state for portfolio context
+                user_id = st.session_state.get("user_id", "user_001")
+                
+                response = requests.post(
+                    f"{API_BASE_URL}/market/screen",
+                    json={
+                        "screener_type": screener_map.get(screener_type, "dividend"),
+                        "params": {"user_id": user_id}
+                    },
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    stocks = data.get("results", [])
+                    
+                    if stocks:
+                        # Convert to DataFrame
+                        results = pd.DataFrame(stocks)
+                        st.success(f"Found {len(results)} stocks matching criteria")
+                        st.dataframe(results, use_container_width=True, hide_index=True)
+                        
+                        # Export option
+                        csv = results.to_csv(index=False)
+                        st.download_button(
+                            label="📥 Download Results (CSV)",
+                            data=csv,
+                            file_name=f"{screener_type.lower().replace(' ', '_')}_screener.csv",
+                            mime="text/csv"
+                        )
+                    else:
+                        st.info("No stocks found matching criteria")
+                else:
+                    st.error(f"Screener unavailable (Status: {response.status_code})")
+                    
+            except Exception as e:
+                st.error(f"Unable to run screener: {str(e)}")
+                st.info("Try asking Finnie in the Chat tab for stock recommendations")
 
 elif market_view == "Strategy Ideas":
     st.subheader("💡 Investment Strategy Ideas")

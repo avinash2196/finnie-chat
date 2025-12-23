@@ -3,7 +3,7 @@ from app.env import load_env_once
 # Ensure .env is loaded before other imports need the keys
 load_env_once()
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -776,6 +776,79 @@ def run_screener(req: ScreenerRequest, db: Session = Depends(get_db)):
         return results
     except Exception as e:
         return {"error": str(e), "results": []}
+
+
+@app.post("/market/movers")
+def get_market_movers(body: dict = Body({})):
+    """Return precomputed top movers for a list of symbols (server-side).
+
+    Accepts JSON body: {"symbols": ["AAPL","MSFT", ...]}.
+    If no symbols provided, uses a default popular list.
+    """
+    try:
+        symbols = body.get("symbols") if isinstance(body, dict) else None
+        default_symbols = [
+            "NVDA", "TSLA", "AAPL", "MSFT", "AMZN", "META", "GOOGL", "AMD",
+            "NFLX", "PYPL", "INTC", "BA", "DIS", "JNJ", "V", "PG",
+            "XOM", "WMT", "JPM", "GS"
+        ]
+        symbols = symbols or default_symbols
+
+        movers = []
+        for sym in symbols:
+            data = get_market_data(sym)
+            if data is None:
+                continue
+            movers.append({
+                "ticker": sym,
+                "price": data.get("price"),
+                "change": data.get("change"),
+                "change_pct": data.get("change_pct")
+            })
+
+        # Sort by change_pct (desc) for gainers
+        movers_sorted = sorted(movers, key=lambda x: (x.get("change_pct") or 0), reverse=True)
+        top_gainers = movers_sorted[:5]
+        top_losers = movers_sorted[-5:][::-1]
+
+        return {"top_gainers": top_gainers, "top_losers": top_losers, "count": len(movers)}
+    except Exception as e:
+        return {"error": str(e), "top_gainers": [], "top_losers": []}
+
+
+@app.post("/market/sectors")
+def get_sector_performance():
+    """Return sector performance using common sector ETFs.
+
+    Returns list of sectors with ETF ticker, price and change_pct.
+    """
+    try:
+        sector_etfs = {
+            "Technology": "XLK",
+            "Healthcare": "XLV",
+            "Financials": "XLF",
+            "Energy": "XLE",
+            "Industrials": "XLI",
+            "Consumer Disc.": "XLY",
+            "Materials": "XLB",
+            "Real Estate": "VNQ",
+            "Utilities": "XLU",
+            "Communication": "XLC",
+        }
+
+        sectors = []
+        for name, etf in sector_etfs.items():
+            data = get_market_data(etf)
+            sectors.append({
+                "sector": name,
+                "etf": etf,
+                "price": data.get("price") if data else None,
+                "change_pct": data.get("change_pct") if data else None,
+            })
+
+        return {"sectors": sectors}
+    except Exception as e:
+        return {"error": str(e), "sectors": []}
 
 
 @app.get("/strategy/ideas")

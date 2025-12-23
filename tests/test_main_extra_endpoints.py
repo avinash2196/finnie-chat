@@ -255,3 +255,52 @@ def test_market_screen_unknown_type(client):
     assert resp.status_code == 200
     data = resp.json()
     assert "error" in data
+
+
+@patch("app.main.get_market_data")
+def test_market_movers_endpoint(mock_get_market_data, client):
+    """Covers /market/movers endpoint."""
+    # Return varied change_pct for a few symbols
+    def side_effect(sym):
+        mapping = {
+            "NVDA": {"price": 600.0, "change_pct": 5.0},
+            "AAPL": {"price": 180.0, "change_pct": 1.2},
+            "MSFT": {"price": 350.0, "change_pct": -0.8},
+            "TSLA": {"price": 220.0, "change_pct": 3.4},
+            "AMZN": {"price": 150.0, "change_pct": -2.1},
+        }
+        return mapping.get(sym, {"price": None, "change_pct": None})
+
+    mock_get_market_data.side_effect = side_effect
+    resp = client.post("/market/movers", json={"symbols": ["NVDA", "AAPL", "MSFT", "TSLA", "AMZN"]})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "top_gainers" in data and "top_losers" in data
+    assert data.get("count") == 5
+
+
+@patch("app.main.get_market_data")
+def test_market_sectors_endpoint(mock_get_market_data, client):
+    """Covers /market/sectors endpoint."""
+    # Mock ETF responses
+    def side_effect(sym):
+        etf_map = {
+            "XLK": {"price": 200.0, "change_pct": 0.8},
+            "XLV": {"price": 120.0, "change_pct": -0.2},
+            "XLF": {"price": 35.0, "change_pct": 0.5},
+            "XLE": {"price": 70.0, "change_pct": -1.1},
+            "XLI": {"price": 95.0, "change_pct": 0.3},
+            "XLY": {"price": 160.0, "change_pct": 1.0},
+            "XLB": {"price": 70.0, "change_pct": 0.4},
+            "VNQ": {"price": 85.0, "change_pct": -0.6},
+            "XLU": {"price": 65.0, "change_pct": 0.1},
+            "XLC": {"price": 55.0, "change_pct": 0.2},
+        }
+        return etf_map.get(sym, {"price": None, "change_pct": None})
+
+    mock_get_market_data.side_effect = side_effect
+    resp = client.post("/market/sectors")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "sectors" in data
+    assert isinstance(data["sectors"], list)
