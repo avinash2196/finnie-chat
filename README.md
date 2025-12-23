@@ -1,8 +1,10 @@
 ﻿# finnie-chat
 
-Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, and comprehensive portfolio analytics.
+Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, comprehensive portfolio analytics, and **enterprise observability** with Arize AI and LangSmith.
 
 ## Recent Updates (December 2025)
+
+✅ **Observability & Monitoring** — Switched to Arize AI and LangSmith for tracing, quality/safety signals, tagging, performance metrics, and error tracking.
 
 ✅ **Portfolio MCP Database Integration** — Replaced hardcoded mock data with real SQLite database queries. Portfolio MCP functions now fetch actual user holdings, transactions, and profiles directly from the database.
 
@@ -17,6 +19,7 @@ Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized age
 finnie-chat is a sophisticated financial AI system that combines:
 - **6 Specialized Agents** for education, market analysis, risk profiling, portfolio coaching, strategy selection, and compliance
 - **Agentic Orchestration** with intelligent routing and context awareness
+- **Enterprise Observability** with Arize AI + LangSmith for monitoring, tracing, and debugging
 - **Database Integration** with SQLAlchemy (SQLite/PostgreSQL) for portfolio persistence
 - **Multi-Provider Portfolio Sync** (Mock, Robinhood, Fidelity) with background scheduler
 - **Portfolio Analytics** with Sharpe ratio, volatility, and diversification metrics
@@ -27,7 +30,7 @@ finnie-chat is a sophisticated financial AI system that combines:
 - **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed)
 - **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval with verification
 - **Guardrails** for input validation and compliance filtering
-- **REST API** with 18+ endpoints for portfolio and market operations
+- **REST API** with 20+ endpoints for portfolio and market operations
 - **Streamlit Frontend** with multi-tab UI (Chat, Portfolio, Market Trends)
 
 ## Architecture
@@ -39,11 +42,21 @@ User Request
     │
     ├─ Intent Classification (determine domain)
     │
-    └─ Orchestrator (agent routing)
+    └─ Orchestrator (agent routing) ◄─ LangSmith Tracing
         │
         ├─ [Educator Agent] ◄─ RAG Engine + Verification
         ├─ [Market Agent] ◄─ Market MCP Server (yFinance)
         ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server
+        ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server
+        ├─ [Strategy Agent] ◄─ Market MCP Server
+            └─ [Compliance Agent] ◄─ Safety guardrails
+            │
+            └─ AI Gateway (3 providers) ◄─ Arize + LangSmith
+                ├─ OpenAI GPT-4o-mini (primary)
+                ├─ Google Gemini (fallback)
+                └─ Anthropic Claude (fallback)
+            │
+            └─ Response + Memory (store in conversation history)
             └─ Anthropic (fallback)
             │
             └─ Response + Memory (store in conversation history)
@@ -68,19 +81,65 @@ Database Layer (SQLAlchemy)
 - **5 Database Models**: User, Holding, Transaction, PortfolioSnapshot, SyncLog
 - **Provider Pattern**: Easily switch between Mock, Robinhood, Fidelity data sources
 - **Background Sync**: Automatic hourly portfolio synchronization
+
 ### Quick Database Start
 ```powershell
 # Initialize database
 python -c "from app.database import init_db; init_db()"
 
 # Run demo
-python demo_database.py
+python scripts/db_utils/demo_database.py
 
 # Sync portfolio from mock provider
 curl -X POST http://localhost:8000/users/{user_id}/sync -d '{"provider":"mock"}'
 ```
 
-See [DATABASE_GUIDE.md](DATABASE_GUIDE.md) for complete documentation.
+See [docs/architecture/DATABASE_GUIDE.md](docs/architecture/DATABASE_GUIDE.md) for complete documentation.
+
+---
+
+## Observability & Monitoring ✅
+
+**Enterprise-Ready** - Production monitoring with Arize AI and LangSmith:
+
+### Features
+- **LangSmith** — Hierarchical run traces: intent → router → agents → final composer
+- **Arize AI** — Prediction logging with tags, quality (groundedness, relevance, risk) and safety signals
+- **Custom Tracking** — Agent execution times, chat interactions, performance metrics
+
+### Quick Setup
+```powershell
+# Add to .env (optional - works without)
+echo "LANGSMITH_API_KEY=lsv2_pt_..." >> .env
+echo "LANGSMITH_PROJECT=finnie-chat" >> .env
+echo "ARIZE_API_KEY=your-arize-api-key" >> .env
+echo "ARIZE_SPACE_KEY=your-arize-space-key" >> .env
+echo "ARIZE_ORG_KEY=optional-org-key" >> .env
+echo "PROMPT_VERSION=v1" >> .env
+echo "AGENT_VERSION=1.0.0" >> .env
+```
+
+### Check Status
+```bash
+# View observability status
+curl http://localhost:8000/observability/status
+
+# Or visit: http://localhost:8000/docs
+```
+
+**What's Tracked Automatically:**
+- ✅ Chat response times by intent and risk level
+- ✅ Agent execution performance (individual and total)
+- ✅ LLM run hierarchy (intent → router → agents → composer) in LangSmith
+- ✅ Arize tags: `prediction_type`, `model_version`, `prompt_version`, `agent_type`, `asset_type`, `compliance_category`
+- ✅ Arize quality: `groundedness_score`, `retrieval_relevance`, `hallucination_risk`, `confidence_level`
+- ✅ Arize safety: `pii_detected`, `restricted_advice_triggered`, `refusal_reason`
+
+See [docs/architecture/OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) for complete guide.
+
+---
+
+## Quick Start
 
 
 ```powershell

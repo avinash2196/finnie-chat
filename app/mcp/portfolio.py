@@ -203,14 +203,62 @@ def get_user_holdings(user_id: str) -> Dict:
             ).first()
             
             if not user:
-                logger.warning(f"No user found for {user_id}")
+                # Fallback to mock holdings if DB has no such user
+                holdings_data = MOCK_HOLDINGS.get(user_id)
+                if not holdings_data:
+                    logger.warning(f"No user found for {user_id}")
+                    return {
+                        "error": f"User not found: {user_id}",
+                        "user_id": user_id,
+                        "holdings": {},
+                        "total_shares_value": 0.0,
+                        "total_cash": 0.0,
+                        "total_portfolio_value": 0.0,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                total_shares_value = 0.0
+                total_cash = 0.0
+                formatted_holdings = {}
+                for ticker, h in holdings_data.items():
+                    if ticker == "CASH":
+                        # Treat cash specially
+                        cash_qty = float(h.get("quantity", 0))
+                        total_cash += cash_qty
+                        formatted_holdings[ticker] = {
+                            "quantity": int(cash_qty),
+                            "purchase_price": 1,
+                            "current_price": 1,
+                            "current_value": round(cash_qty, 2),
+                            "gain_loss": 0.0,
+                            "gain_loss_pct": 0.0,
+                            "purchase_date": h.get("purchase_date")
+                        }
+                        continue
+                    perf = MOCK_PERFORMANCE.get(user_id, {}).get(ticker, {})
+                    current_price = float(perf.get("current_price", h.get("purchase_price", 0)))
+                    purchase_price = float(h.get("purchase_price", 0))
+                    quantity = float(h.get("quantity", 0))
+                    current_value = quantity * current_price
+                    gain_loss = (current_price - purchase_price) * quantity
+                    gain_loss_pct = ((current_price - purchase_price) / purchase_price * 100) if purchase_price > 0 else 0.0
+                    total_shares_value += current_value
+                    formatted_holdings[ticker] = {
+                        "quantity": int(quantity),
+                        "purchase_price": round(purchase_price, 2),
+                        "current_price": round(current_price, 2),
+                        "current_value": round(current_value, 2),
+                        "gain_loss": round(gain_loss, 2),
+                        "gain_loss_pct": round(gain_loss_pct, 2),
+                        "purchase_date": h.get("purchase_date")
+                    }
                 return {
-                    "error": f"User not found: {user_id}",
+                    "error": None,
                     "user_id": user_id,
-                    "holdings": {},
-                    "total_shares_value": 0.0,
-                    "total_cash": 0.0,
-                    "total_portfolio_value": 0.0,
+                    "username": user_id,
+                    "holdings": formatted_holdings,
+                    "total_shares_value": round(total_shares_value, 2),
+                    "total_cash": round(total_cash, 2),
+                    "total_portfolio_value": round(total_shares_value + total_cash, 2),
                     "timestamp": datetime.now().isoformat()
                 }
             
@@ -282,11 +330,20 @@ def get_user_profile(user_id: str) -> Dict:
             ).first()
             
             if not user:
-                logger.warning(f"User not found: {user_id}")
+                # Fallback to mock profile when DB has no such user
+                profile = MOCK_USER_PROFILES.get(user_id)
+                if not profile:
+                    logger.warning(f"User not found: {user_id}")
+                    return {
+                        "error": f"User not found: {user_id}",
+                        "user_id": user_id,
+                        "profile": None
+                    }
                 return {
-                    "error": f"User not found: {user_id}",
+                    "error": None,
                     "user_id": user_id,
-                    "profile": None
+                    "profile": profile,
+                    "timestamp": datetime.now().isoformat()
                 }
             
             profile = {
@@ -422,12 +479,29 @@ def get_transaction_history(user_id: str, days: Optional[int] = None,
             ).first()
             
             if not user:
-                logger.warning(f"User not found: {user_id}")
+                # Fallback to mock transactions
+                txns = MOCK_TRANSACTIONS.get(user_id, [])
+                filtered = txns
+                # Filter by type
+                if transaction_type:
+                    filtered = [t for t in filtered if t.get("type") == transaction_type]
+                # Filter by days
+                if days:
+                    try:
+                        cutoff = datetime.now() - timedelta(days=days)
+                        filtered = [t for t in filtered if datetime.strptime(t.get("date"), "%Y-%m-%d") >= cutoff]
+                    except Exception:
+                        pass
+                # Sort newest first by date string
+                try:
+                    filtered = sorted(filtered, key=lambda t: t.get("date"), reverse=True)
+                except Exception:
+                    pass
                 return {
                     "error": None,
                     "user_id": user_id,
-                    "transactions": [],
-                    "total_transactions": 0
+                    "transactions": filtered,
+                    "total_transactions": len(filtered)
                 }
             
             # Build query

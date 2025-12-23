@@ -15,15 +15,31 @@ from app.agents.strategy import run_dividend_screener, run_growth_screener, run_
 from app.llm import get_gateway_metrics
 from app.memory import get_memory
 from app.rag.verification import query_rag_with_scores, categorize_answer_source, format_answer_with_sources
-from app.database import get_db, User, Holding, Transaction, PortfolioSnapshot, init_db
+from app.database import get_db, User, Holding, Transaction, PortfolioSnapshot, init_db, engine
 from app.sync_tasks import SyncTaskRunner
+from app.observability import observability, track_agent_execution
 import uuid
 from datetime import datetime
+import logging
 
 # Initialize database
 init_db()
 
-app = FastAPI()
+# Initialize FastAPI app
+app = FastAPI(
+    title="Finnie Chat API",
+    description="AI-powered financial assistant with multi-agent orchestration",
+    version="1.0.0"
+)
+
+# Initialize observability
+observability.instrument_fastapi(app)
+observability.instrument_httpx()
+observability.instrument_sqlalchemy(engine)
+
+logger = logging.getLogger(__name__)
+logger.info("🚀 Finnie Chat starting with observability enabled")
+logger.info(f"Observability status: {observability.get_status()}")
 
 class ChatRequest(BaseModel):
     message: str
@@ -379,51 +395,189 @@ def get_allocation(user_id: str, db: Session = Depends(get_db)):
 
 
 @app.post("/chat")
-def chat(req: ChatRequest):
+def chat(req: ChatRequest, db: Session = Depends(get_db)):
+    import time
+    start_time = time.time()
+    
     # Use provided conversation_id or generate new one
     conversation_id = req.conversation_id or str(uuid.uuid4())
     
-    ok, msg = input_guardrails(req.message)
-    if not ok:
-        return {
-            "reply": msg,
-            "conversation_id": conversation_id,
-            "intent": None,
-            "risk": None,
-            "verification": None
+    try:
+        # Start LangSmith root run for this request
+        import os
+        user = get_user_by_id_or_username(req.user_id, db)
+        root_metadata = {
+            "user_id": req.user_id,
+            "user_risk_profile": getattr(user, "risk_tolerance", None) or "UNKNOWN",
+            "experience_level": "beginner",  # default unless provided elsewhere
+            "prompt_version": os.getenv("PROMPT_VERSION", "v1"),
+            "agent_version": os.getenv("AGENT_VERSION", observability.service_version),
+            "verify_sources": bool(req.verify_sources),
         }
+        root_run_id = observability.start_langsmith_run(
+            name="FinanceAgentRequest",
+            run_type="chain",
+            inputs={"message": req.message, "conversation_id": conversation_id},
+            metadata=root_metadata,
+            parent_run_id=None,
+            tags=["chat", "root"],
+        )
+        ok, msg = input_guardrails(req.message)
+        if not ok:
+            observability.track_event("chat_guardrail_blocked", {
+                "user_id": req.user_id,
+                "conversation_id": conversation_id
+            })
+            observability.end_langsmith_run(
+                run_id=root_run_id,
+                outputs={"reply": msg},
+                metadata_update={"blocked": True, "refusal_reason": "guardrail_block"}
+            )
+            return {
+                "reply": msg,
+                "conversation_id": conversation_id,
+                "intent": None,
+                "risk": None,
+                "verification": None
+            }
 
-    # Get conversation context from memory
-    memory = get_memory()
-    context = memory.get_context(conversation_id, limit=10)
+        # Get conversation context from memory
+        memory = get_memory()
+        context = memory.get_context(conversation_id, limit=10)
 
-    # Handle message with context and user_id for portfolio access
-    reply, intent, risk = handle_message(msg, conversation_context=context, user_id=req.user_id)
-    reply = output_guardrails(reply, risk)
+        # Handle message with context and user_id for portfolio access
+        reply, intent, risk = handle_message(msg, conversation_context=context, user_id=req.user_id, root_run_id=root_run_id)
+        reply = output_guardrails(reply, risk)
 
-    # Store in conversation memory
-    memory.add_message(conversation_id, role="user", content=req.message, intent=intent, risk=risk)
-    memory.add_message(conversation_id, role="assistant", content=reply)
+        # Store in conversation memory
+        memory.add_message(conversation_id, role="user", content=req.message, intent=intent, risk=risk)
+        memory.add_message(conversation_id, role="assistant", content=reply)
 
-    # Verify answer source if requested
-    verification = None
-    if req.verify_sources:
-        rag_results = query_rag_with_scores(msg)
-        verification = categorize_answer_source(rag_results, reply)
+        # Verify answer source if requested
+        verification = None
+        if req.verify_sources:
+            rag_results = query_rag_with_scores(msg)
+            verification = categorize_answer_source(rag_results, reply)
 
-    return {
-        "reply": reply,
-        "conversation_id": conversation_id,
-        "intent": intent,
-        "risk": risk,
-        "verification": verification
-    }
+        # Track successful chat interaction
+        duration = time.time() - start_time
+        observability.track_event("chat_interaction", {
+            "user_id": req.user_id,
+            "conversation_id": conversation_id,
+            "intent": intent,
+            "risk": risk,
+            "duration_ms": duration * 1000,
+            "verify_sources": req.verify_sources
+        })
+        observability.track_metric("chat_response_time", duration * 1000, {
+            "intent": intent,
+            "risk": risk
+        })
+
+        # Update/finish LangSmith root run
+        observability.end_langsmith_run(
+            run_id=root_run_id,
+            outputs={"reply_length": len(reply) if isinstance(reply, str) else 0},
+            metadata_update={
+                "request_type": intent,
+                "risk": risk,
+                "duration_ms": duration * 1000,
+            }
+        )
+
+        # Arize AI logging with required tags and signals
+        prediction_id = f"{conversation_id}-{uuid.uuid4()}"
+        # Tags per requirement
+        from app.observability import observability as _obs
+        asset_type = _obs.guess_asset_type(req.message)
+        tags = {
+            "prediction_type": "finance_advice_explanation",
+            "model_version": os.getenv("MODEL_VERSION", observability.service_version),
+            "prompt_version": os.getenv("PROMPT_VERSION", "v1"),
+            "agent_type": intent or "UNKNOWN",
+            "asset_type": asset_type,
+            "compliance_category": "educational_only",
+        }
+        quality = {}
+        safety = {}
+        if verification:
+            quality = {
+                "groundedness_score": float(verification.get("confidence", 0.0)),
+                "retrieval_relevance": float(verification.get("avg_similarity_score", 0.0)),
+                "hallucination_risk": "low" if verification.get("category") in ("RAG_GROUNDED", "RAG_INFORMED") else ("medium" if verification.get("category") == "RAG_PARTIALLY_MATCHED" else "high"),
+                "confidence_level": "high" if verification.get("confidence", 0) >= 0.85 else ("medium" if verification.get("confidence", 0) >= 0.5 else "low"),
+            }
+        else:
+            quality = {
+                "groundedness_score": 0.0,
+                "retrieval_relevance": 0.0,
+                "hallucination_risk": "medium",
+                "confidence_level": "medium",
+            }
+        safety = {
+            "pii_detected": False,
+            "restricted_advice_triggered": False,
+            "refusal_reason": None,
+        }
+        observability.arize_log_chat_response(
+            prediction_id=prediction_id,
+            request_text=req.message,
+            response_text=reply,
+            tags=tags,
+            quality=quality,
+            safety=safety,
+        )
+
+        return {
+            "reply": reply,
+            "conversation_id": conversation_id,
+            "intent": intent,
+            "risk": risk,
+            "verification": verification
+        }
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        observability.track_exception(e, {
+            "endpoint": "chat",
+            "user_id": req.user_id,
+            "conversation_id": conversation_id
+        })
+        observability.track_metric("chat_error_count", 1, {"error": str(type(e).__name__)})
+        logger.error(f"Chat error: {e}")
+        try:
+            observability.end_langsmith_run(
+                run_id=locals().get("root_run_id"),
+                error=str(e),
+                metadata_update={"exception": str(type(e).__name__)},
+            )
+        except Exception:
+            pass
+        raise
+    
 
 
 @app.get("/health")
 def health():
-    """Health check endpoint."""
-    return {"status": "ok"}
+    """Health check endpoint with observability status."""
+    obs_status = observability.get_status()
+    return {
+        "status": "ok",
+        "observability": obs_status
+    }
+
+
+@app.get("/observability/status")
+def observability_status():
+    """Get detailed observability configuration status."""
+    status = observability.get_status()
+    return {
+        "status": status,
+        "message": "Observability services configured" if any([
+            status.get("langsmith_enabled"),
+            status.get("arize_enabled"),
+        ]) else "No observability services enabled"
+    }
 
 
 @app.get("/metrics")

@@ -1,5 +1,6 @@
 ﻿import json
 from app.llm import call_llm
+from app.observability import observability
 from app.intent import classify_intent
 from app.agents.educator import run as educator_run
 from app.agents.market import run as market_run
@@ -46,7 +47,7 @@ Respond ONLY in valid JSON:
 
 # MAIN ORCHESTRATION FUNCTION
 # --------------------------------
-def handle_message(message: str, conversation_context: str = "", user_id: str = "user_123"):
+def handle_message(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
     """
     Full agentic orchestration with support for all 6 agents and Portfolio MCP.
     
@@ -57,11 +58,32 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
     """
 
     # 1. Intent + Risk classification (LLM-based)
+    # LangSmith child run: IntentClassifier
+    run_intent_id = observability.start_langsmith_run(
+        name="IntentClassifier",
+        run_type="chain",
+        inputs={"message": message},
+        parent_run_id=root_run_id,
+        tags=["intent", "classifier"],
+    )
     intent, risk = classify_intent(message)
+    observability.end_langsmith_run(
+        run_id=run_intent_id,
+        outputs={"intent": intent, "risk": risk},
+        metadata_update={"request_type": intent},
+    )
 
     # 2. Ask LLM to plan which agents to use (with context)
     context_info = f"Conversation history:\n{conversation_context}\n\n" if conversation_context else ""
     # Ask LLM to plan which agents to use (with context). Use a safe fallback if LLM is unavailable.
+    # LangSmith child run: AgentRouter
+    run_router_id = observability.start_langsmith_run(
+        name="AgentRouter",
+        run_type="chain",
+        inputs={"message": message, "intent": intent, "context": conversation_context},
+        parent_run_id=root_run_id,
+        tags=["router"],
+    )
     try:
         plan_json = call_llm(
             system_prompt=PLANNER_PROMPT,
@@ -83,6 +105,11 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
             plan = ["StrategyAgent", "ComplianceAgent"]
         else:
             plan = ["EducatorAgent", "ComplianceAgent"]
+    finally:
+        observability.end_langsmith_run(
+            run_id=run_router_id,
+            outputs={"plan": plan},
+        )
 
     # 3. Get user's portfolio data (for portfolio agents)
     portfolio_client = get_portfolio_client(user_id)
@@ -93,6 +120,13 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
     context = {}
 
     for step in plan:
+        run_step_id = observability.start_langsmith_run(
+            name=step,
+            run_type="chain",
+            inputs={"message": message, "user_id": user_id},
+            parent_run_id=root_run_id,
+            tags=["agent", step],
+        )
         if step == "EducatorAgent":
             context["educator"] = educator_run(message)
 
@@ -119,6 +153,11 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
                 strategy_type = "value"
             
             context["strategy"] = strategy_run(message, strategy_type=strategy_type, user_id=user_id)
+
+        observability.end_langsmith_run(
+            run_id=run_step_id,
+            outputs={"context_keys": list(context.keys())}
+        )
 
     # 5. HARD GUARD: For ASK_CONCEPT, RAG MUST exist
     if intent == "ASK_CONCEPT":
@@ -169,6 +208,13 @@ Provide a clear, beginner-friendly response synthesizing all available informati
 """
 
     # Try LLM synthesis; on failure produce a grounded fallback summary from agent outputs
+    run_synth_id = observability.start_langsmith_run(
+        name="FinalResponseComposer",
+        run_type="chain",
+        inputs={"message": message, "context_keys": list(context.keys())},
+        parent_run_id=root_run_id,
+        tags=["composer"],
+    )
     try:
         draft_response = call_llm(
             system_prompt="You explain finance concepts clearly and safely using only provided information.",
@@ -192,6 +238,11 @@ Provide a clear, beginner-friendly response synthesizing all available informati
             draft_response = "\n\n".join(parts)
         else:
             draft_response = "I don't have enough information to synthesize an answer right now."
+    finally:
+        observability.end_langsmith_run(
+            run_id=run_synth_id,
+            outputs={"draft_length": len(draft_response) if isinstance(draft_response, str) else 0}
+        )
 
     # 7. Compliance Agent (always last)
     final_response = compliance_run(draft_response, risk)

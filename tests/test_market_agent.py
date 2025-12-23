@@ -60,3 +60,11 @@ def test_run_message_no_ticker():
     with patch("app.agents.market.extract_ticker", return_value=None):
         out = market_agent.run("Tell me about markets")
         assert "couldn't identify a stock ticker" in out.lower()
+
+
+def test_run_quote_unavailable_error_message():
+    with patch.object(market_agent, "_client") as mock_client, \
+         patch("app.agents.market.extract_ticker", return_value="AAPL"):
+        mock_client.get_quote.return_value = _mock_quote(price=None, error="API Error")
+        out = market_agent.run("What's Apple doing?")
+        assert "Market data unavailable for AAPL" in out

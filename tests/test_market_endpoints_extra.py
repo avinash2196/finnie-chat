@@ -123,3 +123,13 @@ def test_screeners_endpoint_all_types():
     )
     assert r.status_code == 200
     assert "error" in r.json()
+
+
+@patch('app.main.run_growth_screener', side_effect=Exception('boom'))
+def test_market_screen_exception(mock_growth):
+    client = TestClient(app)
+    resp = client.post('/market/screen', json={'screener_type': 'growth', 'params': {}})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert 'error' in data
+    assert data.get('results') == []
