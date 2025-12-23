@@ -158,10 +158,14 @@ See [docs/architecture/OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) for
 ## Quick Start
 
 ### Get the code
+View the repository on GitHub: https://github.com/avinash2196/finnie-chat
+
 ```powershell
 git clone https://github.com/avinash2196/finnie-chat.git
 cd finnie-chat
 ```
+
+Repository docs: https://github.com/avinash2196/finnie-chat/tree/main/docs
 
 ### Setup
 ```powershell
