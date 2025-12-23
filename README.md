@@ -70,6 +70,22 @@ Database Layer (SQLAlchemy)
             ├─ Mock Provider (development)
             ├─ Robinhood Provider (external API)
             └─ Fidelity Provider (external API)
+
+    ### Updated Architecture Diagram
+
+    An updated diagram reflecting recent changes (MCP batching, aggregation cache, optional Redis, observability hooks, and Streamlit frontend) is available at:
+
+    - [Architecture Diagram](docs/architecture/architecture_diagram.svg)
+
+    ### Developer Notes
+
+    - **Aggregation cache**: The in-memory short-TTL aggregation cache `_quote_agg_cache` is used to reduce repeated quote fetches. Enable Redis fallback by setting `REDIS_URL` in `.env` to use a shared cache in production.
+    - **MCP batching & parallelism**: Market MCP now batches ticker requests and runs per-ticker fetches in parallel workers to reduce latency and external calls.
+    - **Observability**: LangSmith and Arize integrations are safe no-ops when API keys are not present; tracing and timing middleware were added to `app/main.py`. Use `OBSERVABILITY` env vars to configure providers.
+    - **Profiling artifacts**: A `coverage.xml` and profiling artifacts (py-spy flamegraphs) are generated during CI runs and saved in the project root when enabled.
+    - **Manual/Full test runs**: To run the full matrix (including manual tests) set `RUN_MANUAL_TESTS=1` in your environment before running pytest.
+
+    If you'd like additional diagram formats (PNG, PDF) or a sequence/data-flow diagram, tell me which and I'll add them.
 ```
 
 ## Database Integration ✅
@@ -399,6 +415,19 @@ max_messages_per_conversation=100
 
 # Persistence directory (optional file-based storage)
 persist_dir="chroma/conversations"
+
+## Performance Benchmarks (recent)
+
+After recent backend improvements (short-TTL caching, batching + threadpooling of yfinance calls, aggregation cache and optional Redis), we ran integration benchmarks against the running `uvicorn` service. HTTP end-to-end results:
+
+- Small (3 tickers): p50 = 15 ms, p95 = 31 ms, avg = 37 ms
+- Medium (6 tickers): p50 = 15 ms, p95 = 32 ms, avg = 53 ms
+- Large (20 tickers): p50 = 15 ms, p95 = 31 ms, avg = 65 ms
+
+These numbers are from live HTTP benchmarks executed with `tools/benchmark_market_quote_http.py`. They represent a major improvement over the earlier sequential-yfinance behavior (previously ~1.8s for a 3-ticker request). See `PERFORMANCE_ROADMAP.md` for the full performance plan and progress updates.
+
+Benchmark runner: `tools/benchmark_market_quote_http.py` — outputs `benchmark_market_quote_http_results.json`.
+
 ```
 
 #### API Reference

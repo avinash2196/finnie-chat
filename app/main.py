@@ -3,7 +3,7 @@ from app.env import load_env_once
 # Ensure .env is loaded before other imports need the keys
 load_env_once()
 
-from fastapi import FastAPI, Depends, Body
+from fastapi import FastAPI, Depends, Body, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from sqlalchemy import or_
 from app.guardrails import input_guardrails, output_guardrails
 from app.agents.orchestrator import handle_message
 from app.agents.market import get_market_data
+from app.mcp.market import get_client
 from app.agents.strategy import run_dividend_screener, run_growth_screener, run_value_screener
 from app.llm import get_gateway_metrics
 from app.memory import get_memory
@@ -18,9 +19,17 @@ from app.rag.verification import query_rag_with_scores, categorize_answer_source
 from app.database import get_db, User, Holding, Transaction, PortfolioSnapshot, init_db, engine
 from app.sync_tasks import SyncTaskRunner
 from app.observability import observability, track_agent_execution
+import os
+import json
+try:
+    import redis
+except Exception:
+    redis = None
 import uuid
 from datetime import datetime
 import logging
+import time
+import functools
 
 # Initialize database
 init_db()
@@ -40,6 +49,70 @@ observability.instrument_sqlalchemy(engine)
 logger = logging.getLogger(__name__)
 logger.info("🚀 Finnie Chat starting with observability enabled")
 logger.info(f"Observability status: {observability.get_status()}")
+
+
+# Lightweight HTTP timing middleware: records request durations, logs, and reports minimal metrics
+@app.middleware("http")
+async def http_timing_middleware(request: Request, call_next):
+    start = time.time()
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        duration_ms = (time.time() - start) * 1000
+        try:
+            logger.info(f"{request.method} {request.url.path} completed_in={duration_ms:.2f}ms status={getattr(response, 'status_code', 'unknown')}")
+        except Exception:
+            logger.info(f"{request.method} {request.url.path} completed_in={duration_ms:.2f}ms")
+        # Attach a simple header so clients/ops can see processing time
+        try:
+            if 'response' in locals() and hasattr(response, 'headers'):
+                response.headers['X-Process-Time-ms'] = str(int(duration_ms))
+        except Exception:
+            pass
+
+        # Report to observability if available
+        try:
+            observability.track_metric("http_request_duration_ms", duration_ms, {
+                "path": request.url.path,
+                "method": request.method,
+                "status": getattr(response, 'status_code', None)
+            })
+        except Exception:
+            pass
+
+
+# Short-lived aggregation cache for /market/quote responses: map sorted-tuple(symbols)->{ts, resp}
+_quote_agg_cache = {}
+_quote_agg_ttl_seconds = 5
+_redis_client = None
+_redis_url = os.getenv("REDIS_URL")
+if redis and _redis_url:
+    try:
+        _redis_client = redis.Redis.from_url(_redis_url)
+        _redis_client.ping()
+        logger.info("Redis aggregation cache enabled")
+    except Exception:
+        _redis_client = None
+        logger.info("Redis not available; falling back to in-memory cache")
+
+
+# Helper decorator to time external/blocking calls and report metrics via observability
+def timed_external_call(name: str):
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            try:
+                return fn(*args, **kwargs)
+            finally:
+                duration_ms = (time.time() - start) * 1000
+                try:
+                    observability.track_metric("external_call_duration_ms", duration_ms, {"call": name})
+                except Exception:
+                    pass
+        return wrapper
+    return decorator
 
 class ChatRequest(BaseModel):
     message: str
@@ -734,18 +807,53 @@ class ScreenerRequest(BaseModel):
 def get_market_quote(req: MarketQuoteRequest):
     """Get real-time quotes for multiple symbols"""
     try:
+        # Aggregation cache key (sorted symbols tuple)
+        key_tuple = tuple(sorted([s.upper() for s in req.symbols]))
+        redis_key = "market:quote:" + ",".join(key_tuple)
+
+        # Try Redis first (production), then fallback to in-memory
+        if _redis_client:
+            try:
+                val = _redis_client.get(redis_key)
+                if val:
+                    return json.loads(val)
+            except Exception:
+                pass
+
+        cached = _quote_agg_cache.get(key_tuple)
+        if cached and (time.time() - cached.get("ts", 0) < _quote_agg_ttl_seconds):
+            return cached["resp"]
+
+        client = get_client()
+        raw = client.get_quotes(req.symbols)
         quotes = {}
-        for symbol in req.symbols:
-            data = get_market_data(symbol)
-            if data:
-                quotes[symbol] = {
-                    "price": data.get("price"),
-                    "change": data.get("change"),
-                    "change_pct": data.get("change_pct"),
-                    "volume": data.get("volume"),
-                    "market_cap": data.get("market_cap")
+        for sym in req.symbols:
+            k = sym.upper()
+            q = raw.get(k)
+            if q:
+                quotes[k] = {
+                    "price": q.price,
+                    "change": None,
+                    "change_pct": q.change_pct,
+                    "volume": None,
+                    "market_cap": None
                 }
-        return {"quotes": quotes, "count": len(quotes)}
+
+        resp = {"quotes": quotes, "count": len(quotes)}
+        # store aggregated response in short TTL cache (Redis preferred)
+        try:
+            if _redis_client:
+                try:
+                    _redis_client.setex(redis_key, _quote_agg_ttl_seconds, json.dumps(resp))
+                except Exception:
+                    # fall back to in-memory
+                    _quote_agg_cache[key_tuple] = {"ts": time.time(), "resp": resp}
+            else:
+                _quote_agg_cache[key_tuple] = {"ts": time.time(), "resp": resp}
+        except Exception:
+            pass
+
+        return resp
     except Exception as e:
         return {"error": str(e), "quotes": {}}
 

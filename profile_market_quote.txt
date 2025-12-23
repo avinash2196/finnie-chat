@@ -1,0 +1,60 @@
+Total run time: 3.584s
+
+         6822 function calls (6610 primitive calls) in 3.582 seconds
+
+   Ordered by: cumulative time
+   List reduced from 342 to 50 due to restriction <50>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    3.582    3.582 profile_market_quote.py:19(run_requests)
+        5    0.000    0.000    2.572    0.514 testclient.py:530(post)
+        5    0.000    0.000    2.571    0.514 _client.py:1123(post)
+        5    0.000    0.000    2.571    0.514 testclient.py:421(request)
+        5    0.000    0.000    2.566    0.513 _client.py:771(request)
+        5    0.000    0.000    2.563    0.513 _client.py:879(send)
+        5    0.000    0.000    2.561    0.512 _client.py:930(_send_handling_auth)
+        5    0.000    0.000    2.561    0.512 _client.py:964(_send_handling_redirects)
+        5    0.000    0.000    2.561    0.512 _client.py:1001(_send_single_request)
+        5    0.001    0.000    2.556    0.511 testclient.py:217(handle_request)
+       77    2.547    0.033    2.547    0.033 {method 'acquire' of '_thread.lock' objects}
+       31    0.000    0.000    2.544    0.082 threading.py:295(wait)
+       35    0.001    0.000    2.538    0.073 _base.py:428(result)
+       15    0.000    0.000    2.529    0.169 from_thread.py:311(call)
+        5    1.004    0.201    1.004    0.201 {built-in method time.sleep}
+    72/57    0.000    0.000    0.032    0.001 {built-in method builtins.next}
+       10    0.000    0.000    0.032    0.003 testclient.py:413(_portal_factory)
+       10    0.000    0.000    0.031    0.003 from_thread.py:491(start_blocking_portal)
+    30/25    0.000    0.000    0.021    0.001 contextlib.py:132(__enter__)
+       15    0.000    0.000    0.013    0.001 from_thread.py:344(start_task_soon)
+       15    0.000    0.000    0.012    0.001 _asyncio.py:1026(_spawn_task_from_thread)
+       15    0.000    0.000    0.012    0.001 _asyncio.py:2574(run_sync_from_thread)
+    30/25    0.000    0.000    0.010    0.000 contextlib.py:141(__exit__)
+        5    0.000    0.000    0.008    0.002 threading.py:945(start)
+        5    0.000    0.000    0.007    0.001 threading.py:611(wait)
+       10    0.006    0.001    0.006    0.001 {built-in method builtins.print}
+       10    0.000    0.000    0.005    0.001 _client.py:391(_merge_url)
+       20    0.000    0.000    0.005    0.000 _urls.py:77(__init__)
+       10    0.001    0.000    0.005    0.000 _urlparse.py:213(urlparse)
+        5    0.000    0.000    0.004    0.001 threading.py:1087(join)
+        5    0.000    0.000    0.004    0.001 threading.py:1125(_wait_for_tstate_lock)
+        5    0.000    0.000    0.004    0.001 _models.py:1101(extract_cookies)
+        5    0.000    0.000    0.003    0.001 _models.py:1249(__init__)
+        5    0.000    0.000    0.003    0.001 _client.py:340(build_request)
+        5    0.000    0.000    0.002    0.000 request.py:319(__init__)
+        5    0.000    0.000    0.002    0.000 _models.py:383(__init__)
+       27    0.000    0.000    0.002    0.000 __init__.py:272(_compile)
+        5    0.000    0.000    0.002    0.000 request.py:343(full_url)
+       25    0.000    0.000    0.002    0.000 {built-in method builtins.any}
+        5    0.000    0.000    0.002    0.000 request.py:374(_parse)
+        5    0.000    0.000    0.002    0.000 _urls.py:327(copy_with)
+        2    0.000    0.000    0.002    0.001 __init__.py:225(compile)
+       15    0.000    0.000    0.001    0.000 _urlparse.py:186(copy_with)
+       75    0.001    0.000    0.001    0.000 _urlparse.py:223(<genexpr>)
+        2    0.000    0.000    0.001    0.001 _compiler.py:740(compile)
+       15    0.000    0.000    0.001    0.000 base_events.py:805(call_soon_threadsafe)
+       10    0.000    0.000    0.001    0.000 {method 'join' of 'bytes' objects}
+        5    0.000    0.000    0.001    0.000 _models.py:876(read)
+        5    0.000    0.000    0.001    0.000 _models.py:441(_prepare)
+       10    0.000    0.000    0.001    0.000 _models.py:884(iter_bytes)
+
+
