@@ -8,6 +8,22 @@ Finnie-Chat is a sophisticated financial AI system with an Orchestrator plus 6 s
 
 ---
 
+## Presentation-Ready Diagram
+
+An up-to-date, presentation-ready architecture diagram is available here:
+
+- [Architecture Diagram (SVG)](architecture/architecture_diagram.svg)
+
+This diagram highlights the recent production-ready improvements:
+
+- MCP batching and per-ticker parallelism for lower latency
+- Short-TTL aggregation cache (`_quote_agg_cache`) with optional Redis fallback (`REDIS_URL`)
+- FastAPI timing middleware and observability instrumentation (LangSmith + Arize safe no-op)
+- Streamlit frontend calling the backend endpoints (Chat, Market, Portfolio)
+
+See the "Developer Notes" section below for quick pointers on running tests and generating profiling artifacts.
+
+
 ## Complete Request Flow (Portfolio Data Integration)
 
 ```

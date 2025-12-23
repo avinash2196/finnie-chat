@@ -8,6 +8,7 @@ Organized documentation for the Finnie Chat financial AI assistant.
 System design and technical architecture documents.
 
 - **ARCHITECTURE.md** — Complete system architecture, data flow, and components
+	- **Presentation Diagram:** [architecture/architecture_diagram.svg](architecture/architecture_diagram.svg) — use for slides and design reviews
 - **DATABASE_GUIDE.md** — Database schema, models, and integration guide
 - **GATEWAY.md** — Multi-provider LLM gateway architecture and failover logic
 
@@ -67,6 +68,7 @@ Executive summaries and completion reports.
 **Need to:**
 - **Get started?** → [implementation/QUICK_START.md](implementation/QUICK_START.md)
 - **Understand the system?** → [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)
+	- **Diagram (presentation-ready):** [architecture/architecture_diagram.svg](architecture/architecture_diagram.svg)
 - **Check database setup?** → [architecture/DATABASE_GUIDE.md](architecture/DATABASE_GUIDE.md)
 - **See what changed?** → [UPDATES.md](UPDATES.md)
 - **Review tests?** → [testing/TEST_COVERAGE.md](testing/TEST_COVERAGE.md)
@@ -85,6 +87,8 @@ Executive summaries and completion reports.
 
 ### **Developers**
 - [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)
+
+**Notes:** The architecture diagram and the `ARCHITECTURE.md` file are curated for presentation; if you want PNG or PDF exports of the SVG diagram, I can add them.
 - [implementation/IMPLEMENTATION_GUIDE.md](implementation/IMPLEMENTATION_GUIDE.md)
 - [architecture/DATABASE_GUIDE.md](architecture/DATABASE_GUIDE.md)
 

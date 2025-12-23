@@ -4,6 +4,8 @@
 
 Finnie Chat includes comprehensive observability with **Arize AI** and **LangSmith** for production monitoring, debugging, and LLM tracing.
 
+**Dec 2025 update:** tracing and timing middleware were added to `app/main.py`, and observability integrations are implemented as safe no-ops when API keys are missing. For a visual overview, see [architecture/architecture_diagram.svg](architecture/architecture_diagram.svg).
+
 ## Features
 
 ### ✅ What's Tracked
@@ -352,6 +354,12 @@ Response (Custom metrics)
 
 - [LangSmith Documentation](https://docs.smith.langchain.com/)
 - [Arize Docs](https://docs.arize.com/)
+
+## Developer Notes
+
+- **Local dev:** Observability is optional and will not fail when keys are missing. Use the `GET /observability/status` endpoint to verify configuration.
+- **Profiling artifacts:** CI and local profiling runs can produce `coverage.xml` and py-spy flamegraphs; store them in the project root for review.
+- **Quick check:** After starting the app, run `curl http://localhost:8000/observability/status` to confirm LangSmith/Arize availability.
 
 ---
 

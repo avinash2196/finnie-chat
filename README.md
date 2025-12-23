@@ -70,6 +70,22 @@ Database Layer (SQLAlchemy)
             ├─ Mock Provider (development)
             ├─ Robinhood Provider (external API)
             └─ Fidelity Provider (external API)
+
+    ### Updated Architecture Diagram
+
+    An updated diagram reflecting recent changes (MCP batching, aggregation cache, optional Redis, observability hooks, and Streamlit frontend) is available at:
+
+    - [Architecture Diagram](docs/architecture/architecture_diagram.svg)
+
+    ### Developer Notes
+
+    - **Aggregation cache**: The in-memory short-TTL aggregation cache `_quote_agg_cache` is used to reduce repeated quote fetches. Enable Redis fallback by setting `REDIS_URL` in `.env` to use a shared cache in production.
+    - **MCP batching & parallelism**: Market MCP now batches ticker requests and runs per-ticker fetches in parallel workers to reduce latency and external calls.
+    - **Observability**: LangSmith and Arize integrations are safe no-ops when API keys are not present; tracing and timing middleware were added to `app/main.py`. Use `OBSERVABILITY` env vars to configure providers.
+    - **Profiling artifacts**: A `coverage.xml` and profiling artifacts (py-spy flamegraphs) are generated during CI runs and saved in the project root when enabled.
+    - **Manual/Full test runs**: To run the full matrix (including manual tests) set `RUN_MANUAL_TESTS=1` in your environment before running pytest.
+
+    If you'd like additional diagram formats (PNG, PDF) or a sequence/data-flow diagram, tell me which and I'll add them.
 ```
 
 ## Database Integration ✅
