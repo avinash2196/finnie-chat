@@ -29,7 +29,17 @@ with st.sidebar:
     )
     
     st.markdown("---")
-    st.caption("💡 Powered by Market Agent & Strategy Agent")
+    st.caption("💡 Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
+    with st.expander("ℹ️ Agents"):
+        st.markdown("""
+        - 🧭 **Orchestrator** — routes requests and composes answers
+        - 🏦 **Market** — quotes, movers, sectors
+        - 🧮 **Strategy** — screeners and ideas
+        - 🎯 **Portfolio Coach** — improvement suggestions
+        - 🔎 **Risk Profiler** — risk from holdings
+        - 🎓 **Educator** — RAG-backed explanations
+        - ✅ **Compliance** — safe outputs & disclaimers
+        """)
 
 # Helper functions
 def fetch_market_data(symbols):

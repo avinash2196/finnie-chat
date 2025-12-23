@@ -123,6 +123,23 @@ with st.sidebar:
             else:
                 st.error(f"❌ {result}")
 
+    st.markdown("---")
+    st.caption("💡 Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
+    with st.expander("ℹ️ Agents & Docs"):
+        st.markdown("""
+        - 🧭 **Orchestrator** — routes requests and composes answers
+        - 🏦 **Market** — quotes, movers, sectors
+        - 🧮 **Strategy** — screeners and ideas
+        - 🎯 **Portfolio Coach** — improvement suggestions
+        - 🔎 **Risk Profiler** — risk from holdings
+        - 🎓 **Educator** — RAG-backed explanations
+        - ✅ **Compliance** — safe outputs & disclaimers
+        
+        **Useful Links:**
+        - [API Docs (FastAPI)](http://localhost:8000/docs)
+        - [Streamlit App (Home)](http://localhost:8501)
+        """)
+
 # Fetch portfolio data
 portfolio_data, error = fetch_portfolio_data(user_id)
 
@@ -470,3 +487,4 @@ if portfolio_data:
     if last_sync:
         st.caption(f"Last synced: {last_sync}")
     st.caption("Portfolio Tab | Connected to Database ✅")
+    st.caption("💡 Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")

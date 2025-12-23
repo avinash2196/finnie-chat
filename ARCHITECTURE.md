@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Finnie-Chat is a sophisticated financial AI system with 6 specialized agents that process user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, portfolio analysis, market data, and safety guardrails.
+Finnie-Chat is a sophisticated financial AI system with an Orchestrator plus 6 specialized agents that process user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, portfolio analysis, market data, and safety guardrails.
 
 ---
 
@@ -164,6 +164,16 @@ User Query
 ---
 
 ## Agent Details
+
+### Orchestrator
+**Purpose:** Route requests to appropriate agents based on intent and context
+
+**Module:** `app/agents/orchestrator.py`
+
+**Responsibilities:**
+- Intent-aware agent selection
+- Aggregating multi-agent outputs
+- Fallback logic and graceful degradation
 
 ### 1. Educator Agent
 **Purpose:** Explain financial concepts using trusted knowledge base

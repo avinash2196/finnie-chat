@@ -51,6 +51,7 @@ Features:
 - ✅ **Stock Screeners** - Dividend, Growth, Value, Momentum, High Volume
 - ✅ **Strategy Ideas** - Income, Growth, Value strategies by risk level
 - ✅ **Sector Analysis** - Sector performance, leaders, trends
+ - ✅ **Agent Caption** - Sidebar now lists all agents (Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator, Compliance)
 
 #### 2.2 API Endpoints Added
 - ✅ `/market/quote` - Real-time quotes for multiple symbols
@@ -95,6 +96,7 @@ import numpy as np
 - Complete new page: ~450 lines of code
 - 4 views: Overview, Screeners, Strategy Ideas, Sector Analysis
 - Interactive visualizations with Plotly
+ - Updated caption: Powered by full agent set
 
 ---
 

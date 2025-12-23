@@ -13,7 +13,18 @@ You should see: `Database initialized successfully!`
 
 ## Running the Application
 
-The Finnie Chat system consists of two parts that need to run simultaneously:
+You can use the startup script (recommended) or run backend and frontend separately.
+
+### Option A: Start Both (Recommended)
+
+```powershell
+cd C:\Users\avina\Codes\finnie-chat
+start.bat
+```
+
+This opens two terminals:
+- Backend (FastAPI) on http://localhost:8000
+- Frontend (Streamlit) on http://localhost:8501
 
 ### Part 1: Backend (FastAPI Server)
 
@@ -32,7 +43,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 ✅ **Backend is ready** when you see these messages.
 
-### Part 2: Frontend (Streamlit Web App)
+### Option B: Frontend (Streamlit Web App)
 
 Open **Terminal 2** and run:
 
@@ -69,12 +80,17 @@ Once both are running, open your browser and go to:
 - "Explain P/E ratio"
 
 ### 📊 Portfolio Tab
-- Coming in Phase 3 (Weeks 6-8)
-- Currently shows placeholder with roadmap
+- Holdings table with metrics and details
+- Asset allocation pie chart and concentration summary
+- Transaction history with summary (10-year default window)
+- Performance & analytics (Sharpe, volatility, 30-day chart)
+- Manage tab (add holdings, update prices)
 
-### 📈 Market Tab
-- Coming in Phase 4 (Weeks 9-10)
-- Currently shows sample market data and screeners
+### 📈 Market Trends
+- Market overview (indices, gainers/losers, sector heatmap)
+- Stock screeners (dividend, growth, value, momentum, high volume)
+- Strategy ideas by risk level
+- Sector analysis leaders and trends
 
 ## Troubleshooting
 
@@ -106,23 +122,20 @@ To stop either service:
 ## System Status
 
 ### ✅ What's Complete
-- Backend: 6 agents + gateway + 218 tests ✅
-- Database: SQLAlchemy models + sync system ✅ 🆕
-- Portfolio: Mock/Robinhood/Fidelity providers ✅ 🆕
-- Background Sync: Hourly auto-sync ✅ 🆕
-- REST API: 10+ endpoints for portfolio ops ✅ 🆕
-- Frontend: Chat tab fully functional ✅
-- Integration: Chat → Backend communication ✅
+- Backend: Orchestrator + 6 agents, gateway, tests ✅
+- Database: SQLAlchemy models + sync system ✅
+- Providers: Mock/Robinhood/Fidelity ✅
+- Background Sync: Hourly auto-sync ✅
+- REST API: 18+ endpoints (portfolio, analytics, market, strategy) ✅
+- Frontend: Chat, Portfolio, Market Trends ✅
 
 ### ⚠️ What's In Progress
-- Portfolio UI: Backend ready, frontend pending
-- Market Tab: Sample data displayed
-- Placeholder tabs: Portfolio & Market ready for Phase 3 & 4 ✅
+- Polishing UI and documentation
+- Optional authentication and deployment
 
-### 📅 What's Next (Phase 3 - Weeks 6-8)
-- PostgreSQL database setup
-- Portfolio management system
-- Enhanced portfolio analysis
-- Portfolio tracking UI
+### 📅 What's Next
+- PostgreSQL database (optional)
+- Docker + deployment
+- Monitoring and auth
 
 **See ROADMAP.md for full development plan**

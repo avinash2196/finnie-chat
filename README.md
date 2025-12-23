@@ -1,6 +1,6 @@
 ﻿# finnie-chat
 
-Local FastAPI-based financial AI assistant with 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, and comprehensive portfolio analytics.
+Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, and comprehensive portfolio analytics.
 
 ## Overview
 
@@ -34,13 +34,6 @@ User Request
         ├─ [Educator Agent] ◄─ RAG Engine + Verification
         ├─ [Market Agent] ◄─ Market MCP Server (yFinance)
         ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server
-        ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server
-        ├─ [Strategy Agent] ◄─ Portfolio MCP Server
-        └─ [Compliance Agent] ◄─ Safety Rules
-        │
-        └─ AI Gateway (Multi-provider LLM routing)
-            ├─ OpenAI (primary)
-            ├─ Gemini (fallback)
             └─ Anthropic (fallback)
             │
             └─ Response + Memory (store in conversation history)
@@ -50,9 +43,6 @@ Database Layer (SQLAlchemy)
     ├─ User Management
     ├─ Portfolio Holdings
     ├─ Transaction History
-    ├─ Portfolio Snapshots
-    └─ Sync Logs
-        │
         └─ Provider Pattern (Multi-source sync)
             ├─ Mock Provider (development)
             ├─ Robinhood Provider (external API)
@@ -68,10 +58,6 @@ Database Layer (SQLAlchemy)
 - **5 Database Models**: User, Holding, Transaction, PortfolioSnapshot, SyncLog
 - **Provider Pattern**: Easily switch between Mock, Robinhood, Fidelity data sources
 - **Background Sync**: Automatic hourly portfolio synchronization
-- **Transaction History**: Complete audit trail of all BUY/SELL/DIVIDEND activities
-- **Portfolio Snapshots**: Historical performance tracking and analytics
-- **REST API**: 10+ endpoints for complete portfolio CRUD operations
-
 ### Quick Database Start
 ```powershell
 # Initialize database
@@ -86,10 +72,6 @@ curl -X POST http://localhost:8000/users/{user_id}/sync -d '{"provider":"mock"}'
 
 See [DATABASE_GUIDE.md](DATABASE_GUIDE.md) for complete documentation.
 
-
-## Quick Start (PowerShell)
-
-### Setup
 
 ```powershell
 # Create and activate virtual environment
@@ -107,10 +89,6 @@ echo "GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini
 
 ### Run Server
 
-```powershell
-# Start FastAPI server with hot-reload
-.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
-
 # Server runs on http://127.0.0.1:8000
 # Interactive API docs: http://127.0.0.1:8000/docs
 # ReDoc: http://127.0.0.1:8000/redoc
@@ -125,10 +103,6 @@ echo "GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini
 # Quick run (quiet mode)
 .\venv\Scripts\python.exe -m pytest tests -q
 
-# Run specific test suites
-.\venv\Scripts\python.exe -m pytest tests/test_memory.py -v              # Memory (13 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_market.py -v              # Market MCP (8 tests)
-.\venv\Scripts\python.exe -m pytest tests/test_gateway.py -v             # Gateway (15 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_risk_profiler.py -v       # Risk Profiler Agent (11 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_portfolio_coach.py -v     # Portfolio Coach Agent (23 tests)
 .\venv\Scripts\python.exe -m pytest tests/test_strategy.py -v            # Strategy Agent (20 tests)
@@ -142,10 +116,6 @@ echo "GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1/models/gemini
 
 .\venv\Scripts\python.exe -m pytest tests/test_strategy.py::TestStrategyAgent::test_agent_dividend_strategy tests/test_strategy.py::TestStrategyAgent::test_agent_growth_strategy -v
 
-# Total: 183 tests across all modules
-```
-
-#### Sample Test Output
 
 **Full Suite:**
 ```
@@ -156,10 +126,6 @@ tests/compliance_test.py::test_no_disclaimer_for_low_risk PASSED                
 tests/test_gateway.py::test_gateway_loads_openai_from_env PASSED                              [  8%]
 tests/test_risk_profiler.py::TestRiskProfilerAgent::test_run_with_holdings PASSED             [ 86%]
 tests/test_portfolio_coach.py::TestPortfolioCoachAgent::test_agent_with_holdings PASSED       [ 55%]
-tests/test_strategy.py::TestStrategyAgent::test_agent_dividend_strategy PASSED                [ 95%]
-...
-
-======================================= 183 passed in 44.27s =======================================
 ```
 
 **Agent-Specific Tests:**
@@ -185,7 +151,17 @@ tests/test_strategy.py::TestStrategyAgent::test_agent_growth_strategy PASSED    
 
 ## Agents
 
-The system includes 6 specialized agents for different financial tasks:
+Agent overview (Orchestrator + 6 specialized agents):
+
+- **Orchestrator**: Intent routing and agent selection
+- **Market Agent**: Real-time quotes and market intel
+- **Strategy Agent**: Screeners and investment ideas
+- **Portfolio Coach Agent**: Portfolio improvement suggestions
+- **Risk Profiler Agent**: Risk assessment from holdings
+- **Educator Agent**: Concept explanations via RAG
+- **Compliance Agent**: Disclaimers and safe output
+
+The system includes 6 specialized agents (plus Orchestrator) for different financial tasks:
 
 ### 1. Educator Agent
 **Purpose:** Explain financial concepts using trusted knowledge base
