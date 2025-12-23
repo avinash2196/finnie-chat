@@ -8,8 +8,8 @@ from datetime import datetime
 
 # Page configuration
 st.set_page_config(
-    page_title="Finnie Chat - Financial AI Assistant",
-    page_icon="💰",
+    page_title="💬 Finnie Chat",
+    page_icon="💬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -25,7 +25,7 @@ if "user_id" not in st.session_state:
 
 # Sidebar
 with st.sidebar:
-    st.title("💰 Finnie Chat")
+    st.title("💬 Finnie Chat")
     st.markdown("---")
     
     # User settings

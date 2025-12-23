@@ -1,6 +1,6 @@
 ﻿# finnie-chat
 
-Local FastAPI-based financial AI assistant with 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, and multi-provider AI Gateway.
+Local FastAPI-based financial AI assistant with 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, and comprehensive portfolio analytics.
 
 ## Overview
 
@@ -9,12 +9,16 @@ finnie-chat is a sophisticated financial AI system that combines:
 - **Agentic Orchestration** with intelligent routing and context awareness
 - **Database Integration** with SQLAlchemy (SQLite/PostgreSQL) for portfolio persistence
 - **Multi-Provider Portfolio Sync** (Mock, Robinhood, Fidelity) with background scheduler
+- **Portfolio Analytics** with Sharpe ratio, volatility, and diversification metrics
+- **Performance Tracking** with historical snapshots and trend analysis
+- **Market Trends & Analysis** with stock screeners and strategy ideas
 - **Conversation Memory** with persistent storage (JSON)
 - **Multi-provider LLM Gateway** (OpenAI primary, Gemini/Anthropic fallback) with caching
 - **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed)
 - **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval with verification
 - **Guardrails** for input validation and compliance filtering
-- **REST API** with 10+ endpoints for portfolio management
+- **REST API** with 18+ endpoints for portfolio and market operations
+- **Streamlit Frontend** with multi-tab UI (Chat, Portfolio, Market Trends)
 
 ## Architecture
 

@@ -9,6 +9,8 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from app.guardrails import input_guardrails, output_guardrails
 from app.agents.orchestrator import handle_message
+from app.agents.market import get_market_data
+from app.agents.strategy import run_dividend_screener, run_growth_screener, run_value_screener
 from app.llm import get_gateway_metrics
 from app.memory import get_memory
 from app.rag.verification import query_rag_with_scores, categorize_answer_source, format_answer_with_sources
@@ -141,43 +143,58 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
         return {"error": "User not found", "status": "error"}
     
     purchase_date = datetime.fromisoformat(holding.purchase_date) if holding.purchase_date else datetime.utcnow()
-    
-    new_holding = Holding(
-        user_id=user_id,
-        ticker=holding.ticker.upper(),
-        quantity=holding.quantity,
-        purchase_price=holding.purchase_price,
-        current_price=holding.purchase_price,
-        total_value=holding.quantity * holding.purchase_price,
-        gain_loss=0.0,
-        purchase_date=purchase_date
-    )
+    ticker = holding.ticker.upper()
+
+    # If holding exists, merge quantities using weighted average cost
+    existing = db.query(Holding).filter(Holding.user_id == user_id, Holding.ticker == ticker).first()
+    if existing:
+        old_qty = existing.quantity
+        new_qty = old_qty + holding.quantity
+        # Weighted average purchase price
+        existing.purchase_price = ((old_qty * existing.purchase_price) + (holding.quantity * holding.purchase_price)) / new_qty
+        existing.quantity = new_qty
+        existing.current_price = existing.current_price or holding.purchase_price
+        existing.total_value = existing.quantity * existing.current_price
+        existing.gain_loss = (existing.current_price - existing.purchase_price) * existing.quantity
+        existing.updated_at = datetime.utcnow()
+        holding_record = existing
+    else:
+        holding_record = Holding(
+            user_id=user_id,
+            ticker=ticker,
+            quantity=holding.quantity,
+            purchase_price=holding.purchase_price,
+            current_price=holding.purchase_price,
+            total_value=holding.quantity * holding.purchase_price,
+            gain_loss=0.0,
+            purchase_date=purchase_date
+        )
+        db.add(holding_record)
     
     # Add transaction record
     txn = Transaction(
         user_id=user_id,
-        ticker=holding.ticker.upper(),
+        ticker=ticker,
         transaction_type="BUY",
         quantity=holding.quantity,
         price=holding.purchase_price,
         total_amount=holding.quantity * holding.purchase_price,
         transaction_date=purchase_date
     )
-    
-    db.add(new_holding)
     db.add(txn)
     
     # Update user portfolio value
-    user.portfolio_value = sum(h.total_value for h in db.query(Holding).filter(Holding.user_id == user_id).all()) + (holding.quantity * holding.purchase_price)
+    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    user.portfolio_value = sum(h.total_value for h in holdings)
     user.updated_at = datetime.utcnow()
     
     db.commit()
-    db.refresh(new_holding)
+    db.refresh(holding_record)
     
     return {
         "status": "success",
-        "holding_id": new_holding.id,
-        "message": f"Added {holding.quantity} shares of {holding.ticker}"
+        "holding_id": holding_record.id,
+        "message": f"Added {holding.quantity} shares of {ticker} (total {holding_record.quantity})"
     }
 
 
@@ -222,7 +239,7 @@ def delete_holding(user_id: str, holding_id: str, db: Session = Depends(get_db))
 
 
 @app.get("/users/{user_id}/transactions")
-def list_transactions(user_id: str, days: int = 90, db: Session = Depends(get_db)):
+def list_transactions(user_id: str, days: int = 3650, db: Session = Depends(get_db)):
     """List transactions"""
     from datetime import timedelta
     
@@ -377,6 +394,100 @@ def metrics():
     return get_gateway_metrics()
 
 
+@app.post("/users/{user_id}/sync/prices")
+async def sync_prices(user_id: str, db: Session = Depends(get_db)):
+    """Quick price update for existing holdings"""
+    result = await SyncTaskRunner.sync_price_update(user_id)
+    return result
+
+
+@app.get("/users/{user_id}/analytics")
+def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
+    """Get portfolio analytics including Sharpe ratio, volatility, diversification"""
+    import numpy as np
+    
+    holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+    snapshots = db.query(PortfolioSnapshot).filter(
+        PortfolioSnapshot.user_id == user_id
+    ).order_by(PortfolioSnapshot.snapshot_date.desc()).limit(30).all()
+    
+    if not holdings:
+        return {"error": "No holdings found"}
+    
+    # Calculate basic metrics
+    total_value = sum(h.total_value for h in holdings)
+    total_cost = sum(h.purchase_price * h.quantity for h in holdings)
+    total_gain_loss = total_value - total_cost
+    
+    # Diversification (Herfindahl index)
+    if total_value > 0:
+        concentrations = [(h.total_value / total_value) ** 2 for h in holdings]
+        herfindahl = sum(concentrations)
+        diversification_score = (1 - herfindahl) * 100  # 0-100 scale
+    else:
+        diversification_score = 0
+    
+    # Volatility calculation from snapshots
+    if len(snapshots) >= 2:
+        returns = []
+        for i in range(len(snapshots) - 1):
+            if snapshots[i+1].total_value > 0:
+                daily_return = (snapshots[i].total_value - snapshots[i+1].total_value) / snapshots[i+1].total_value
+                returns.append(daily_return)
+        
+        if returns:
+            volatility = np.std(returns) * np.sqrt(252) * 100  # Annualized
+            avg_return = np.mean(returns) * 252 * 100  # Annualized
+            sharpe = (avg_return - 2.0) / volatility if volatility > 0 else 0  # Assume 2% risk-free rate
+        else:
+            volatility = 0
+            avg_return = 0
+            sharpe = 0
+    else:
+        volatility = 0
+        avg_return = 0
+        sharpe = 0
+    
+    return {
+        "total_value": round(total_value, 2),
+        "total_cost": round(total_cost, 2),
+        "total_return": round(total_gain_loss, 2),
+        "return_pct": round((total_gain_loss / total_cost * 100) if total_cost > 0 else 0, 2),
+        "diversification_score": round(diversification_score, 2),
+        "volatility": round(volatility, 2),
+        "sharpe_ratio": round(sharpe, 2),
+        "holdings_count": len(holdings),
+        "largest_position": max([h.total_value / total_value * 100 for h in holdings]) if total_value > 0 else 0
+    }
+
+
+@app.get("/users/{user_id}/performance")
+def get_performance_history(user_id: str, days: int = 30, db: Session = Depends(get_db)):
+    """Get portfolio performance history"""
+    from datetime import timedelta
+    
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    snapshots = db.query(PortfolioSnapshot).filter(
+        PortfolioSnapshot.user_id == user_id,
+        PortfolioSnapshot.snapshot_date >= cutoff
+    ).order_by(PortfolioSnapshot.snapshot_date.asc()).all()
+    
+    return {
+        "snapshots": [
+            {
+                "date": s.snapshot_date.isoformat(),
+                "value": s.total_value,
+                "cash": s.cash_balance,
+                "daily_return": s.daily_return,
+                "monthly_return": s.monthly_return,
+                "yearly_return": s.yearly_return
+            }
+            for s in snapshots
+        ],
+        "count": len(snapshots)
+    }
+
+
 @app.post("/verify-rag")
 def verify_rag(query: str):
     """
@@ -402,3 +513,118 @@ def verify_rag(query: str):
         "warning": verification["warning"],
         "recommendation": verification["recommendation"]
     }
+
+
+# ==================== MARKET & STRATEGY ENDPOINTS ====================
+
+class MarketQuoteRequest(BaseModel):
+    symbols: List[str]
+
+
+class ScreenerRequest(BaseModel):
+    screener_type: str
+    params: Optional[dict] = {}
+
+
+@app.post("/market/quote")
+def get_market_quote(req: MarketQuoteRequest):
+    """Get real-time quotes for multiple symbols"""
+    try:
+        quotes = {}
+        for symbol in req.symbols:
+            data = get_market_data(symbol)
+            if data:
+                quotes[symbol] = {
+                    "price": data.get("price"),
+                    "change": data.get("change"),
+                    "change_pct": data.get("change_pct"),
+                    "volume": data.get("volume"),
+                    "market_cap": data.get("market_cap")
+                }
+        return {"quotes": quotes, "count": len(quotes)}
+    except Exception as e:
+        return {"error": str(e), "quotes": {}}
+
+
+@app.post("/market/screen")
+def run_screener(req: ScreenerRequest, db: Session = Depends(get_db)):
+    """Run stock screener"""
+    try:
+        # Get user's holdings for context
+        user_id = req.params.get("user_id", "user_001")
+        holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
+        holdings_dict = {h.ticker: {"quantity": h.quantity, "purchase_price": h.purchase_price} for h in holdings}
+        
+        if req.screener_type.lower() == "dividend":
+            results = run_dividend_screener(holdings_dict)
+        elif req.screener_type.lower() == "growth":
+            results = run_growth_screener(holdings_dict)
+        elif req.screener_type.lower() == "value":
+            results = run_value_screener(holdings_dict)
+        else:
+            results = {"error": "Unknown screener type"}
+        
+        return results
+    except Exception as e:
+        return {"error": str(e), "results": []}
+
+
+@app.get("/strategy/ideas")
+def get_strategy_ideas(risk_level: str = "MEDIUM"):
+    """Get investment strategy ideas based on risk level"""
+    strategies = {
+        "LOW": [
+            {
+                "name": "Dividend Aristocrats",
+                "description": "Companies with 25+ years of consecutive dividend increases",
+                "tickers": ["JNJ", "PG", "KO", "MCD", "WMT"],
+                "allocation": "30-40%",
+                "risk": "LOW"
+            },
+            {
+                "name": "Investment Grade Bonds",
+                "description": "High-quality corporate and government bonds",
+                "tickers": ["AGG", "BND", "VCIT"],
+                "allocation": "40-50%",
+                "risk": "LOW"
+            }
+        ],
+        "MEDIUM": [
+            {
+                "name": "S&P 500 Index",
+                "description": "Broad market exposure through index funds",
+                "tickers": ["SPY", "VOO", "IVV"],
+                "allocation": "40-50%",
+                "risk": "MEDIUM"
+            },
+            {
+                "name": "Balanced Growth",
+                "description": "Mix of growth and value stocks",
+                "tickers": ["VUG", "VTV", "SCHD"],
+                "allocation": "30-40%",
+                "risk": "MEDIUM"
+            }
+        ],
+        "HIGH": [
+            {
+                "name": "AI & Technology",
+                "description": "High-growth tech and AI companies",
+                "tickers": ["NVDA", "MSFT", "GOOGL", "META"],
+                "allocation": "30-40%",
+                "risk": "HIGH"
+            },
+            {
+                "name": "Emerging Markets",
+                "description": "Growth opportunities in developing economies",
+                "tickers": ["VWO", "IEMG", "EEM"],
+                "allocation": "15-20%",
+                "risk": "HIGH"
+            }
+        ]
+    }
+    
+    return {
+        "risk_level": risk_level,
+        "strategies": strategies.get(risk_level, strategies["MEDIUM"])
+    }
+

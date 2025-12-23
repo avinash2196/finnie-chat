@@ -91,3 +91,25 @@ def run(query: str):
         f"{ticker} is trading at {quote.price} {quote.currency} "
         f"({quote.change_pct:.2f}% today)."
     )
+
+
+def get_market_data(ticker: str):
+    """Lightweight getter used by API endpoints to fetch quote details."""
+    quote = _client.get_quote(ticker)
+    if not quote or quote.price is None:
+        return None
+
+    # Basic shape expected by FastAPI endpoints
+    return {
+        "ticker": quote.ticker,
+        "price": quote.price,
+        "currency": quote.currency,
+        "change_pct": quote.change_pct,
+        # MarketClient currently does not return these; keep placeholders
+        "change": None,
+        "volume": None,
+        "market_cap": None,
+        "timestamp": quote.timestamp,
+        "source": quote.source,
+        "error": quote.error,
+    }

@@ -338,11 +338,19 @@ async def sync_portfolio(
             # Find existing or create new
             holding = next((h for h in existing_holdings if h.ticker == ticker), None)
             if holding:
-                holding.quantity = holding_data["quantity"]
-                holding.purchase_price = holding_data["purchase_price"]
+                # For mock provider, preserve manual quantities/prices; only refresh pricing
+                if provider_type.lower() == "mock":
+                    qty = holding.quantity
+                    cost = holding.purchase_price
+                else:
+                    qty = holding_data["quantity"]
+                    cost = holding_data["purchase_price"]
+
+                holding.quantity = qty
+                holding.purchase_price = cost
                 holding.current_price = current_price
-                holding.total_value = holding_data["quantity"] * current_price
-                holding.gain_loss = (current_price - holding_data["purchase_price"]) * holding_data["quantity"]
+                holding.total_value = qty * current_price
+                holding.gain_loss = (current_price - cost) * qty
                 holding.updated_at = datetime.utcnow()
             else:
                 holding = Holding(

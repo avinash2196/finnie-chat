@@ -4,11 +4,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
+import os
 
 st.set_page_config(page_title="Market Trends", page_icon="📈", layout="wide")
 
-# API Configuration
-API_BASE_URL = "http://localhost:8000"
+# API Configuration: prefer env var, fallback to localhost
+API_BASE_URL = os.getenv("API_BASE_URL") or "http://localhost:8000"
 
 # Session state
 if "user_id" not in st.session_state:
@@ -81,16 +82,18 @@ if market_view == "Overview":
     st.subheader("📊 Market Overview")
     
     # Major indices
+    indices = ["^GSPC", "^DJI", "^IXIC", "^RUT"]
+    index_names = ["S&P 500", "Dow Jones", "NASDAQ", "Russell 2000"]
+    
     col1, col2, col3, col4 = st.columns(4)
     
-    # Mock data for indices
+    # Mock data for indices (replace with actual API call)
     mock_indices = [
         {"symbol": "^GSPC", "price": 4783.45, "change": 0.75, "change_pct": 0.016},
         {"symbol": "^DJI", "price": 37305.16, "change": -45.23, "change_pct": -0.012},
         {"symbol": "^IXIC", "price": 14813.92, "change": 123.45, "change_pct": 0.084},
         {"symbol": "^RUT", "price": 2027.07, "change": 12.34, "change_pct": 0.061},
     ]
-    index_names = ["S&P 500", "Dow Jones", "NASDAQ", "Russell 2000"]
     
     for col, idx_data, name in zip([col1, col2, col3, col4], mock_indices, index_names):
         with col:
