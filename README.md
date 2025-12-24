@@ -2,7 +2,7 @@
 
 Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, comprehensive portfolio analytics, and **enterprise observability** with Arize AI and LangSmith.
 
-## Recent Updates (December 2025)
+## Recent Updates
 
 ✅ **Observability & Monitoring** — Switched to Arize AI and LangSmith for tracing, quality/safety signals, tagging, performance metrics, and error tracking.
 
