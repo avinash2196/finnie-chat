@@ -1,0 +1,14 @@
+[Unit]
+Description=Finnie Chat Streamlit (frontend)
+After=network.target finnie-backend.service
+
+[Service]
+User=www-data
+WorkingDirectory=/home/ubuntu/finnie-chat
+Environment="PATH=/home/ubuntu/finnie-chat/venv/bin"
+ExecStart=/home/ubuntu/finnie-chat/venv/bin/streamlit run frontend/Home.py --server.address 0.0.0.0 --server.port 8501
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

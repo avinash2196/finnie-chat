@@ -7,6 +7,9 @@ git clone https://github.com/avinash2196/finnie-chat.git
 cd finnie-chat
 ```
 
+View the repository on GitHub: https://github.com/avinash2196/finnie-chat
+Repository docs: https://github.com/avinash2196/finnie-chat/tree/main/docs
+
 ## Prerequisites
 
 Before running the application, ensure the database is initialized:
