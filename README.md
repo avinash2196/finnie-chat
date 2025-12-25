@@ -2,17 +2,6 @@
 
 Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, comprehensive portfolio analytics, and **enterprise observability** with Arize AI and LangSmith.
 
-## Recent Updates (December 2025)
-
-✅ **Observability & Monitoring** — Switched to Arize AI and LangSmith for tracing, quality/safety signals, tagging, performance metrics, and error tracking.
-
-✅ **Portfolio MCP Database Integration** — Replaced hardcoded mock data with real SQLite database queries. Portfolio MCP functions now fetch actual user holdings, transactions, and profiles directly from the database.
-
-✅ **Chat Portfolio Access** — Fixed `/chat` endpoint to pass `user_id` to orchestrator, enabling agents to access user portfolio data during conversations.
-
-✅ **Compliance Agent Deduplication** — Fixed duplicate disclaimer messages by checking if disclaimer already exists before appending.
-
-✅ **Test Coverage Expansion** — Added 26+ new tests: 11 for Portfolio MCP database integration, 10 for compliance agent, 5 for DeepEval portfolio chat scenarios.
 
 ## Overview
 
