@@ -1,0 +1,14 @@
+[Unit]
+Description=Finnie Chat FastAPI (backend)
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/home/ubuntu/finnie-chat
+Environment="PATH=/home/ubuntu/finnie-chat/venv/bin"
+ExecStart=/home/ubuntu/finnie-chat/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

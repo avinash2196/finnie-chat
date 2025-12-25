@@ -1,0 +1,5 @@
+# constraints-ubuntu.txt
+# Ubuntu/GCP constraints to avoid common dependency resolution conflicts
+# Keep low-level libraries in wide ranges compatible with opentelemetry and others
+importlib-metadata<8.7.0,>=6.0
+protobuf<5
