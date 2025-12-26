@@ -11,6 +11,9 @@ Classify the user message into ONE of:
 - ASK_PORTFOLIO: Asking about their holdings (diversification, allocation, concentration)
 - ASK_RISK: Asking about portfolio risk, volatility, or Sharpe ratio
 - ASK_STRATEGY: Asking for investment opportunities or screening (dividend, growth, value)
+- ASK_GOAL: Asking about financial goals, retirement planning, savings targets
+- ASK_NEWS: Asking to summarize or contextualize financial news
+- ASK_TAX: Asking about tax concepts, account types, tax strategies
 - ADVICE: Asking for direct trading advice (buy/sell specific stock, allocation target)
 - OTHER: General chat, small talk, or unrelated questions
 
@@ -20,6 +23,9 @@ Also assign risk level:
 - HIGH (direct buy/sell, tax, legal, urgent, specific recommendations)
 
 Rules:
+- If message contains "goal", "retirement", "plan", "target", "save" → ASK_GOAL
+- If message contains "news", "headline", "article", "summary", "what happened" → ASK_NEWS
+- If message contains "tax", "ira", "roth", "401k", "capital gains", "account type" → ASK_TAX
 - If message contains "diversify", "allocation", "concentration", "rebalance" → ASK_PORTFOLIO
 - If message contains "risk", "volatility", "sharpe", "beta", "downside" → ASK_RISK
 - If message contains "dividend", "growth", "value", "screen", "find stocks" → ASK_STRATEGY
@@ -27,7 +33,7 @@ Rules:
 
 Respond ONLY in valid JSON:
 {
-  "intent": "ASK_CONCEPT|ASK_MARKET|ASK_PORTFOLIO|ASK_RISK|ASK_STRATEGY|ADVICE|OTHER",
+  "intent": "ASK_CONCEPT|ASK_MARKET|ASK_PORTFOLIO|ASK_RISK|ASK_STRATEGY|ASK_GOAL|ASK_NEWS|ASK_TAX|ADVICE|OTHER",
   "risk": "LOW|MED|HIGH"
 }
 """
@@ -43,7 +49,19 @@ def _rule_based_intent(message: str):
   market_kw = any(k in m for k in ["price", "volume", "market", "s&p", "sp500", "up today", "trading", "stock price"])
   concept_kw = any(k in m for k in ["what is", "explain", "how do", "how does"])
   strategy_kw = any(k in m for k in ["dividend", "growth", "value", "screen", "find stocks", "opportunities"])
+  goal_kw = any(k in m for k in ["goal", "retirement", "plan", "target", "save", "objective"])
+  news_kw = any(k in m for k in ["news", "headline", "article", "summary", "what happened"])
+  tax_kw = any(k in m for k in ["tax", "ira", "roth", "401k", "capital gains", "account type"])
 
+  # Tax-related (check early to avoid confusion with other keywords)
+  if tax_kw:
+    return "ASK_TAX", "MED"
+  # News-related
+  if news_kw:
+    return "ASK_NEWS", "LOW"
+  # Goal-related
+  if goal_kw:
+    return "ASK_GOAL", "MED"
   # Risk-related (higher priority so portfolio mentions with "risk" are classified as risk)
   if risk_kw:
     return "ASK_RISK", "MED"
