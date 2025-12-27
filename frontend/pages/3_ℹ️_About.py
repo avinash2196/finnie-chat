@@ -43,10 +43,10 @@ st.subheader("Documentation Links")
 st.markdown(
     """
 - [API Docs (FastAPI)](http://localhost:8000/docs)
-- [Architecture](https://github.com/your-org/your-repo/blob/main/ARCHITECTURE.md)
-- [Implementation Guide](https://github.com/your-org/your-repo/blob/main/finnie-chat/IMPLEMENTATION_GUIDE.md)
-- [Database Guide](https://github.com/your-org/your-repo/blob/main/finnie-chat/DATABASE_GUIDE.md)
-- [Observability Guide](https://github.com/your-org/your-repo/blob/main/finnie-chat/OBSERVABILITY.md)
+- [Architecture](https://github.com/avinash2196/finnie-chat/blob/main/docs/architecture/ARCHITECTURE.md)
+- [Implementation Guide](https://github.com/avinash2196/finnie-chat/blob/main/docs/implementation/IMPLEMENTATION_GUIDE.md)
+- [Database Guide](https://github.com/avinash2196/finnie-chat/blob/main/docs/architecture/DATABASE_GUIDE.md)
+- [Observability Guide](https://github.com/avinash2196/finnie-chat/blob/main/docs/architecture/OBSERVABILITY.md)
     """
 )
 

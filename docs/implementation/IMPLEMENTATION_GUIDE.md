@@ -1,29 +1,29 @@
 # Finnie-Chat: Implementation Quick Start Guide
 
-## 📋 Current Score Card
+## 📋 Current Score Card (Dec 2025)
 
 ```
-✅ COMPLETE (70%)
-├─ Backend Framework
-├─ LLM Integration (3 providers)
-├─ Conversation Memory
-├─ Market Data Integration
-├─ Guardrails & Compliance
-├─ Database Integration (SQLAlchemy) 🆕
-├─ Portfolio Sync System (Mock/Robinhood/Fidelity) 🆕
-├─ Background Scheduler (hourly sync) 🆕
-├─ MCP Server with Database 🆕
-├─ 218 Unit Tests (35 database tests) 🆕
-└─ Comprehensive Documentation
+✅ COMPLETE
+├─ Backend Framework (FastAPI)
+├─ Multi‑provider LLM Gateway (OpenAI primary; Gemini/Anthropic fallback)
+├─ Conversation Memory & RAG (TF‑IDF with verification)
+├─ Market Data (yFinance via MCP)
+├─ Guardrails & Compliance (safe no‑ops where needed)
+├─ Database Integration (SQLAlchemy)
+├─ Portfolio MCP (database‑backed)
+├─ Background Scheduler (hourly sync)
+├─ Observability (LangSmith tracing, Arize optional; OTEL deferred)
+├─ Tests: 618 passing; Coverage: 88% across app modules
+└─ Documentation synced to current implementation
 
-⚠️  PARTIAL (20%)
-├─ Agents (4/6 complete)
-└─ Frontend UI (chat tab working)
+⚠️ PARTIAL
+├─ Frontend (Streamlit multipage UI)
+└─ DeepEval expansion + coverage ≥90% (next milestone)
 
-❌ NOT STARTED (10%)
-├─ Portfolio UI (backend ready)
-├─ User Authentication
-└─ Production Deployment
+📝 Deferred (tracked in roadmap)
+├─ OTEL tracing & dashboards
+├─ Redis cache rollout + metrics
+└─ Production deployment hardening
 ```
 
 ---
@@ -75,6 +75,21 @@ Automated portfolio synchronization:
 - All tests passing ✅
 
 For complete documentation, see [DATABASE_GUIDE.md](DATABASE_GUIDE.md)
+
+---
+
+## 🔎 Observability (Current)
+
+Observability focuses on safe, optional integrations:
+
+- LangSmith tracing enabled via environment; full multi‑agent traces when configured
+- Arize logging optional for quality/safety signals
+- `instrument_*` methods are intentional no‑ops in this release; OTEL is not active
+- Status endpoints: `GET /observability/status`, `GET /health`
+
+Read the detailed guide: [../architecture/OBSERVABILITY.md](../architecture/OBSERVABILITY.md)
+
+Quick setup: [../implementation/OBSERVABILITY_SETUP.md](../implementation/OBSERVABILITY_SETUP.md)
 
 ---
 

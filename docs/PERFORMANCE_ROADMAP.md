@@ -122,8 +122,6 @@ Next step (recommended):
 1. Run an integration benchmark (automated runner) to measure p50/p95 for `/market/quote` with representative symbol sets; compare before/after numbers.
 2. Run a live profiler (`py-spy`) attached to a running `uvicorn` process to generate a flamegraph and validate reduced blocking time.
 
-If you want, I can implement the integration benchmark next and run it locally, then produce a short report. 
-
 ### Recent Results
 
 - Live HTTP benchmark results are saved in `benchmark_market_quote_http_results.json` and summarized in the project `README.md` under "Performance Benchmarks (recent)".
@@ -133,4 +131,3 @@ If you want, I can implement the integration benchmark next and run it locally, 
 
 1. Run `py-spy` as admin or via direct `py-spy record -- python -m uvicorn app.main:app` to capture a flamegraph (`profile_uvicorn.svg`) in a reproducible way.
 2. Frontend improvements: client-side caching, debouncing, remove blocking sleeps, and E2E UI performance tests (next sprint).
-
