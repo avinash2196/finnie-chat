@@ -192,16 +192,25 @@ if prompt := st.chat_input("Ask about your portfolio, stocks, or financial conce
 if not st.session_state.messages:
     st.markdown("### 💡 Try asking:")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
-        st.info("📊 **Portfolio Questions**\n\n- How is my portfolio diversified?\n- What's my risk level?\n- Analyze my holdings")
+        st.info("📊 **Portfolio**\n\n- How diversified am I?\n- What's my risk level?\n- Rebalance suggestions")
     
     with col2:
-        st.info("📈 **Market Queries**\n\n- What's the price of AAPL?\n- Show me tech stock trends\n- Market overview today")
+        st.info("📈 **Market**\n\n- AAPL stock price?\n- Tech trends today?\n- Market movers?")
     
     with col3:
-        st.info("🎓 **Learn Finance**\n\n- What is a dividend?\n- Explain P/E ratio\n- How do bonds work?")
+        st.info("🎓 **Learn**\n\n- What is a dividend?\n- Explain P/E ratio\n- How do bonds work?")
+    
+    with col4:
+        st.info("🎯 **Goals**\n\n- Retire in 20 years\n- Save $500K goal\n- Plan my finances")
+    
+    with col5:
+        st.info("📰 **News**\n\n- Summarize earnings\n- Market headlines\n- News impact?")
+    
+    with col6:
+        st.info("💰 **Tax**\n\n- What's a Roth IRA?\n- Capital gains tax?\n- Account types?")
 
 # Footer
 st.markdown("---")

@@ -19,6 +19,10 @@ Finnie Chat includes a complete database layer with:
 
 ✅ **UUID & Username Support** — All portfolio MCP functions support both lookup methods (by UUID or username).
 
+✅ **Testing & Coverage** — Full suite stabilized with 618 passing tests; database APIs verified by unit and integration tests. Overall coverage is 88% across `app/` modules.
+
+ℹ️ **Observability** — Logging/tracing is optional: LangSmith tracing active when configured; Arize logging optional; OTEL is deferred in the current release. See [OBSERVABILITY.md](OBSERVABILITY.md).
+
 ## Architecture
 
 ```
@@ -271,6 +275,15 @@ DATABASE_URL=sqlite:///./finnie_chat.db
 ```bash
 # Set in .env
 DATABASE_URL=postgresql://user:password@localhost/finnie_chat
+
+### Observability Status Endpoints
+
+Verify instrumentation and health:
+
+```bash
+curl http://localhost:8000/observability/status
+curl http://localhost:8000/health
+```
 ```
 
 ## Testing

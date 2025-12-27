@@ -304,6 +304,12 @@ Compliance Agent returns:
 
 ---
 
+## Implementation Notes (2025‑12‑26)
+
+- **Observability:** LangSmith runs are created/updated synchronously; Arize logging is optional; OTEL instrumentation is not active and `instrument_*` methods are no‑ops.
+- **Gateway:** In test environments the circuit breaker prevents outbound LLM calls; agent outputs are synthesized deterministically or via mocks.
+- **Caching:** Short‑TTL aggregation cache is enabled in `app/main.py`; Redis fallback is optional via `REDIS_URL`.
+
 ## Key Components
 
 | Component | File | Purpose |

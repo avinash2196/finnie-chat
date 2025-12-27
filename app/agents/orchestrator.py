@@ -8,6 +8,9 @@ from app.agents.risk_profiler import run as risk_profiler_run
 from app.agents.portfolio_coach import run as portfolio_coach_run
 from app.agents.strategy import run as strategy_run
 from app.agents.compliance import run as compliance_run
+from app.agents.goal_planning import run as goal_planning_run
+from app.agents.news_synthesizer import run as news_synthesizer_run
+from app.agents.tax_education import run as tax_education_run
 from app.mcp.portfolio import get_portfolio_client
 
 
@@ -27,6 +30,9 @@ Available agents:
 - PortfolioCoachAgent: Analyzes diversification and allocation
 - StrategyAgent: Identifies investment opportunities (dividend/growth/value)
 - ComplianceAgent: Final safety and disclaimer check (must always be last)
+- GoalPlanningAgent: Assists with financial goal-setting and planning
+- NewsSynthesizerAgent: Summarizes and contextualizes financial news
+- TaxEducationAgent: Explains tax concepts and account types
 
 Rules:
 - For ASK_CONCEPT: EducatorAgent is REQUIRED
@@ -34,6 +40,9 @@ Rules:
 - For ASK_PORTFOLIO (diversification, allocation, analysis): PortfolioCoachAgent
 - For ASK_RISK (volatility, risk assessment): RiskProfilerAgent
 - For ASK_STRATEGY (investment opportunities, screening): StrategyAgent
+- For ASK_GOAL (goal planning, retirement targets): GoalPlanningAgent
+- For ASK_NEWS (summarize news or market commentary): NewsSynthesizerAgent
+- For ASK_TAX (tax questions, account types): TaxEducationAgent
 - For questions combining multiple topics, use multiple agents
 - ComplianceAgent must always be last
 - Use conversation history to provide context-aware responses
@@ -97,6 +106,12 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
             plan = ["EducatorAgent", "ComplianceAgent"]
         elif intent == "ASK_MARKET":
             plan = ["MarketAgent", "ComplianceAgent"]
+        elif intent == "ASK_GOAL":
+            plan = ["GoalPlanningAgent", "ComplianceAgent"]
+        elif intent == "ASK_NEWS":
+            plan = ["NewsSynthesizerAgent", "ComplianceAgent"]
+        elif intent == "ASK_TAX":
+            plan = ["TaxEducationAgent", "ComplianceAgent"]
         elif intent == "ASK_PORTFOLIO":
             plan = ["PortfolioCoachAgent", "ComplianceAgent"]
         elif intent == "ASK_RISK":
@@ -136,6 +151,18 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
         elif step == "RiskProfilerAgent":
             # Risk Profiler analyzes volatility and Sharpe ratio
             context["risk_analysis"] = risk_profiler_run(message, user_id=user_id)
+
+        elif step == "GoalPlanningAgent":
+            # Goal Planning agent assists with financial goal setting
+            context["goal_plan"] = goal_planning_run(message, user_id=user_id)
+
+        elif step == "NewsSynthesizerAgent":
+            # News Synthesizer agent summarizes and contextualizes financial news
+            context["news_summary"] = news_synthesizer_run(message, user_id=user_id)
+
+        elif step == "TaxEducationAgent":
+            # Tax Education agent explains tax concepts and account types
+            context["tax_education"] = tax_education_run(message, user_id=user_id)
 
         elif step == "PortfolioCoachAgent":
             # Portfolio Coach analyzes diversification and allocation
@@ -200,6 +227,15 @@ Risk analysis:
 
 Strategy recommendations:
 {context.get("strategy") or "(Not requested)"}
+
+Goal planning:
+{context.get("goal_plan") or "(Not requested)"}
+
+News summary:
+{context.get("news_summary") or "(Not requested)"}
+
+Tax education:
+{context.get("tax_education") or "(Not requested)"}
 
 User question:
 {message}

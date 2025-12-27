@@ -10,27 +10,32 @@ st.markdown("Finnie Chat is an AI-powered financial assistant built with FastAPI
 
 st.markdown("---")
 
-st.subheader("Agents")
+st.subheader("Agents (9 Specialized)")
 st.markdown(
     """
-- 🧭 **Orchestrator** — routes requests and composes answers
-- 🏦 **Market** — quotes, movers, sectors
-- 🧮 **Strategy** — screeners and investment ideas
-- 🎯 **Portfolio Coach** — improvement suggestions
-- 🔎 **Risk Profiler** — risk analysis from holdings
-- 🎓 **Educator** — RAG-backed explanations
-- ✅ **Compliance** — safe outputs & disclaimers
+- 🧭 **Orchestrator** — intelligently routes requests to specialized agents
+- 🎓 **Educator** — explains financial concepts via RAG-backed knowledge base
+- 🏦 **Market** — real-time quotes, market data, and trends
+- 🎯 **Portfolio Coach** — analyzes diversification and allocation
+- 🔎 **Risk Profiler** — assesses portfolio risk and volatility
+- 📈 **Strategy** — identifies investment opportunities (dividend, growth, value)
+- 🎯 **Goal Planning** — assists with financial goal-setting and retirement planning
+- 📰 **News Synthesizer** — summarizes and contextualizes financial news
+- 💰 **Tax Education** — explains tax concepts and account types
+- ✅ **Compliance** — applies safety guardrails and regulatory disclaimers
     """
 )
 
 st.subheader("System Overview")
 st.markdown(
     """
-- Backend: FastAPI + SQLAlchemy (SQLite dev)
-- Frontend: Streamlit multipage UI
-- Data: Portfolio DB, MCP servers (market, portfolio)
-- Analytics: Sharpe ratio, volatility, diversification
-- RAG: TF-IDF retrieval with verification
+- **Backend**: FastAPI with multi-agent orchestration + enterprise observability (Arize AI, LangSmith)
+- **Frontend**: Streamlit multipage UI (Chat, Portfolio, Market Trends, About)
+- **Database**: SQLAlchemy ORM with SQLite (dev) or PostgreSQL (production)
+- **Data Sources**: Portfolio DB, MCP servers (market, portfolio), yFinance API
+- **Analytics**: Sharpe ratio, volatility, diversification scoring
+- **RAG**: TF-IDF retrieval with source attribution and verification
+- **LLM Gateway**: Multi-provider (OpenAI primary, Gemini/Anthropic fallback) with caching
     """
 )
 
@@ -38,12 +43,12 @@ st.subheader("Documentation Links")
 st.markdown(
     """
 - [API Docs (FastAPI)](http://localhost:8000/docs)
-- [Architecture](https://github.com/your-org/your-repo/blob/main/ARCHITECTURE.md)
-- [Implementation Guide](https://github.com/your-org/your-repo/blob/main/finnie-chat/IMPLEMENTATION_GUIDE.md)
-- [Database Guide](https://github.com/your-org/your-repo/blob/main/finnie-chat/DATABASE_GUIDE.md)
-- [Feature Summary](https://github.com/your-org/your-repo/blob/main/finnie-chat/FEATURE_COMPLETION_SUMMARY.md)
+- [Architecture](https://github.com/avinash2196/finnie-chat/blob/main/docs/architecture/ARCHITECTURE.md)
+- [Implementation Guide](https://github.com/avinash2196/finnie-chat/blob/main/docs/implementation/IMPLEMENTATION_GUIDE.md)
+- [Database Guide](https://github.com/avinash2196/finnie-chat/blob/main/docs/architecture/DATABASE_GUIDE.md)
+- [Observability Guide](https://github.com/avinash2196/finnie-chat/blob/main/docs/architecture/OBSERVABILITY.md)
     """
 )
 
 st.markdown("---")
-st.caption("Finnie Chat | Orchestrator + 6 Specialized Agents")
+st.caption("Finnie Chat | Orchestrator + 9 Specialized Agents | Enterprise-Ready Financial AI")

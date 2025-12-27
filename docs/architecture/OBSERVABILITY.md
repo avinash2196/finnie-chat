@@ -5,6 +5,8 @@
 Finnie Chat includes comprehensive observability with **Arize AI** and **LangSmith** for production monitoring, debugging, and LLM tracing.
 
 **Dec 2025 update:** tracing and timing middleware were added to `app/main.py`, and observability integrations are implemented as safe no-ops when API keys are missing. For a visual overview, see [architecture/architecture_diagram.svg](architecture/architecture_diagram.svg).
+ 
+**Status (Dec 2025):** OTEL is not enabled; `instrument_*` methods intentionally perform no work. LangSmith tracing provides hierarchical multi-agent visibility when `LANGSMITH_*` variables are set; Arize prediction logging is optional.
 
 ## Features
 
@@ -103,12 +105,12 @@ Packages used:
 ## Usage
 
 ### Automatic Tracing & Logging
-Observability is integrated on app startup:
+Observability is integrated on app startup (no‑op when not configured):
 
 ```python
 # app/main.py (already configured)
 from app.observability import observability
-observability.instrument_fastapi(app)  # optional
+observability.instrument_fastapi(app)  # currently a no‑op
 ```
 
 ### Manual Event Tracking
@@ -186,12 +188,16 @@ GET http://localhost:8000/observability/status
         "langsmith_available": true,
         "langsmith_enabled": true,
         "langsmith_project": "finnie-chat",
-        "opentelemetry_available": false,
         "arize_enabled": true
     },
     "message": "Observability services configured"
 }
 ```
+
+Notes:
+- `instrument_fastapi()`, `instrument_httpx()`, and `instrument_sqlalchemy()` are intentional no‑ops in the current release.
+- OTEL instrumentation is not active; enabling OTEL is part of the future roadmap.
+ - When not configured, observability calls succeed as no‑ops and do not impact the request path.
 
 ### Health Check with Observability
 ```bash

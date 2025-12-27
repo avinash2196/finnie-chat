@@ -13,7 +13,7 @@ def ingest():
 
     chunks = [c.strip() for c in text.split("\n") if c.strip()]
     add_documents(chunks)
-    logging.info("RAG ingestion completed: %d documents loaded", len(chunks))
+    logging.info("RAG ingestion completed: %d documents loaded (TF-IDF + semantic)", len(chunks))
 
 if __name__ == "__main__":
     ingest()

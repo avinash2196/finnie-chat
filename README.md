@@ -1,12 +1,35 @@
 ﻿# finnie-chat
 
-Local FastAPI-based financial AI assistant with Orchestrator + 6 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, comprehensive portfolio analytics, and **enterprise observability** with Arize AI and LangSmith.
+Local FastAPI-based financial AI assistant with Orchestrator + 9 specialized agents, database-backed portfolio management, conversation memory, MCP servers for market data and portfolio, RAG-based education, multi-provider AI Gateway, comprehensive portfolio analytics, and **enterprise observability** with Arize AI and LangSmith.
 
 
-## Overview
+## About Finnie Chat
 
-finnie-chat is a sophisticated financial AI system that combines:
-- **6 Specialized Agents** for education, market analysis, risk profiling, portfolio coaching, strategy selection, and compliance
+**Finnie Chat** is a sophisticated, production-ready financial AI assistant that combines agentic orchestration with specialized domain agents, enterprise-grade observability, and robust data management. Built for investors, financial advisors, and educators, it provides intelligent, context-aware financial guidance through a modern REST API and interactive Streamlit frontend.
+
+### What is Finnie Chat?
+
+Finnie Chat is a **multi-agent financial AI system** where:
+- An intelligent **Orchestrator** routes user questions to the most appropriate specialized agents
+- **9 Specialized Agents** handle distinct financial domains (education, market analysis, portfolio management, tax, goal planning, and news synthesis)
+- **Enterprise observability** (Arize AI + LangSmith) tracks agent performance, user interactions, and model quality metrics
+- **Persistent database** (SQLAlchemy) stores user profiles, portfolios, transactions, and performance snapshots
+- **Real-time data** is fetched via MCP servers and external APIs (yFinance, etc.)
+- **Context-aware conversations** maintain memory across message turns and enable coherent multi-turn interactions
+- **Safety guardrails** enforce compliance, block risky advice, and validate inputs
+
+### Key Differentiators
+
+- **9 Specialized Agents**: Not a single "general" chatbot; each agent is purpose-built for a specific domain (educator, market analyst, risk profiler, portfolio coach, strategist, tax expert, goal planner, news synthesizer, compliance officer)
+- **Intent-Driven Routing**: Automatically detects user intent (ASK_CONCEPT, ASK_MARKET, ASK_GOAL, ASK_TAX, ASK_NEWS, etc.) and assembles the right agent pipeline
+- **Verifiable RAG**: Uses TF-IDF retrieval with explicit source attribution and confidence scoring
+- **Portfolio-Aware**: Accesses real portfolio data via MCP and provides personalized analysis
+- **Multi-Provider LLM Gateway**: Seamlessly falls back between OpenAI, Gemini, and Anthropic with caching and circuit breaker
+- **Production Observability**: Full tracing, quality metrics, safety signals, and audit logs via Arize + LangSmith
+
+### Core Features
+
+- **9 Specialized Agents** for education, market analysis, risk profiling, portfolio coaching, strategy selection, goal planning, tax education, news synthesis, and compliance
 - **Agentic Orchestration** with intelligent routing and context awareness
 - **Enterprise Observability** with Arize AI + LangSmith for monitoring, tracing, and debugging
 - **Database Integration** with SQLAlchemy (SQLite/PostgreSQL) for portfolio persistence
@@ -15,12 +38,25 @@ finnie-chat is a sophisticated financial AI system that combines:
 - **Performance Tracking** with historical snapshots and trend analysis
 - **Market Trends & Analysis** with stock screeners and strategy ideas
 - **Conversation Memory** with persistent storage (JSON)
-- **Multi-provider LLM Gateway** (OpenAI primary, Gemini/Anthropic fallback) with caching
-- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed)
-- **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval with verification
-- **Guardrails** for input validation and compliance filtering
-- **REST API** with 20+ endpoints for portfolio and market operations
-- **Streamlit Frontend** with multi-tab UI (Chat, Portfolio, Market Trends)
+- **Multi-provider LLM Gateway** (OpenAI primary, Gemini/Anthropic fallback) with caching and circuit breaker
+- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed) + News (Alpha Vantage)
+- **RAG Engine** with **Hybrid Search** (TF-IDF + semantic embeddings) for trusted financial knowledge retrieval with verification and source attribution
+- **Guardrails** for input validation, compliance filtering, and risk-based advice controls
+- **REST API** with 20+ endpoints for portfolio, market, user, and chat operations
+- **Streamlit Frontend** with multi-tab UI (Chat, Portfolio, Market Trends, About)
+- **Dual Caching** (Redis + in-memory) for market quotes and news articles with configurable TTL
+- **Smart News Synthesis** with ticker filtering, general news fallback, and compliance gates
+- **Non-blocking Observability** with background LangSmith tracing and timeout protection
+
+### Use Cases
+
+- **Personal Finance Education**: Explain financial concepts, tax strategies, and account types via the Educator and Tax Education agents
+- **Portfolio Management**: Analyze diversification, allocate assets, identify rebalancing opportunities
+- **Investment Strategy**: Detect dividend, growth, and value opportunities; screen stocks based on criteria
+- **Goal Planning**: Help users plan retirement, savings targets, and investment timelines
+- **Risk Assessment**: Quantify portfolio volatility, Sharpe ratio, and concentration risk
+- **Market Intelligence**: Retrieve real-time prices, detect market movers, and contextualize financial news
+- **Compliance & Safety**: Enforce guardrails, block risky advice, and provide regulatory disclaimers
 
 ## Architecture
 
@@ -74,7 +110,41 @@ Database Layer (SQLAlchemy)
     - **Profiling artifacts**: A `coverage.xml` and profiling artifacts (py-spy flamegraphs) are generated during CI runs and saved in the project root when enabled.
     - **Manual/Full test runs**: To run the full matrix (including manual tests) set `RUN_MANUAL_TESTS=1` in your environment before running pytest.
 
+    ### Recent Improvements (Latest Release)
+
+    #### 🔎 LangSmith Observability (Sync + Safe No‑Ops)
+    - **Synchronous run lifecycle**: `create_run` / `update_run` used directly; no background thread pool
+    - **Safe no‑ops** when API keys are missing (LangSmith/Arize gracefully disabled)
+    - **Lightweight timing middleware** in `app/main.py` for per‑request latency metrics
+    - **No OTEL instrumentation** at present; `instrument_*` methods are intentional no‑ops
+    - **Backwards compatible**: integrates only when configured, otherwise inert
+
+    #### 🎯 Hybrid RAG Search Engine
+    - **Semantic embeddings** using `sentence-transformers` (all-MiniLM-L6-v2, 384-dim vectors)
+    - **TF-IDF fallback** for queries with missing semantic embeddings
+    - **50/50 score blending** combining both methods for best-of-both-worlds retrieval
+    - **Lazy model loading** - downloads only on first use (~90MB)
+    - **Retriever abstraction** (Protocol-based) enabling pluggable backends (Hybrid, TFIDF, Semantic)
+
+    #### 📰 Smart News Synthesis
+    - **Alpha Vantage News MCP server** with ticker-specific + general market endpoints
+    - **COMMON_WORDS filter** to prevent false ticker extraction (e.g., "WHAT", "ARE", "THE")
+    - **3-tier fallback** pipeline: ticker-specific → general market news → knowledge base text
+    - **Dual caching** (Redis + in-memory) with 5s TTL for fast repeated queries
+
+    #### 💾 Dual Caching Layer
+    - **Redis caching** (optional, via `REDIS_URL` env var) for distributed/production environments
+    - **In-memory fallback** caching with configurable TTL (5s for market quotes, 5s for news)
+    - **Cache serialization** for complex objects (NewsArticle, Quote objects)
+    - **Automatic fallback** if Redis unavailable - no errors, just uses in-memory cache
+
     If you'd like additional diagram formats (PNG, PDF) or a sequence/data-flow diagram, tell me which and I'll add them.
+
+    ### Status Update (2025‑12‑26)
+    - **Test Suite:** 618 tests passing (100% of collected), excluding manual/integration
+    - **Coverage:** 88% across `app/` modules (see `coverage.xml`)
+    - **Observability:** LangSmith enabled when keys are present; Arize optional; OTEL not active
+    - **Gateway:** Circuit breaker prevents external LLM calls in tests; mocks/fallbacks used
 ```
 
 ## Database Integration ✅
@@ -234,17 +304,7 @@ tests/test_strategy.py::TestStrategyAgent::test_agent_growth_strategy PASSED    
 
 ## Agents
 
-Agent overview (Orchestrator + 6 specialized agents):
-
-- **Orchestrator**: Intent routing and agent selection
-- **Market Agent**: Real-time quotes and market intel
-- **Strategy Agent**: Screeners and investment ideas
-- **Portfolio Coach Agent**: Portfolio improvement suggestions
-- **Risk Profiler Agent**: Risk assessment from holdings
-- **Educator Agent**: Concept explanations via RAG
-- **Compliance Agent**: Disclaimers and safe output
-
-The system includes 6 specialized agents (plus Orchestrator) for different financial tasks:
+The system includes **9 specialized agents** (plus Orchestrator) for different financial domains:
 
 ### 1. Educator Agent
 **Purpose:** Explain financial concepts using trusted knowledge base
@@ -255,6 +315,7 @@ The system includes 6 specialized agents (plus Orchestrator) for different finan
 - Concept explanation with examples
 - Knowledge base retrieval via RAG/TF-IDF
 - Beginner-friendly language
+- Source attribution and confidence scoring
 
 **Example:**
 ```
@@ -270,10 +331,11 @@ Agent: "A bond is a fixed-income security where you lend money..."
 **Data Source:** Market MCP Server (yFinance)
 
 **Capabilities:**
-- Current stock prices
-- Percentage change
+- Current stock prices with real-time updates
+- Percentage change and trends
 - Historical data (when requested)
-- Multi-ticker support
+- Multi-ticker support with batching
+- 5-second aggregation caching to reduce API calls
 
 **Example:**
 ```
@@ -345,17 +407,75 @@ Agent: "Top performers: MSFT (+50%), AAPL (+20%)..."
 
 **Capabilities:**
 - Risk-based disclaimers
-- Advice filtering (blocks HIGH risk)
+- Advice filtering (blocks HIGH risk advice)
 - Regulatory language enforcement
 - PII detection and blocking
 
 **Example:**
 ```
 User: "Should I buy this stock?"
-Agent: [Blocks advice for HIGH risk queries]
+Agent: [Blocks high-risk advice; adds disclaimer if low/medium risk]
 ```
 
-Maintains chat history and context across message turns.
+### 7. Goal Planning Agent
+**Purpose:** Assist with financial goal setting and planning
+
+**Module:** `app/agents/goal_planning.py`
+
+**Capabilities:**
+- Extract financial goals from user input (retirement, savings targets)
+- Suggest timeframes and milestones
+- Recommend savings rate and allocation steps
+- Multi-goal prioritization
+
+**Example:**
+```
+User: "I want $1M in retirement in 20 years"
+Agent: "Target: $1M by 2045. Suggested steps: 1) Calculate monthly savings ($3.2K), 2) Allocate to core/satellite buckets, 3) Revisit annually."
+```
+
+### 8. News Synthesizer Agent
+**Purpose:** Summarize and contextualize financial news
+
+**Module:** `app/agents/news_synthesizer.py`
+
+**Capabilities:**
+- Summarize multi-sentence news articles
+- Contextualize impact on portfolios
+- Source credibility assessment
+- Bias/sentiment detection hints
+
+**Example:**
+```
+User: "Summarize this earnings report: [article text]"
+Agent: "Summary: Strong revenue growth (+15%), margin compression (-2%). Impact: positive for growth investors, watch execution."
+```
+
+### 9. Tax Education Agent
+**Purpose:** Explain tax concepts and account types
+
+**Module:** `app/agents/tax_education.py`
+
+**Capabilities:**
+- Tax-advantaged account types (IRA, Roth, 401k, HSA)
+- Capital gains treatment (short-term vs. long-term)
+- Tax-loss harvesting basics
+- High-level tax strategy guidance
+
+**Example:**
+```
+User: "What is a Roth IRA?"
+Agent: "A Roth IRA is funded with after-tax dollars; qualified withdrawals are tax-free. Contribution limits apply."
+```
+
+### Orchestrator & Conversation Memory
+
+The **Orchestrator** intelligently routes user messages to the appropriate agent pipeline based on intent classification:
+
+- **Intent Detection**: Automatically classifies queries as ASK_CONCEPT, ASK_MARKET, ASK_GOAL, ASK_TAX, ASK_NEWS, ASK_PORTFOLIO, ASK_RISK, ASK_STRATEGY
+- **Agent Selection**: Uses an LLM planner to determine which agents to call (often multiple in sequence)
+- **Context Awareness**: Passes conversation history to enable coherent multi-turn interactions
+- **Memory Integration**: Maintains per-conversation context in JSON-based persistent storage
 
 #### Key Capabilities
 
@@ -408,6 +528,7 @@ max_messages_per_conversation=100
 
 # Persistence directory (optional file-based storage)
 persist_dir="chroma/conversations"
+```
 
 ## Performance Benchmarks (recent)
 

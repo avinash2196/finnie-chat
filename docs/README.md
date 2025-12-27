@@ -13,9 +13,6 @@ System design and technical architecture documents.
 - **GATEWAY.md** — Multi-provider LLM gateway architecture and failover logic
 
 ### 🚀 `implementation/`
-Guides for implementing and extending the system.
-
-### 🚀 `implementation/`
 Guides for operating and extending the delivered system.
 
 - **IMPLEMENTATION_GUIDE.md** — Step-by-step implementation instructions
@@ -23,10 +20,7 @@ Guides for operating and extending the delivered system.
 - **ROADMAP.md** — Archived roadmap (project delivered)
 
 ### 📋 `planning/`
-Initial planning documents and requirements.
-
-### 📋 `planning/`
-Archived planning documents and requirements (all gaps closed).
+Archived planning documents and requirements.
 
 - **REQUIREMENTS_ANALYSIS.md** — Historical requirements analysis (completed)
 - **high-architecture.md** — High-level system design overview
@@ -70,6 +64,8 @@ Executive summaries and completion reports.
 - **Understand the system?** → [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)
 	- **Diagram (presentation-ready):** [architecture/architecture_diagram.svg](architecture/architecture_diagram.svg)
 - **Check database setup?** → [architecture/DATABASE_GUIDE.md](architecture/DATABASE_GUIDE.md)
+- **Configure observability?** → [architecture/OBSERVABILITY.md](architecture/OBSERVABILITY.md)
+- **Observability setup (env)** → [implementation/OBSERVABILITY_SETUP.md](implementation/OBSERVABILITY_SETUP.md)
 - **See what changed?** → [UPDATES.md](UPDATES.md)
 - **Review tests?** → [testing/TEST_COVERAGE.md](testing/TEST_COVERAGE.md)
 - **Plan next steps?** → [implementation/ROADMAP.md](implementation/ROADMAP.md)
@@ -91,6 +87,7 @@ Executive summaries and completion reports.
 **Notes:** The architecture diagram and the `ARCHITECTURE.md` file are curated for presentation; if you want PNG or PDF exports of the SVG diagram, I can add them.
 - [implementation/IMPLEMENTATION_GUIDE.md](implementation/IMPLEMENTATION_GUIDE.md)
 - [architecture/DATABASE_GUIDE.md](architecture/DATABASE_GUIDE.md)
+- [architecture/OBSERVABILITY.md](architecture/OBSERVABILITY.md)
 
 ### **QA/Testers**
 - [testing/TEST_COVERAGE.md](testing/TEST_COVERAGE.md)
