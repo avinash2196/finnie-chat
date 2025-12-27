@@ -3,36 +3,21 @@ RAG Verification System - Track whether answers come from trusted RAG sources
 This module adds transparency to responses by tracking source attribution
 """
 
-def query_rag_with_scores(query, k=3):
+def query_rag_with_scores(query, k=3, mode="hybrid"):
     """
-    Query RAG and return documents WITH similarity scores
-    This allows verification of answer quality and source confidence
+    Query RAG and return documents WITH similarity scores.
+    Uses retriever abstraction for flexible backend switching.
+    
+    Args:
+        query: Query string
+        k: Number of results to return
+        mode: Retrieval mode ("hybrid", "tfidf", "semantic")
+    
+    Returns:
+        List of dicts with document, similarity_score, index, source
     """
-    from app.rag.store import vectorizer, embeddings, documents
-    from sklearn.metrics.pairwise import cosine_similarity
-    
-    if embeddings is None or len(documents) == 0:
-        return []
-    
-    # Transform query using the fitted vectorizer
-    query_vec = vectorizer.transform([query])
-    
-    # Compute similarity scores
-    similarities = cosine_similarity(query_vec, embeddings)[0]
-    
-    # Get top k with their scores
-    top_indices = similarities.argsort()[-k:][::-1]
-    
-    results = []
-    for idx in top_indices:
-        if idx < len(documents):
-            results.append({
-                "document": documents[idx],
-                "similarity_score": float(similarities[idx]),
-                "index": int(idx)
-            })
-    
-    return results
+    from app.rag.retriever import query_rag_with_scores as retriever_query
+    return retriever_query(query, k=k, mode=mode)
 
 
 def categorize_answer_source(rag_results, answer):

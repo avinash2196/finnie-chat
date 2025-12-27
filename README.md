@@ -39,11 +39,14 @@ Finnie Chat is a **multi-agent financial AI system** where:
 - **Market Trends & Analysis** with stock screeners and strategy ideas
 - **Conversation Memory** with persistent storage (JSON)
 - **Multi-provider LLM Gateway** (OpenAI primary, Gemini/Anthropic fallback) with caching and circuit breaker
-- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed)
-- **RAG Engine** (TF-IDF) for trusted financial knowledge retrieval with verification and source attribution
+- **Dual MCP Servers**: Market data (yFinance) + Portfolio management (database-backed) + News (Alpha Vantage)
+- **RAG Engine** with **Hybrid Search** (TF-IDF + semantic embeddings) for trusted financial knowledge retrieval with verification and source attribution
 - **Guardrails** for input validation, compliance filtering, and risk-based advice controls
 - **REST API** with 20+ endpoints for portfolio, market, user, and chat operations
 - **Streamlit Frontend** with multi-tab UI (Chat, Portfolio, Market Trends, About)
+- **Dual Caching** (Redis + in-memory) for market quotes and news articles with configurable TTL
+- **Smart News Synthesis** with ticker filtering, general news fallback, and compliance gates
+- **Non-blocking Observability** with background LangSmith tracing and timeout protection
 
 ### Use Cases
 
@@ -106,6 +109,34 @@ Database Layer (SQLAlchemy)
     - **Observability**: LangSmith and Arize integrations are safe no-ops when API keys are not present; tracing and timing middleware were added to `app/main.py`. Use `OBSERVABILITY` env vars to configure providers.
     - **Profiling artifacts**: A `coverage.xml` and profiling artifacts (py-spy flamegraphs) are generated during CI runs and saved in the project root when enabled.
     - **Manual/Full test runs**: To run the full matrix (including manual tests) set `RUN_MANUAL_TESTS=1` in your environment before running pytest.
+
+    ### Recent Improvements (Latest Release)
+
+    #### 🔄 Non-Blocking LangSmith Observability
+    - **Background thread pool** (2 workers) for async LangSmith logging
+    - **Configurable timeouts** (default 2s, set via `LANGSMITH_TIMEOUT` env var) to prevent request blocking
+    - **Run completion marking** with explicit `end_time` parameter to avoid indefinite "Pending" status
+    - **Thread-safe execution** with proper error handling and graceful degradation
+    - **Full backward compatibility** with existing code; no API changes required
+
+    #### 🎯 Hybrid RAG Search Engine
+    - **Semantic embeddings** using `sentence-transformers` (all-MiniLM-L6-v2, 384-dim vectors)
+    - **TF-IDF fallback** for queries with missing semantic embeddings
+    - **50/50 score blending** combining both methods for best-of-both-worlds retrieval
+    - **Lazy model loading** - downloads only on first use (~90MB)
+    - **Retriever abstraction** (Protocol-based) enabling pluggable backends (Hybrid, TFIDF, Semantic)
+
+    #### 📰 Smart News Synthesis
+    - **Alpha Vantage News MCP server** with ticker-specific + general market endpoints
+    - **COMMON_WORDS filter** to prevent false ticker extraction (e.g., "WHAT", "ARE", "THE")
+    - **3-tier fallback** pipeline: ticker-specific → general market news → knowledge base text
+    - **Dual caching** (Redis + in-memory) with 5s TTL for fast repeated queries
+
+    #### 💾 Dual Caching Layer
+    - **Redis caching** (optional, via `REDIS_URL` env var) for distributed/production environments
+    - **In-memory fallback** caching with configurable TTL (5s for market quotes, 5s for news)
+    - **Cache serialization** for complex objects (NewsArticle, Quote objects)
+    - **Automatic fallback** if Redis unavailable - no errors, just uses in-memory cache
 
     If you'd like additional diagram formats (PNG, PDF) or a sequence/data-flow diagram, tell me which and I'll add them.
 ```
