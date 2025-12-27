@@ -36,7 +36,7 @@ Phases (prioritized):
 
 - **Long-term (4-8 weeks)** — Robust scaling and monitoring
   - Task: Move heavy aggregation to background workers (e.g., Celery, RQ, or a simple scheduler) to precompute movers/sectors.
-  - Task: Add full tracing (OTel) + Grafana dashboards for `http_request_duration_ms`, `market_yfinance_call_ms`, and LLM call latencies.
+  - Task: Add full tracing (OTel) + Grafana dashboards for `http_request_duration_ms`, `market_yfinance_call_ms`, and LLM call latencies. (currently not active)
   - Task: Define SLOs (p95 < 800ms for single-quote requests) and alerting on regressions.
 
 Quick Wins Summary:
@@ -73,6 +73,11 @@ If you want, I can implement the short-TTL cache + threadpool batching next and 
 - Frontend: `frontend/pages/2_📈_Market.py` was updated to use `st.cache_data` (ttl=5s) and an input debounce flow. The Streamlit process can be started and serves at `http://localhost:8501`, but UI verification requires interactive QA (some scripted GETs were intermittent during smoke runs). 
 - Profiling: native profiler attempts (`py-spy`) were attempted but advisable to re-run under a controlled invocation (`py-spy record -- python -m uvicorn app.main:app`) to produce a reliable flamegraph.
 
+### Testing & Coverage (2025-12-26)
+- Test suite: 618 passing tests (manual/integration excluded)
+- Coverage: 88% across `app/` modules (`coverage.xml` generated)
+- Observability: LangSmith enabled when configured; OTEL deferred; `instrument_*` are no-ops
+
 ### Is this production-grade?
 
 Short answer: not yet.
@@ -94,7 +99,8 @@ Parked for Next Release (deferred)
 1. Add Redis short-TTL cache & export cache hit/miss metrics. (owner: Backend/DevOps)
 2. Add CI job that runs the integration benchmark (`tools/benchmark_market_quote_http.py`) and validates p50/p95 baselines. (owner: Backend/CI)
 3. Run `py-spy record -- python -m uvicorn app.main:app` on a staging instance to generate `profile_uvicorn.svg` and confirm no remaining blocking hotspots. (owner: Backend)
-4. Add OTel tracing and Grafana dashboards for `http_request_duration_ms`, `market_yfinance_call_ms`, LLM latencies. (owner: Observability)
+4. Add OTel tracing and Grafana dashboards for `http_request_duration_ms`, `market_yfinance_call_ms`, LLM latencies. (owner: Observability; not active yet)
+7. Raise code coverage to ≥90% and expand DeepEval checks for groundedness/relevance across agents. (owner: QA)
 5. Complete frontend QA: cross-browser debounce + caching checks, and add a lightweight Playwright test to simulate typing and validate the debounce timing. (owner: Frontend)
 6. Create a canary rollout (feature flag) and run a 24-72 hour observation window with alerts. (owner: Product/DevOps)
 

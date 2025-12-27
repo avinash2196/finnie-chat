@@ -103,12 +103,12 @@ Packages used:
 ## Usage
 
 ### Automatic Tracing & Logging
-Observability is integrated on app startup:
+Observability is integrated on app startup (no‑op when not configured):
 
 ```python
 # app/main.py (already configured)
 from app.observability import observability
-observability.instrument_fastapi(app)  # optional
+observability.instrument_fastapi(app)  # currently a no‑op
 ```
 
 ### Manual Event Tracking
@@ -186,12 +186,15 @@ GET http://localhost:8000/observability/status
         "langsmith_available": true,
         "langsmith_enabled": true,
         "langsmith_project": "finnie-chat",
-        "opentelemetry_available": false,
         "arize_enabled": true
     },
     "message": "Observability services configured"
 }
 ```
+
+Notes:
+- `instrument_fastapi()`, `instrument_httpx()`, and `instrument_sqlalchemy()` are intentional no‑ops in the current release.
+- OTEL instrumentation is not active; enabling OTEL is part of the future roadmap.
 
 ### Health Check with Observability
 ```bash

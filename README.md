@@ -112,12 +112,12 @@ Database Layer (SQLAlchemy)
 
     ### Recent Improvements (Latest Release)
 
-    #### 🔄 Non-Blocking LangSmith Observability
-    - **Background thread pool** (2 workers) for async LangSmith logging
-    - **Configurable timeouts** (default 2s, set via `LANGSMITH_TIMEOUT` env var) to prevent request blocking
-    - **Run completion marking** with explicit `end_time` parameter to avoid indefinite "Pending" status
-    - **Thread-safe execution** with proper error handling and graceful degradation
-    - **Full backward compatibility** with existing code; no API changes required
+    #### 🔎 LangSmith Observability (Sync + Safe No‑Ops)
+    - **Synchronous run lifecycle**: `create_run` / `update_run` used directly; no background thread pool
+    - **Safe no‑ops** when API keys are missing (LangSmith/Arize gracefully disabled)
+    - **Lightweight timing middleware** in `app/main.py` for per‑request latency metrics
+    - **No OTEL instrumentation** at present; `instrument_*` methods are intentional no‑ops
+    - **Backwards compatible**: integrates only when configured, otherwise inert
 
     #### 🎯 Hybrid RAG Search Engine
     - **Semantic embeddings** using `sentence-transformers` (all-MiniLM-L6-v2, 384-dim vectors)
@@ -139,6 +139,12 @@ Database Layer (SQLAlchemy)
     - **Automatic fallback** if Redis unavailable - no errors, just uses in-memory cache
 
     If you'd like additional diagram formats (PNG, PDF) or a sequence/data-flow diagram, tell me which and I'll add them.
+
+    ### Status Update (2025‑12‑26)
+    - **Test Suite:** 618 tests passing (100% of collected), excluding manual/integration
+    - **Coverage:** 88% across `app/` modules (see `coverage.xml`)
+    - **Observability:** LangSmith enabled when keys are present; Arize optional; OTEL not active
+    - **Gateway:** Circuit breaker prevents external LLM calls in tests; mocks/fallbacks used
 ```
 
 ## Database Integration ✅
