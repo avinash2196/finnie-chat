@@ -7,8 +7,8 @@ This document tracks significant updates, bug fixes, and improvements to the fin
 
 ## Major Fixes & Features
 
-### 1. Portfolio MCP Database Integration ✅
-**Status:** COMPLETE  
+### 1. Portfolio MCP Database Integration ⚠️ (Partial)
+**Status:** IN PROGRESS — not yet wired to agents  
 **Date:** December 22, 2025
 
 **Problem:**
@@ -16,19 +16,19 @@ This document tracks significant updates, bug fixes, and improvements to the fin
 - All agents returned data for `user_123` regardless of actual user
 - Users created in UI had no access to their actual portfolio data
 
-**Solution:**
-- Refactored `get_user_holdings()` to query SQLite database directly
-- Refactored `get_user_profile()` to fetch User records from database
-- Refactored `get_transaction_history()` to fetch Transaction records from database
-- Added UUID/username resolution in all functions (supports both lookup methods)
-
-**Files Changed:**
-- `app/mcp/portfolio.py` — Updated 3 core functions to use real database
-
-**Impact:**
-- Chat agents now see actual user portfolio data
-- Supports both UUID and username lookups
+**What was built:**
+- `app/portfolio_mcp_db.py` — a fully database-backed MCP variant using SQLAlchemy
+- Supports UUID/username resolution in all functions
 - Works with SQLite dev environment and PostgreSQL production
+
+**Current state (April 2026):**
+- `app/mcp/portfolio.py` (used by all agents) still uses `MOCK_HOLDINGS`, `MOCK_USER_PROFILES`, `MOCK_TRANSACTIONS`
+- `app/portfolio_mcp_db.py` exists and is functional but **no agent imports it**
+- To complete integration: replace `from app.mcp.portfolio import ...` with `app.portfolio_mcp_db` in agents
+
+**Files involved:**
+- `app/mcp/portfolio.py` — active, mock data
+- `app/portfolio_mcp_db.py` — DB-backed variant, not yet wired
 
 ---
 
@@ -154,44 +154,7 @@ pytest tests/deepeval/test_deepeval_portfolio_chat.py -v
 ## Architecture Changes
 
 ### Portfolio MCP Server
-**Before:** Mock data hardcoded
-```python
-MOCK_HOLDINGS = {
-    "user_123": {
-        "AAPL": {...},
-        "MSFT": {...}
-    }
-}
-```
-
-**After:** Database-driven
-```python
-def get_user_holdings(user_id: str) -> Dict:
-    user = db.query(User).filter(
-        (User.id == user_id) | (User.username == user_id)
-    ).first()
-    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
-    return format_holdings(holdings)
-```
-
-### Chat Endpoint
-**Before:**
-```python
-@app.post("/chat")
-def chat(req: ChatRequest):
-    reply, intent, risk = handle_message(msg, conversation_context=context)
-```
-
-**After:**
-```python
-@app.post("/chat")
-def chat(req: ChatRequest):
-    reply, intent, risk = handle_message(
-        msg, 
-        conversation_context=context,
-        user_id=req.user_id  # ← Now passes user_id
-    )
-```
+**Current state:** `app/mcp/portfolio.py` (active) serves hardcoded mock data. A database-backed variant exists in `app/portfolio_mcp_db.py` but is not imported by any agent. Replacing the import in each portfolio-related agent is the only wiring step.
 
 ---
 
@@ -222,7 +185,7 @@ No migration needed! The system is backward compatible:
 
 ## Verification Checklist
 
-- [x] Portfolio MCP queries real database
+- [ ] Portfolio MCP wired to database (pending — `app/portfolio_mcp_db.py` exists but agents still import mock server)
 - [x] Chat passes user_id to orchestrator
 - [x] Compliance agent deduplicates disclaimers
 - [x] Tests added for all 3 fixes
@@ -231,57 +194,17 @@ No migration needed! The system is backward compatible:
 
 ---
 
-## Performance Impact
-
-| Operation | Before | After | Change |
-|-----------|--------|-------|--------|
-| Get holdings (1 user) | N/A (mock) | ~10ms | New |
-| Get holdings (100 users) | N/A (mock) | ~15ms | New |
-| Chat with portfolio | ❌ No data | ✅ Real data | +Fixed |
-| Disclaimer appending | ~1ms (dups) | ~2ms (dedup) | +0.1ms |
-
----
-
 ## Known Limitations & Future Work
 
-All previously listed limitations have been addressed in the December 2025 release. No open items remain.
-
----
-
-## Rollback Plan
-
-If issues arise:
-
-1. **Revert Portfolio MCP:**
-   ```bash
-   git checkout HEAD~1 app/mcp/portfolio.py
-   # Reverts to mock data
-   ```
-
-2. **Revert Chat User ID:**
-   ```bash
-   git checkout HEAD~1 app/main.py
-   # Line 400 goes back to original
-   ```
-
-3. **Revert Compliance:**
-   ```bash
-   git checkout HEAD~1 app/agents/compliance.py
-   # Removes dedup logic
-   ```
-
----
-
-## Contributors & Timeline
-
-- **Dec 22, 2025** — Portfolio MCP refactor, chat user_id fix, compliance dedup
-- **Test expansion** — 26+ new tests added across 3 test files
+- **Portfolio MCP** — Agents still use mock data. `app/portfolio_mcp_db.py` is the DB-backed variant but is not yet imported by any agent.
+- **Alembic migrations** — Alembic is a listed dependency but migration files have not been scaffolded.
+- **Test suite** — Latest full test run: 452 passed, 1 failed (`tests/test_rag.py::test_rag_grounded_answer`).
 
 ---
 
 ## Questions & Support
 
-For issues or questions about these changes:
-1. Check [DATABASE_GUIDE.md](DATABASE_GUIDE.md) for database details
+For questions about these changes:
+1. Check [DATABASE_GUIDE.md](architecture/DATABASE_GUIDE.md) for database details
 2. Review test files for usage examples
 3. Check git log for detailed commit messages

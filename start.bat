@@ -11,7 +11,7 @@ echo.
 REM Check if we're in the right directory
 if not exist "venv\" (
     echo ERROR: venv directory not found!
-    echo Please run this script from: C:\Users\avina\Codes\finnie-chat
+    echo Please run this script from the project root directory (finnie-chat)
     pause
     exit /b 1
 )

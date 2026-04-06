@@ -18,11 +18,13 @@ Both Market and Market Trends pages were displaying hardcoded/dummy data instead
 - **Error Handling**: Added None-safe value handling (`or 0` pattern) to prevent TypeError
 - **User Feedback**: Added captions noting sample data sections and directing to Chat for analysis
 
-#### `frontend/pages/2_📈_Market_Trends.py`
-- **Market Indices**: Same updates as Market.py - fetches real-time data from backend
+#### `frontend/pages/2_📈_Market.py` (updated)
+- **Market Indices**: Replaced hardcoded mock data with real-time API calls to `/market/quote`
 - **Screener**: Updated to use backend API instead of hardcoded results
-- **Error Handling**: Same None-safe handling as Market.py
-- **Consistency**: Now matches Market.py functionality
+- **Error Handling**: Added None-safe value handling (`or 0` pattern) to prevent TypeError
+- **User Feedback**: Added captions noting sample data sections and directing to Chat for analysis
+
+> Note: A second page referenced as `Market_Trends.py` in earlier planning does not exist. The single `2_📈_Market.py` page covers all market functionality.
 
 ### 2. Key Technical Fixes
 
@@ -76,16 +78,16 @@ Manual verification tool that:
 
 #### All Existing Tests Pass
 ```
-✅ 8/8 tests passed - test_market.py (MCP server tests)
-✅ 1/1 test passed - test_market_quote_endpoint_success
-✅ 1/1 test passed - test_market_screen_dividend
-✅ 42/42 market-related tests passed (full test suite)
+✅ test_market.py — MCP server tests (all passing at time of update)
+✅ test_market_quote_endpoint_success — passing
+✅ test_market_screen_dividend — passing
+✅ Market-related tests — passing at time of this update (full current count in test_results_full.txt)
 ```
 
 #### New Integration Tests Pass
 ```
-✅ 6/6 tests passed - test_market_frontend_integration.py
-✅ All verification checks passed - verify_market_pages.py
+✅ test_market_frontend_integration.py — all tests passing at time of update
+✅ verify_market_pages.py — all verification checks passed
 ```
 
 #### Live Data Verification
@@ -103,9 +105,9 @@ Real-time prices retrieved successfully:
 1. Market indices now display real-time prices from yFinance
 2. TypeError on None values resolved
 3. Screeners use backend API for recommendations
-4. Both Market and Market_Trends pages use live data
-5. Consistent data across Chat, Market, and Market Trends tabs
-6. All tests passing (42 market tests + 6 new integration tests)
+4. Market page (`2_📈_Market.py`) uses live data
+5. Consistent data across Chat and Market tabs
+6. All tests passing at time of update (see `test_results_full.txt` for current full-suite count)
 
 ### 📊 Sample Data (Intentional)
 The following sections still use sample data with user notification:
@@ -162,8 +164,7 @@ Empty Results → Info Message → Suggest Chat Alternative
 ## Files Modified
 
 ### Frontend
-- `frontend/pages/2_📈_Market.py` (60 lines changed)
-- `frontend/pages/2_📈_Market_Trends.py` (60 lines changed)
+- `frontend/pages/2_📈_Market.py` (updated)
 
 ### Tests (New)
 - `tests/test_market_frontend_integration.py` (168 lines)

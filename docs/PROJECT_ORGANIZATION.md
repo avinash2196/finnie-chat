@@ -4,22 +4,18 @@
 
 The project has been reorganized for better maintainability and clarity.
 
-### Root Directory (`C:\Users\avina\Codes\finnie-chat\`)
+### Root Directory (`finnie-chat/`)
 
 ```
 finnie-chat/
 ├── 📄 README.md                    # Main project documentation
-├── 📄 INDEX.md                     # General index
-├── 📄 DOCUMENTATION_INDEX.md       # Complete documentation guide
 ├── 📄 requirements.txt             # Python dependencies
 ├── 📄 pytest.ini                   # Pytest configuration
-├── 📄 .env                         # Environment variables (API keys)
-├── 📄 .gitignore                   # Git ignore rules
-├── 📄 .coveragerc                  # Coverage configuration
 ├── 📄 start.bat                    # Windows startup script
 ├── 📄 start.sh                     # Linux/Mac startup script
-├── 📄 finnie_chat.db               # SQLite database
-├── 📄 coverage.xml                 # Coverage report
+├── 📄 test_results_full.txt        # Latest test run output
+├── 📄 .env                         # Environment variables (API keys; not committed)
+├── 📄 .gitignore
 │
 ├── 📁 app/                         # Backend application code
 │   ├── main.py                     # FastAPI entry point
@@ -33,7 +29,7 @@ finnie-chat/
 │   ├── Home.py                     # Chat interface
 │   └── pages/                      # Portfolio, Market tabs
 │
-├── 📁 tests/                       # Test suite (183 tests)
+├── 📁 tests/                       # Test suite (452 passed, 1 failed — see test_results_full.txt)
 │   ├── test_*.py                   # Unit tests
 │   └── deepeval/                   # DeepEval tests
 │
@@ -87,14 +83,14 @@ finnie-chat/
 ├── 📁 data/                        # Knowledge base data
 │   └── finance_kb.txt
 │
-└── 📁 chroma/                      # Conversation storage
+└── 📁 chroma/                      # Embedding cache (pickle file; not a ChromaDB database)
     └── conversations/              # JSON conversation files
 ```
 
 ## 🔄 What Changed
 
 ### ✅ Files Moved from Root
-**From `C:\Users\avina\Codes\` to `finnie-chat\docs\planning\`:**
+**Moved to `finnie-chat/docs/planning/`:**
 - chat-bot.md
 - DELIVERABLES.md
 - diagram.md

@@ -4,7 +4,7 @@
 
 ### 1. Install Dependencies
 ```bash
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\activate
 pip install -r requirements.txt
 ```

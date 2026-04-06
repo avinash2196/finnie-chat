@@ -2,9 +2,9 @@
 
 ## What Was Delivered
 
-### 📝 New Test Files (3 files, 28 tests)
+### 📝 New Test Files (3 files, 29 tests)
 
-#### 1. **tests/test_portfolio_mcp_database.py** (13 tests)
+#### 1. **tests/test_portfolio_mcp_database.py** (14 tests)
 - Portfolio MCP database integration tests
 - Tests UUID and username lookups
 - Validates calculations (gain/loss, portfolio value)
@@ -31,7 +31,7 @@
 - Added "Recent Updates (December 2025)" section
 - Highlights portfolio MCP database integration
 - Notes compliance agent deduplication fix
-- Updated test count from 183 to 200+
+- Updated documentation to reflect current test results (452 passed, 1 failed — see `test_results_full.txt`)
 
 #### 2. **UPDATES.md** (NEW - Comprehensive changelog)
 - Detailed problem/solution for each fix
@@ -44,7 +44,7 @@
 - Added section on database-backed portfolio MCP
 - Explains query flow for agents
 - Documents UUID/username support
-- Clarifies how agents access real portfolio data
+- Clarifies the database-backed MCP variant and its current wiring status
 
 #### 4. **ARCHITECTURE.md**
 - Added "Architecture Changes (Dec 2025)" section
@@ -63,14 +63,15 @@
 
 ## Key Improvements Validated by Tests
 
-### ✅ Portfolio MCP Now Database-Backed
-**Tests:** `test_portfolio_mcp_database.py` (13 tests)
-- Agents see real holdings (not mock data)
+### ✅ Database-Backed Portfolio Variant Added
+**Tests:** `test_portfolio_mcp_database.py` (14 tests)
+- Validates `app/portfolio_mcp_db.py` (SQLAlchemy-backed MCP module)
+- Note: agents still call `app/mcp/portfolio.py` (mock data); `portfolio_mcp_db.py` is not yet wired into the agent flow
 - Supports UUID and username lookups
 - Includes accurate gain/loss calculations
 
 ### ✅ Chat Gets User Portfolio Context
-**Tests:** `test_deepeval_portfolio_chat.py` (3 tests)
+**Tests:** `test_deepeval_portfolio_chat.py` (5 tests)
 - Orchestrator receives user_id from /chat endpoint
 - Different users get different portfolios
 - Agents receive portfolio data for analysis
@@ -86,8 +87,8 @@
 ## Test Execution Summary
 
 ### Coverage
-- **Total New Tests:** 28
-- **Portfolio MCP Tests:** 13
+- **Total New Tests:** 29
+- **Portfolio MCP Tests:** 14
 - **Compliance Agent Tests:** 10
 - **DeepEval Chat Tests:** 5
 
@@ -109,11 +110,11 @@ pytest tests/ --cov=app --cov-report=html
 ## Files Modified Summary
 
 ### Code Changes (3 files)
-1. ✅ `app/mcp/portfolio.py` — Database-backed functions
+1. ✅ `app/mcp/portfolio.py` — Database-backed functions (module exists; not yet wired into active agent imports)
 2. ✅ `app/main.py` — Chat endpoint passes user_id
 3. ✅ `app/agents/compliance.py` — Deduplication logic
 
-### New Test Files (3 files, 28 tests)
+### New Test Files (3 files, 29 tests)
 1. ✅ `tests/test_portfolio_mcp_database.py`
 2. ✅ `tests/test_compliance_agent.py`
 3. ✅ `tests/deepeval/test_deepeval_portfolio_chat.py`
@@ -148,7 +149,7 @@ pytest tests/ --cov=app --cov-report=html
 - [x] Portfolio MCP uses real database
 - [x] Chat passes user_id to orchestrator
 - [x] Compliance agent deduplicates disclaimers
-- [x] 28 new tests added and documented
+- [x] 29 new tests added and documented
 - [x] 5 documentation files updated
 - [x] README updated with recent changes
 - [x] Architecture diagrams updated
@@ -161,11 +162,11 @@ pytest tests/ --cov=app --cov-report=html
 
 This delivery includes:
 - **3 critical bug fixes** with comprehensive test coverage
-- **28 new test cases** validating all improvements
+- **29 new test cases** validating all improvements
 - **5 updated documentation files** explaining changes and architecture
 - **Complete test guide** for running and debugging tests
 
-All changes are backward compatible. Existing deployments will automatically benefit from database-backed portfolio access once the backend is restarted.
+All changes are backward compatible. The database-backed MCP variant (`app/portfolio_mcp_db.py`) requires explicit agent import rewiring before it becomes active in the agent flow.
 
 **Recommendation:** Run the full test suite to validate all changes:
 ```bash

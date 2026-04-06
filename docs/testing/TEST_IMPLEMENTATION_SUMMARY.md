@@ -5,9 +5,9 @@ This document summarizes all new test cases and DeepEval tests added to validate
 
 ---
 
-## Test Files Added (3 new files, 26+ tests)
+## Test Files Added (3 new files)
 
-### 1. `tests/test_portfolio_mcp_database.py` — 11 Tests
+### 1. `tests/test_portfolio_mcp_database.py`
 **Purpose:** Comprehensive unit testing for Portfolio MCP database integration
 
 **Test Class:** `TestPortfolioMCPDatabase`
@@ -45,7 +45,7 @@ pytest tests/test_portfolio_mcp_database.py::TestPortfolioClient -v
 
 ---
 
-### 2. `tests/test_compliance_agent.py` — 10 Tests
+### 2. `tests/test_compliance_agent.py`
 **Purpose:** Validate compliance agent disclaimer logic and deduplication
 
 **Test Class:** `TestComplianceAgent`
@@ -70,7 +70,7 @@ pytest tests/test_compliance_agent.py::TestComplianceAgent::test_no_duplicate_di
 
 ---
 
-### 3. `tests/deepeval/test_deepeval_portfolio_chat.py` — 5 Tests
+### 3. `tests/deepeval/test_deepeval_portfolio_chat.py`
 **Purpose:** DeepEval-based testing for chat with portfolio context
 
 **Test Class:** `TestChatPortfolioAccess` (Mocked Tests)
@@ -106,19 +106,18 @@ pytest tests/deepeval/test_deepeval_portfolio_chat.py::TestChatPortfolioAccess -
 
 ## Test Coverage Summary
 
-| Module | Type | Count | Status |
-|--------|------|-------|--------|
-| Portfolio MCP DB | Unit | 13 | ✅ READY |
-| Compliance Agent | Unit | 10 | ✅ READY |
-| Chat Portfolio | DeepEval/Mock | 5 | ✅ READY |
-| **Total** | | **28** | **✅** |
+| Module | Type | Status |
+|--------|------|-------|
+| Portfolio MCP DB (`test_portfolio_mcp_database.py`) | Unit | ✅ Ready |
+| Compliance Agent (`test_compliance_agent.py`) | Unit | ✅ Ready |
+| Chat Portfolio (`test_deepeval_portfolio_chat.py`) | DeepEval/Mock | ✅ Ready |
 
 ---
 
 ## Running All New Tests
 
 ```bash
-# Run all 28 new tests
+# Run all new tests
 pytest tests/test_portfolio_mcp_database.py tests/test_compliance_agent.py tests/deepeval/test_deepeval_portfolio_chat.py -v
 
 # Run with coverage

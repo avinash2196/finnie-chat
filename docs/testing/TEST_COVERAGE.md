@@ -1,8 +1,7 @@
 # 📊 Test Coverage Report - Finnie Chat
 
 **Generated:** December 22, 2025  
-**Total Tests:** 218  
-**Status:** ✅ All Passing
+**Note:** Test counts and pass rates reflect the state of individual test modules at the time individual snapshots were taken. For the current overall result see `test_results_full.txt` (root): **452 passed, 1 failed**.
 
 ---
 
@@ -12,20 +11,14 @@
 ┌─────────────────────────────────────────────────────┐
 │          FINNIE CHAT TEST COVERAGE                  │
 │                                                     │
-│  Total Tests:        218 ✅                         │
-│  Pass Rate:          100%                           │
-│  Estimated Coverage: 70-75%                         │
-│  Backend Tests:      183 (legacy)                   │
-│  Database Tests:     35 (new)                       │
+│  Latest full run:  452 passed, 1 failed             │
+│  (see test_results_full.txt in repo root)           │
 │                                                     │
-│  Status: EXCELLENT - Production Ready              │
+│  Status: Good coverage; 1 known failing test        │
 └─────────────────────────────────────────────────────┘
 ```
 
-### New Database Test Suite (35 tests)
-- ✅ Database Models (13 tests)
-- ✅ Integration Sync (22 tests)
-- ⏳ API Endpoints (30+ tests created, fixture refinement needed)
+> Module-level test counts throughout this document are snapshots taken at individual development stages. The authoritative overall result is in `test_results_full.txt`.
 
 ---
 
@@ -330,7 +323,7 @@
 
 ---
 
-### 9. **Risk Profiler Agent** (11 tests)
+### 11. **Risk Profiler Agent** (11 tests)
 ✅ **File:** `tests/test_risk_profiler.py`
 
 **Portfolio Metrics (5 tests):**
@@ -354,7 +347,7 @@
 
 ---
 
-### 10. **Strategy Agent** (20 tests)
+### 12. **Strategy Agent** (20 tests)
 ✅ **File:** `tests/test_strategy.py`
 
 **Dividend Screener (4 tests):**
@@ -391,87 +384,54 @@
 
 ---
 
-### 11. **Compliance & Disclaimers** (2 tests)
-✅ **File:** `tests/compliance_test.py`
+### 13. **Compliance & Disclaimers** (12 tests)
+✅ **Files:** `tests/test_compliance.py`, `tests/test_compliance_agent.py`
 
 - ✅ No disclaimer for low-risk queries
 - ✅ Disclaimer for medium-risk queries
+- ✅ No duplicate disclaimers (deduplication logic)
+- ✅ Disclaimer format with proper newlines
+- ✅ Edge cases: empty text, multiline, unknown risk level, case sensitivity
 
-**Coverage:** Risk-based compliance ✅
+**Coverage:** Risk-based compliance, disclaimer deduplication ✅
 
 ---
 
-## 📊 Coverage by Category
+## 📊 Coverage by Area
 
-| Category | Tests | Status | Coverage |
-|----------|-------|--------|----------|
-| **Agents** (6 agents) | 94 | ✅ | 90% |
-| **Gateway & LLM** | 15 | ✅ | 85% |
-| **Data Persistence** | 58 | ✅ | 80% |
-| **Safety & Compliance** | 6 | ✅ | 85% |
-| **Intent & Orchestration** | 43 | ✅ | 75% |
-| **Frontend Integration** | 0 | ❌ | 0% |
-| **RAG System** | 0 | ❌ | 0% |
-| **API Endpoints** | 0 | ❌ | 0% |
-| **Database** | 0 | ❌ | 0% (Phase 3) |
+> Test counts in this table are module-level snapshots taken during individual development sessions. For the current overall pass count, see `test_results_full.txt` in the repo root.
+
+| Area | Key Test Files | Status |
+|------|---------------|--------|
+| **Agents** (9 agents) | `test_educator_agent.py`, `test_market_agent.py`, `test_risk_profiler.py`, `test_portfolio_coach.py`, `test_strategy.py`, `test_goal_planning.py`, `test_news_synthesizer.py`, `test_tax_education.py` | ✅ Covered |
+| **Orchestration & Intent** | `test_orchestrator_integration.py`, `test_intent_extra.py`, `test_intent_risk.py` | ✅ Covered |
+| **Gateway & LLM** | `test_gateway.py`, `test_llm_utilities.py` | ✅ Covered |
+| **Database & Sync** | `test_database.py`, `test_integration_sync.py`, `test_portfolio_mcp_database.py` | ✅ Covered |
+| **Safety & Compliance** | `test_guardrails.py`, `test_compliance_agent.py` | ✅ Covered |
+| **RAG** | `test_rag.py`, `test_retriever_abstraction.py`, `test_semantic_search.py` | ✅ Covered (1 known failure in `test_rag.py`) |
+| **Memory** | `test_memory.py`, `test_memory_extra.py`, `test_memory_module.py` | ✅ Covered |
+| **Market & MCP** | `test_market.py`, `test_mcp_market_server.py`, `test_market_frontend_integration.py` | ✅ Covered |
+| **Observability** | `test_observability.py`, `test_observability_decorators.py` | ✅ Covered |
+| **API Endpoints** | `test_main_api.py`, `test_main_users_and_chat.py`, `test_main_market.py` | ✅ Covered |
+| **LLM Evaluation** | `tests/deepeval/` (3 files) | ✅ Covered (requires live keys) |
+| **Frontend (Streamlit)** | — | ❌ No automated tests |
 
 ---
 
 ## ❌ What's NOT Tested
 
-### 1. **Frontend (Streamlit)** - No Tests
-- Chat UI behavior
-- Message rendering
-- Sidebar interactions
-- Tab navigation
-- Error display
-
-**Why:** Streamlit UI testing requires special setup  
-**Solution:** Add Streamlit test runner in Phase 2
-
-### 2. **RAG System** - No Tests
-- Document ingestion
-- Query matching
-- Similarity scoring
-- Verification logic
-
-**Why:** Tests exist but in separate `test_rag_improvement.py`  
-**Solution:** Move to main test suite
-
-### 3. **API Endpoints** - No Tests
-- `/chat` endpoint behavior
-- `/verify-rag` endpoint
-- Response validation
-- Error handling
-
-**Why:** Tested via orchestrator, but no direct endpoint tests  
-**Solution:** Add integration tests for main.py
-
-### 4. **Environment Variables** - Minimal Tests
-- `.env` loading
-- Missing keys handling
-
-**Why:** Tested via gateway initialization  
-**Solution:** Add dedicated env.py tests
+### **Frontend (Streamlit)** — No Automated Tests
+- Chat UI behavior, message rendering, tab navigation
+- Streamlit components require a running server and browser automation
+- Manual verification scripts exist (`tests/verify_market_pages.py`, `tests/verify_news_mcp.py`)
 
 ---
 
-## 🎯 Test Quality Metrics
+## 🎯 Test Status
 
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Total Tests** | 183 | ✅ Excellent |
-| **Pass Rate** | 100% | ✅ Perfect |
-| **Execution Time** | 43.62s | ✅ Good |
-| **Code Coverage** | ~65-70% | 🟡 Good |
-| **Agent Coverage** | 90% | ✅ Excellent |
-| **Integration Tests** | 40+ | ✅ Strong |
+The test suite includes unit, integration, and evaluation-oriented tests across backend agents, the RAG pipeline, database integration, observability decorators, and LLM-evaluation quality metrics via DeepEval. The suite runs locally without live API keys (observability and external services are mock-safe).
 
----
-
-## 🚀 Test Status
-
-Testing is complete for the December 2025 release. Frontend, API, MCP, sync jobs, market features, and performance scenarios are covered with ~90% code coverage and 400+ tests passing.
+See `test_results_full.txt` in the repo root for the most recent overall pass/fail summary.
 
 ---
 
@@ -479,7 +439,7 @@ Testing is complete for the December 2025 release. Frontend, API, MCP, sync jobs
 
 ```powershell
 # Run all tests
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\python.exe -m pytest tests -v
 
 # Run specific module
@@ -496,12 +456,6 @@ cd C:\Users\avina\Codes\finnie-chat
 
 ---
 
-## ✅ Conclusion
+## ✅ Summary
 
-- **183 tests** covering core backend functionality
-- **100% pass rate** - all features working
-- **65-70% estimated coverage** - solid foundation
-- **90% agent coverage** - agents well-tested
-- **Ready for Phase 2 frontend** - backend stable
-
-**Recommendation:** Begin Phase 2 frontend development with current test base
+The test suite contains structured testing artifacts for backend logic and AI workflows: individual agent tests, database/provider integration tests, API endpoint tests, LLM-evaluation scenarios (DeepEval), and observability decorator coverage. Module-level snapshots throughout this document were taken at different points in development — the authoritative current result is in `test_results_full.txt` (repo root). The one known failing test (`tests/test_rag.py::test_rag_grounded_answer`) is tracked.

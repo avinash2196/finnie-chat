@@ -58,11 +58,7 @@ Related files:
 - `app/mcp/market_server.py` — yFinance server code (batching/parallelization)
 - `app/main.py` — middleware/observability hooks
 
-If you want, I can implement the short-TTL cache + threadpool batching next — confirm and I'll start with a focused PR.
-
 ---
-
-If you want, I can implement the short-TTL cache + threadpool batching next and I'll start with a focused PR.
 
 ### Progress Update (implemented)
 
@@ -74,8 +70,7 @@ If you want, I can implement the short-TTL cache + threadpool batching next and 
 - Profiling: native profiler attempts (`py-spy`) were attempted but advisable to re-run under a controlled invocation (`py-spy record -- python -m uvicorn app.main:app`) to produce a reliable flamegraph.
 
 ### Testing & Coverage (2025-12-26)
-- Test suite: 618 passing tests (manual/integration excluded)
-- Coverage: 88% across `app/` modules (`coverage.xml` generated)
+- Test suite: Latest full test run — 452 passed, 1 failed (`tests/test_rag.py::test_rag_grounded_answer`)
 - Observability: LangSmith enabled when configured; OTEL deferred; `instrument_*` are no-ops
 
 ### Is this production-grade?
@@ -92,42 +87,21 @@ Rationale:
 
 ### Action items required before production rollout
 
-> Note: per direction, the operational/infra tasks below are parked for the next release. We'll track these in the release backlog and schedule their implementation in the next sprint.
+Deferred items (not yet implemented):
+- Redis-backed cache with hit/miss metrics
+- CI integration benchmark job
+- py-spy flamegraph on staging
+- OTel tracing and Grafana dashboards
+- E2E frontend performance tests
+- Canary rollout with SLO alerting
 
-Parked for Next Release (deferred)
+### What was implemented
 
-1. Add Redis short-TTL cache & export cache hit/miss metrics. (owner: Backend/DevOps)
-2. Add CI job that runs the integration benchmark (`tools/benchmark_market_quote_http.py`) and validates p50/p95 baselines. (owner: Backend/CI)
-3. Run `py-spy record -- python -m uvicorn app.main:app` on a staging instance to generate `profile_uvicorn.svg` and confirm no remaining blocking hotspots. (owner: Backend)
-4. Add OTel tracing and Grafana dashboards for `http_request_duration_ms`, `market_yfinance_call_ms`, LLM latencies. (owner: Observability; not active yet)
-7. Raise code coverage to ≥90% and expand DeepEval checks for groundedness/relevance across agents. (owner: QA)
-5. Complete frontend QA: cross-browser debounce + caching checks, and add a lightweight Playwright test to simulate typing and validate the debounce timing. (owner: Frontend)
-6. Create a canary rollout (feature flag) and run a 24-72 hour observation window with alerts. (owner: Product/DevOps)
-
-These items are intentionally deferred; immediate focus remains on stabilizing current changes and preparing a staging cut for verification.
-
-Estimated effort to reach prod-grade: 3-10 days depending on infra availability and CI speed.
-
-### Recommended immediate next steps
-
-- Push the Streamlit debounce + cache changes to a staging branch and run an interactive QA pass (I can automate this with Playwright if you want).
-- (Parked) Provision a Redis instance for staging and configure `REDIS_URL` to validate distributed caching + metrics.
-- (Parked) Re-run `py-spy` on staging uvicorn to produce a flamegraph for final validation.
-If you want, I can start with the staging branch and interactive QA now; remaining infra tasks are parked for the next release.
-- Implemented short-TTL in-memory cache and `get_quotes` batch method in `app/mcp/market.py`.
-- Implemented batched MCP tool `get_quotes` and parallel per-ticker processing with retry/backoff in `app/mcp/market_server.py`.
-- Added short-lived aggregation cache with Redis support (fallback to in-memory) in `app/main.py` for `/market/quote`.
-
-Next step (recommended):
-1. Run an integration benchmark (automated runner) to measure p50/p95 for `/market/quote` with representative symbol sets; compare before/after numbers.
-2. Run a live profiler (`py-spy`) attached to a running `uvicorn` process to generate a flamegraph and validate reduced blocking time.
+- Short-TTL in-memory cache and `get_quotes` batch method in `app/mcp/market.py`.
+- Batched MCP tool `get_quotes` and parallel per-ticker processing with retry/backoff in `app/mcp/market_server.py`.
+- Short-lived aggregation cache with Redis support (fallback to in-memory) in `app/main.py` for `/market/quote`.
 
 ### Recent Results
 
-- Live HTTP benchmark results are saved in `benchmark_market_quote_http_results.json` and summarized in the project `README.md` under "Performance Benchmarks (recent)".
-- Observed improvement: p95 for small (3-symbol) requests reduced from ~1831 ms (sequential baseline) to ~31 ms after batching, parallelization and caching — ~98% reduction.
-
-### Next Actions
-
-1. Run `py-spy` as admin or via direct `py-spy record -- python -m uvicorn app.main:app` to capture a flamegraph (`profile_uvicorn.svg`) in a reproducible way.
-2. Frontend improvements: client-side caching, debouncing, remove blocking sleeps, and E2E UI performance tests (next sprint).
+- Live HTTP benchmark results are saved in `benchmark_market_quote_http_results.json`.
+- Observed improvement: p95 for 3-symbol requests reduced from ~1831 ms (sequential baseline) to ~31 ms after batching, parallelization, and caching -- approximately 98% reduction.

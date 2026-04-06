@@ -176,7 +176,7 @@ def my_custom_agent(message):
 
 ```bash
 # Run observability tests
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\python.exe -m pytest tests/test_observability.py -v
 
 # Expected: All tests pass (works without credentials)

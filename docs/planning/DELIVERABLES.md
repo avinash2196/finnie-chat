@@ -1,4 +1,8 @@
-# 📦 Deliverables Summary: Complete Analysis Package
+# Deliverables Summary: Analysis Package
+
+> ⚠️ **Archived document** — reflects an earlier development stage and not the current implementation state. Status figures, timelines, and "100% Complete" claims below describe the state after the December 2025 planning sprint, not the live codebase. For current implementation state see `docs/INDEX.md` and `docs/architecture/ARCHITECTURE.md`.
+
+---
 
 ## What You're Getting
 
@@ -412,7 +416,7 @@ Project is delivered; future iterations can extend features as needed.
 
 ## 📝 Document Locations
 
-All files in: `C:\Users\avina\Codes\finnie-chat\`
+All files in: `finnie-chat/`
 
 ```
 finnie-chat/

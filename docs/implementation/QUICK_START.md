@@ -1,4 +1,6 @@
-# 🚀 Quick Start Guide - Finnie Chat
+# Quick Start Guide — Finnie Chat
+
+> **Platform note:** This guide uses PowerShell syntax (Windows). For macOS/Linux, swap `.\venv\Scripts\Activate.ps1` for `source venv/bin/activate` and `.\` paths for `./`.
 
 ## Get the code
 
@@ -12,11 +14,41 @@ Repository docs: https://github.com/avinash2196/finnie-chat/tree/main/docs
 
 ## Prerequisites
 
-Before running the application, ensure the database is initialized:
+### 1. Create and activate a virtual environment
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
-.\venv\Scripts\python.exe -c "from app.database import init_db; init_db()"
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+### 2. Install dependencies
+
+```powershell
+pip install -r requirements.txt
+pip install streamlit   # frontend dependency (not in requirements.txt)
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file in the project root:
+
+```powershell
+# Minimum viable — OpenAI key required
+echo "OPENAI_API_KEY=sk-proj-..." > .env
+
+# Optional fallback providers
+echo "GEMINI_API_KEY=your-key" >> .env
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
+
+# Optional observability (safe no-ops if omitted)
+echo "LANGSMITH_API_KEY=lsv2_pt_..." >> .env
+echo "LANGSMITH_PROJECT=finnie-chat" >> .env
+```
+
+### 4. Initialise the database
+
+```powershell
+python -c "from app.database import init_db; init_db()"
 ```
 
 You should see: `Database initialized successfully!`
@@ -28,7 +60,7 @@ You can use the startup script (recommended) or run backend and frontend separat
 ### Option A: Start Both (Recommended)
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 start.bat
 ```
 
@@ -36,13 +68,12 @@ This opens two terminals:
 - Backend (FastAPI) on http://localhost:8000
 - Frontend (Streamlit) on http://localhost:8501
 
-### Part 1: Backend (FastAPI Server)
+### Option B: Backend only (FastAPI Server)
 
-Open **Terminal 1** and run:
+Open **Terminal 1** and run (with venv activated):
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
-.\venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+uvicorn app.main:app --port 8000
 ```
 
 You should see:
@@ -53,13 +84,12 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 
 ✅ **Backend is ready** when you see these messages.
 
-### Option B: Frontend (Streamlit Web App)
+### Option C: Frontend only (Streamlit Web App)
 
-Open **Terminal 2** and run:
+Open **Terminal 2** and run (with venv activated):
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
-.\venv\Scripts\python.exe -m streamlit run frontend/Home.py
+streamlit run frontend/Home.py
 ```
 
 You should see:

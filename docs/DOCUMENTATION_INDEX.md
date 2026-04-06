@@ -5,11 +5,6 @@
 - [INDEX.md](INDEX.md) — Project index
 - [docs/implementation/QUICK_START.md](docs/implementation/QUICK_START.md) — Fast startup guide
 
-## 🆕 What's New (December 2025)
-- [docs/summaries/DELIVERY_SUMMARY.md](docs/summaries/DELIVERY_SUMMARY.md) — What was delivered (this session)
-- [docs/UPDATES.md](docs/UPDATES.md) — Detailed changelog of all fixes
-- [docs/testing/TEST_IMPLEMENTATION_SUMMARY.md](docs/testing/TEST_IMPLEMENTATION_SUMMARY.md) — Complete guide to new tests
-
 ## 🏗️ Architecture & Design
 - [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) — System architecture and data flow
 - [docs/architecture/DATABASE_GUIDE.md](docs/architecture/DATABASE_GUIDE.md) — Database integration guide
@@ -63,7 +58,13 @@
 
 ---
 
-## New Tests (December 2025)
+## 📋 Changelog (December 2025)
+
+- [docs/summaries/DELIVERY_SUMMARY.md](docs/summaries/DELIVERY_SUMMARY.md) — What was delivered
+- [docs/UPDATES.md](docs/UPDATES.md) — Detailed changelog of all fixes
+- [docs/testing/TEST_IMPLEMENTATION_SUMMARY.md](docs/testing/TEST_IMPLEMENTATION_SUMMARY.md) — Guide to new tests added
+
+## Tests Added (December 2025)
 
 ### Location & Count
 | File | Tests | Purpose |
@@ -74,22 +75,19 @@
 
 ### Run Tests
 ```bash
-# All new tests
-pytest tests/test_portfolio_mcp_database.py tests/test_compliance_agent.py tests/deepeval/test_deepeval_portfolio_chat.py -v
-
-# With coverage report
-pytest tests/ --cov=app --cov-report=html
+pytest tests/ -v
+# Latest results: see test_results_full.txt in repo root
 ```
 
 ---
 
 ## Key Improvements
 
-✅ **Portfolio MCP is Database-Backed** — Agents see real user holdings, not mock data
-✅ **Chat Portfolio Access** — Orchestrator receives user_id and passes to agents  
-✅ **No Duplicate Disclaimers** — Compliance agent deduplicates messages  
-✅ **28 New Tests** — Complete test coverage for all fixes  
-✅ **Updated Documentation** — 5 files updated to reflect changes
+⚠️ **Portfolio MCP (mock data)** — `app/mcp/portfolio.py` serves hardcoded demo holdings; a DB-backed variant exists in `app/portfolio_mcp_db.py` but is not yet wired to agents  
+✅ **Chat passes user_id** — Orchestrator receives `user_id` and forwards it to agents  
+✅ **No Duplicate Disclaimers** — Compliance agent deduplicates disclaimer messages  
+✅ **New Tests Added** — Test coverage added for all three fixes (MCP DB, chat user_id, compliance dedup)  
+✅ **Updated Documentation** — 5 files updated to reflect current implementation
 
 ---
 
@@ -111,7 +109,6 @@ pytest tests/ --cov=app --cov-report=html
 - REQUIREMENTS_ANALYSIS.md
 - EXECUTIVE_SUMMARY.md
 - ANALYSIS_COMPLETE.md
-- HIGH_ARCHITECTURE.md
 - IMPLEMENTATION_GUIDE.md
 - TEST_COVERAGE.md
 

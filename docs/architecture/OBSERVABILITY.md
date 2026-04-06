@@ -91,7 +91,7 @@ LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
 
 ### Install Observability Packages
 ```bash
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\activate
 pip install -r requirements.txt
 ```

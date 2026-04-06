@@ -1,12 +1,30 @@
 # Finnie-Chat: Requirements Analysis & Gap Assessment
 
-> Status: Archived for historical reference. All requirements and gaps identified here have been fully addressed in the December 2025 production release.
+> ⚠️ **Archived Document** — Written before December 2025 development sprint. The status descriptions below ("0% UI", "0% Portfolio DB", etc.) reflect the codebase at time of writing and **do not** describe the current implementation. Read `docs/architecture/ARCHITECTURE.md` for current state.
 
-## Executive Summary
+> Note: The claim that "all requirements have been fully addressed" is overstated — portfolio MCP database integration and Alembic migrations remain incomplete.
+
+## Current Build State (December 2025)
+
+All agents, frontend, and database layer described as missing below have since been implemented. The status descriptions further in this document are **historical** — written before the December 2025 sprint.
+
+| Area | Current State |
+|------|--------------|
+| Backend (FastAPI) | ✅ Complete |
+| 9 specialized agents | ✅ Complete |
+| Frontend (Streamlit multipage) | ✅ Complete |
+| Database layer (SQLAlchemy) | ✅ Complete |
+| Portfolio MCP → database | ⚠️ DB-backed variant built; not yet wired to agents |
+| Alembic migrations | ⚠️ Dependency present; files not configured |
+| Test suite | ✅ 452 passed, 1 known failure |
+
+---
+
+## Executive Summary (Historical — December 2025)
 
 Your project has achieved **Phase 1 (Backend Core)** with solid foundational infrastructure. However, it's currently **missing the frontend multi-tab UI, portfolio persistence layer, and several advanced agents**.
 
-**Current Status:** ✅ 60-70% complete on backend logic | ❌ 0% UI | ❌ 0% Portfolio DB | ❌ 2/6 of planned agents
+**Historical Status (at time of writing):** ✅ 60-70% complete on backend logic | ❌ 0% UI | ❌ 0% Portfolio DB | ❌ 2/6 of planned agents
 
 ---
 
