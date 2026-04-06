@@ -1,5 +1,21 @@
 # Finnie-Chat: Executive Summary
 
+## Engineering Patterns Demonstrated
+
+This project goes beyond a single-model chatbot. Key architectural decisions worth highlighting in technical discussions:
+
+| Pattern | Implementation |
+|---|---|
+| Intent-driven multi-agent routing | `app/intent.py` → `app/agents/orchestrator.py` — 10 intents, LLM + deterministic fallback |
+| Protocol-based retrieval abstraction | `app/rag/` — `Retriever` Protocol with 3 concrete backends (Hybrid, TF-IDF, Semantic) |
+| Multi-provider LLM failover | `app/gateway.py` — circuit breaker, TTL cache, priority ordering across OpenAI/Gemini/Anthropic |
+| Provider pattern for data sources | `app/providers.py` — `PortfolioProvider` ABC with Mock/Robinhood/Fidelity implementations |
+| Safety-first agent ordering | `ComplianceAgent` always runs last; PII guardrails at both input and output boundaries |
+| Observability as optional layer | LangSmith + Arize wired as safe no-ops — no keys required for core functionality |
+| LLM output quality validation | DeepEval `ExactMatchMetric` across 12 tests in `tests/deepeval/` — all mocked, all deterministic |
+
+---
+
 ## 🎯 Current Status
 
 ### Delivered Capabilities
@@ -52,7 +68,8 @@ Level: Prototype with production-oriented design
 - ✅ Streamlit frontend: Chat, Portfolio (5-tab), Market, About pages
 - ✅ RAG engine (TF-IDF + sentence-transformers, pickle cache)
 - ✅ Observability (LangSmith tracing, Arize optional)
-- ✅ Test suite: 452 passed, 1 known failure (`test_rag_grounded_answer`)
+- ✅ Test suite: 453 passed (all green)
+- ✅ DeepEval: 12 LLM output quality tests across all agents (`tests/deepeval/`)
 - ⚠️ Portfolio MCP: agents call `app/mcp/portfolio.py` (mock data); DB-backed variant in `app/portfolio_mcp_db.py` not yet wired
 - ⚠️ Alembic: dependency present; migration files not yet configured
 

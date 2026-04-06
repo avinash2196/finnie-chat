@@ -5,11 +5,6 @@
 - [INDEX.md](INDEX.md) — Project index
 - [docs/implementation/QUICK_START.md](docs/implementation/QUICK_START.md) — Fast startup guide
 
-## Recent Changes (December 2025)
-- [docs/summaries/DELIVERY_SUMMARY.md](docs/summaries/DELIVERY_SUMMARY.md) — What was delivered (this session)
-- [docs/UPDATES.md](docs/UPDATES.md) — Detailed changelog of all fixes
-- [docs/testing/TEST_IMPLEMENTATION_SUMMARY.md](docs/testing/TEST_IMPLEMENTATION_SUMMARY.md) — Complete guide to new tests
-
 ## 🏗️ Architecture & Design
 - [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) — System architecture and data flow
 - [docs/architecture/DATABASE_GUIDE.md](docs/architecture/DATABASE_GUIDE.md) — Database integration guide
@@ -62,6 +57,12 @@
 - OpenAPI Spec: [docs/external_portfolio_api.yaml](docs/external_portfolio_api.yaml)
 
 ---
+
+## 📋 Changelog (December 2025)
+
+- [docs/summaries/DELIVERY_SUMMARY.md](docs/summaries/DELIVERY_SUMMARY.md) — What was delivered
+- [docs/UPDATES.md](docs/UPDATES.md) — Detailed changelog of all fixes
+- [docs/testing/TEST_IMPLEMENTATION_SUMMARY.md](docs/testing/TEST_IMPLEMENTATION_SUMMARY.md) — Guide to new tests added
 
 ## Tests Added (December 2025)
 

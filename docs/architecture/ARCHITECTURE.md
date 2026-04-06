@@ -12,7 +12,7 @@ Finnie-Chat is a sophisticated financial AI system with an Orchestrator plus 9 s
 
 An up-to-date, presentation-ready architecture diagram is available here:
 
-- [Architecture Diagram (SVG)](architecture/architecture_diagram.svg)
+- [Architecture Diagram (SVG)](architecture_diagram.svg)
 
 This diagram highlights the recent production-ready improvements:
 
@@ -300,6 +300,26 @@ User Query
 
 ---
 
+## Testing & Quality
+
+Finnie Chat uses a two-layer test strategy:
+
+- **pytest unit/integration suite** (`tests/`) — 453 tests covering agent logic, API endpoints, RAG retrieval, guardrails, memory, and observability. All LLM calls are intercepted by a circuit-breaker in test environments so no external keys are required.
+- **DeepEval LLM quality suite** (`tests/deepeval/`) — 12 deterministic tests using [DeepEval](https://github.com/confident-ai/deepeval)'s `ExactMatchMetric`. Each test mocks the LLM/MCP layer and asserts the exact expected output through `evaluate()`, covering: market price formatting (`MarketAgent`), RAG-grounded educator responses, strategy/portfolio-coach/risk-profiler synthesis, orchestrator intent routing, and portfolio context isolation per user.
+
+| File | Tests | Coverage |
+|---|---|---|
+| `test_deepeval_paths.py` | 2 | `MarketAgent` price format, `EducatorAgent` RAG grounding |
+| `test_deepeval_other_agents.py` | 4 | Strategy, PortfolioCoach, RiskProfiler, Orchestrator routing |
+| `test_deepeval_portfolio_chat.py` | 6 | Portfolio context access, user isolation, diversification, risk, compliance wording |
+
+Run DeepEval tests:
+```bash
+python -m pytest tests/deepeval/ -v --no-cov
+```
+
+---
+
 ## Data Sources & External Integrations
 
 ### 1. LLM: OpenAI GPT-4o-mini
@@ -408,7 +428,8 @@ User Query
 - SQLAlchemy database layer with portfolio sync
 - Streamlit frontend (Chat, Portfolio, Market, About)
 - Observability (LangSmith, Arize optional)
-- Test suite: 452 passed, 1 known failure
+- Test suite: 453 passed (all green)
+- DeepEval: 12 LLM output quality tests (`tests/deepeval/`)
 
 ⚠️ **Pending:**
 - Portfolio MCP: agents use mock data; DB-backed variant (`app/portfolio_mcp_db.py`) not yet wired

@@ -1,6 +1,28 @@
-﻿# Finnie Chat
+﻿![Python](https://img.shields.io/badge/Python-3.11-blue)
+![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-green)
+![Tests](https://img.shields.io/badge/Tests-453%20passed-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
+# Finnie Chat
 
 A multi-agent financial AI assistant built on FastAPI and Streamlit. An LLM-driven orchestrator routes natural-language queries across nine purpose-built agents covering portfolio analysis, market data, education, goal planning, tax concepts, news synthesis, and compliance — backed by a hybrid RAG engine, a multi-provider LLM gateway with circuit-breaker failover, and optional observability via LangSmith and Arize AI.
+
+---
+
+## Project Status
+
+| Capability | Status |
+|---|---|
+| 9-agent LLM orchestration | ✅ Functional |
+| Multi-provider LLM gateway (OpenAI → Gemini → Anthropic) | ✅ Functional |
+| Hybrid RAG engine (TF-IDF + sentence-transformers) | ✅ Functional |
+| SQLAlchemy database layer (SQLite dev / PostgreSQL prod) | ✅ Functional |
+| Streamlit frontend (Chat, Portfolio, Market, About) | ✅ Functional |
+| Observability — LangSmith + Arize AI | ✅ Optional; safe no-ops without keys |
+| DeepEval LLM test suite (12 tests) | ✅ All passing; ExactMatch-based, fully mocked |
+| Test suite | ✅ 453 passed |
+| Portfolio MCP server | ⚠️ Agents use mock data; DB-backed variant built, not yet wired |
+| Alembic migrations | ⚠️ Dependency present; migration files not yet configured |
 
 ---
 
@@ -318,6 +340,20 @@ Key test areas:
 | Database & sync | `test_database.py`, `test_integration_sync.py`, `test_portfolio_mcp_database.py` |
 | Observability | `test_observability.py`, `test_observability_langsmith.py` |
 | Intent & guardrails | `test_intent_extra.py`, `test_guardrails.py` |
+
+---
+
+## Further Reading
+
+| Document | When to read it |
+|---|---|
+| [Architecture & Data Flow](docs/architecture/ARCHITECTURE.md) | Full request pipeline, agent coordination, flowcharts |
+| [AI Gateway](docs/architecture/GATEWAY.md) | LLM routing, circuit-breaker, caching, provider config |
+| [Database Guide](docs/architecture/DATABASE_GUIDE.md) | SQLAlchemy models, provider pattern, DB-backed MCP variant |
+| [Executive Summary](docs/summaries/EXECUTIVE_SUMMARY.md) | One-page overview — what is built and what is still open |
+| [Test Coverage](docs/testing/TEST_COVERAGE.md) | Per-module breakdown of all 452 tests |
+| [Quick Start (Windows)](docs/implementation/QUICK_START.md) | Step-by-step startup walkthrough |
+| [Documentation Index](docs/DOCUMENTATION_INDEX.md) | Full index of all project docs |
 | LLM quality (DeepEval) | `tests/deepeval/` |
 
 > All observability integrations are safe no-ops in testsno live LangSmith or Arize keys are required to run the suite.
@@ -408,3 +444,9 @@ Items tracked in `docs/planning/` and `docs/PERFORMANCE_ROADMAP.md`:
 ## License
 
 MIT -- see `LICENSE` for details.
+
+## Known Limitations
+
+- Portfolio MCP currently uses mock data (DB-backed variant not yet integrated)
+- Alembic migrations not yet configured
+- RAG uses TF-IDF + embeddings (not vector DB-backed yet)
