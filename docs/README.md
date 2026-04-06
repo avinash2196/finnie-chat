@@ -36,7 +36,7 @@ Archived planning documents and requirements.
 - [planning/REQUIREMENTS_ANALYSIS.md](planning/REQUIREMENTS_ANALYSIS.md) (archived)
 - [implementation/ROADMAP.md](implementation/ROADMAP.md) (archived)
 
-- **TEST_COVERAGE.md** — Comprehensive test coverage report (183 tests)
+- **TEST_COVERAGE.md** — Comprehensive test coverage report (see `test_results_full.txt` for current results)
 - **TEST_IMPLEMENTATION_SUMMARY.md** — Test implementation guide
 - **test_results.txt** — Latest test results
 - **full_test_results.txt** — Complete test execution logs

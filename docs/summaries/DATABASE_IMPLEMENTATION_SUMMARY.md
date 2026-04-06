@@ -6,15 +6,16 @@ Successfully added comprehensive database integration with external API support 
 
 ## 📊 **Test Results**
 
-| Test Suite | Tests | Status |
+| Test Suite | Key Test File | Status |
 |---|---|---|
-| Database Models | 13 | ✅ All Passing |
-| Integration Sync | 22 | ✅ All Passing |
-| **TOTAL** | **35** | ✅ **100% Pass** |
+| Database Models | `tests/test_database.py` | ✅ Passing |
+| Integration Sync | `tests/test_integration_sync.py` | ✅ Passing |
+
+> These files were added as part of the database integration sprint. For the current overall pass count, see `test_results_full.txt` in the repo root.
 
 ### Test Breakdown
 
-**Database Models Tests (13)**
+**Database Models (`tests/test_database.py`)**
 - User CRUD operations
 - Holding relationships
 - Transaction tracking
@@ -93,7 +94,7 @@ Successfully added comprehensive database integration with external API support 
 
 ```txt
 sqlalchemy==2.0.45
-alembic==1.17.2
+alembic==1.15.2
 ```
 
 ## 📝 **Usage Examples**
@@ -175,13 +176,13 @@ Provider Pattern
 - Provider pattern
 - Mock + external API adapters
 - REST API endpoints
-- Tests (35 passing)
+- Tests (unit + integration, all passing)
 
 ### Phase 2 (Suggested)
 - [ ] API endpoint integration tests
 - [ ] Real Robinhood API integration
 - [ ] Real Fidelity API integration
-- [ ] Database migrations (Alembic)
+- [ ] Alembic migration files (dependency is present; configuration and migration files not yet created)
 - [ ] Redis caching layer
 
 ### Phase 3 (Future)
@@ -225,14 +226,14 @@ PortfolioProviderFactory.register_provider("mybroker", MyBrokerProvider)
 
 - **Files Created**: 6
 - **Lines of Code**: ~2,500
-- **Tests Added**: 35
+- **Tests Added**: Unit + integration tests for database models and provider sync
 - **API Endpoints**: 10
 - **Providers**: 3 (Mock, Robinhood, Fidelity)
 - **Database Models**: 5
-- **Test Coverage**: 100% (new code)
+- **Test Coverage**: Covers CRUD, relationships, constraints, provider switching, and sync workflows for newly added modules
 
 ---
 
-**Status**: ✅ Production Ready  
+**Status**: ✅ Database layer implemented; portfolio MCP integration pending  
 **Last Updated**: December 22, 2025  
 **Version**: 1.0.0

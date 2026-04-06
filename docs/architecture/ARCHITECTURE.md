@@ -2,9 +2,9 @@
 
 ## System Overview
 
-Finnie-Chat is a sophisticated financial AI system with an Orchestrator plus 6 specialized agents that process user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, portfolio analysis, market data, and safety guardrails.
+Finnie-Chat is a sophisticated financial AI system with an Orchestrator plus 9 specialized agents that process user questions through a multi-layered reasoning and synthesis pipeline, combining intent classification, portfolio analysis, market data, and safety guardrails.
 
-**Key Improvement (Dec 2025):** Portfolio MCP server is now fully database-backed. Agents see real user holdings, transactions, and profiles from SQLite/PostgreSQL.
+**Current State:** Portfolio MCP server (`app/mcp/portfolio.py`) currently uses hardcoded mock data. A database-backed implementation exists in `app/portfolio_mcp_db.py` but is not yet integrated into the agent pipeline.
 
 ---
 
@@ -35,17 +35,15 @@ User Query with User ID (e.g., /chat?user_id=user_002)
    │
    ├─ [Educator Agent] ◄─ RAG (TF-IDF) Knowledge Base
    ├─ [Market Agent] ◄─ Market MCP Server (yFinance)  
-   ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server ◄─ DATABASE
+   ├─ [Risk Profiler Agent] ◄─ Portfolio MCP Server (mock data)
    │                            • get_user_holdings(user_id)
-   │                            • Queries: User, Holding tables
    │
-   ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server ◄─ DATABASE
+   ├─ [Portfolio Coach Agent] ◄─ Portfolio MCP Server (mock data)
    │                             • get_user_profile(user_id)
    │                             • get_transaction_history()
    │
-   ├─ [Strategy Agent] ◄─ Portfolio MCP Server ◄─ DATABASE
-   │                       • Analyzes actual holdings
-   │                       • Identifies opportunities
+   ├─ [Strategy Agent] ◄─ Portfolio MCP Server (mock data)
+   │                       • DB-backed variant: app/portfolio_mcp_db.py (not yet wired)
    │
    └─ [Compliance Agent] ◄─ Safety Rules
        • Risk-based disclaimers
@@ -58,33 +56,11 @@ User Query with User ID (e.g., /chat?user_id=user_002)
    ▼ Final Response + Memory Storage
 ```
 
-## Architecture Changes (Dec 2025)
+## Portfolio Data Layer
 
-### Before (Mock Data)
-```python
-# Portfolio MCP used hardcoded data
-MOCK_HOLDINGS = {
-    "user_123": {  # Only this user had data
-        "AAPL": {...},
-        "MSFT": {...}
-    }
-}
-```
+**Active implementation:** `app/mcp/portfolio.py` — hardcoded mock holdings, used by all portfolio-related agents (Risk Profiler, Portfolio Coach, Strategy).
 
-### After (Database-Backed)
-```python
-# Portfolio MCP queries real database
-def get_user_holdings(user_id):
-    user = db.query(User).filter(
-        (User.id == user_id) | (User.username == user_id)
-    ).first()
-    
-    holdings = db.query(Holding).filter(
-        Holding.user_id == user.id
-    ).all()
-    
-    return format_holdings(holdings)
-```
+**Database-backed variant:** `app/portfolio_mcp_db.py` — SQLAlchemy-backed implementation that queries the live `Holding` table. Not yet imported by agents; replacing the mock import in each agent is the only wiring step required.
 
 ## Complete Request Flowchart
 
@@ -96,7 +72,7 @@ User Query
 │   Backend API (FastAPI)                 │
 │   POST /chat                            │
 │   ├─ message: "What stocks do I own?"   │
-│   ├─ user_id: "user_002"  ← NEW         │
+│   ├─ user_id: "user_002"                │
 │   └─ conversation_id: "conv_123"        │
 └─────────────────────────────────────────┘
    │
@@ -134,7 +110,7 @@ User Query
    │
    ▼
 ┌─────────────────────────────────────────┐
-│   ORCHESTRATOR (now receives user_id)   │
+│   ORCHESTRATOR                          │
 
 │   ────────────────────────────          │
 │   Module: app/agents/orchestrator.py    │
@@ -147,21 +123,21 @@ User Query
    │                         │                          │
    ▼                         ▼                          ▼
 ┌──────────────────┐  ┌──────────────────┐  ┌─────────────────────┐
-│ EDUCATOR AGENT   │  │ MARKET AGENT     │  │ STRATEGY/ANALYSIS   │
+│ EDUCATOR AGENT   │  │ MARKET AGENT     │  │ PORTFOLIO AGENTS    │
 │ ────────────────│  │ ────────────────│  │ ────────────────────│
-│ Module:         │  │ Module:         │  │ (Planned for v2)    │
-│ app/agents/     │  │ app/agents/     │  │                     │
-│ educator.py     │  │ market.py       │  │ • Diversification   │
-│                 │  │                 │  │ • Risk Scoring      │
-│ Data Source:    │  │ Data Source:    │  │ • Portfolio Analysis│
-│ • RAG Engine    │  │ • yFinance API  │  └─────────────────────┘
-│ • TF-IDF        │  │ • MCP Server    │
-│   Embeddings    │  │   (future)      │
-│ • Finance KB    │  │                 │
-│   (ChromaDB)    │  │ Returns:        │
-│                 │  │ • Price         │
-│ Returns:        │  │ • % Change      │
-│ • Explanation   │  │ • Currency      │
+│ Module:         │  │ Module:         │  │ RiskProfilerAgent   │
+│ app/agents/     │  │ app/agents/     │  │ PortfolioCoachAgent │
+│ educator.py     │  │ market.py       │  │ StrategyAgent       │
+│                 │  │                 │  │ GoalPlanningAgent   │
+│ Data Source:    │  │ Data Source:    │  │ NewsSynthesizer     │
+│ • RAG Engine    │  │ • yFinance API  │  │ TaxEducationAgent   │
+│ • TF-IDF        │  │ • Market MCP    │  │                     │
+│   Embeddings    │  │   Server        │  │ Data Source:        │
+│ • Finance KB    │  │                 │  │ • Portfolio MCP     │
+│   (TF-IDF pkl)  │  │ Returns:        │  │   (mock data)       │
+│                 │  │ • Price         │  │ • Market MCP        │
+│ Returns:        │  │ • % Change      │  │ • LLM reasoning     │
+│ • Explanation   │  │ • Currency      │  └─────────────────────┘
 │ • Concepts      │  │ • Error msgs    │
 │ • Examples      │  │                 │
 └──────────────────┘  └──────────────────┘
@@ -240,20 +216,9 @@ User Query
 
 **Data Source:** 
 - RAG Engine (`app/rag/store.py`)
-- TF-IDF Embeddings (scikit-learn)
-- ChromaDB persistence (`chroma/embeddings.pkl`)
+- TF-IDF Embeddings (scikit-learn) + sentence-transformers (all-MiniLM-L6-v2)
+- Pickle-based cache (`chroma/embeddings.pkl`) — not a ChromaDB database
 - Finance Knowledge Base (`data/finance_kb.txt`)
-
-**Example Flow:**
-```
-User: "What is diversification?"
-   ↓
-Intent: ASK_CONCEPT (LOW risk)
-   ↓
-Educator Agent queries RAG
-   ↓
-Returns: "Diversification means spreading investments across..."
-```
 
 ### 2. Market Agent
 **Purpose:** Fetch live market data and stock prices
@@ -261,46 +226,56 @@ Returns: "Diversification means spreading investments across..."
 **Module:** `app/agents/market.py`
 
 **Data Source:**
-- yFinance API (`app/mcp/market.py`)
-- Live market prices and metrics
-- Daily percentage changes
+- yFinance API via Market MCP Server (`app/mcp/market.py`)
+- Short-TTL aggregation cache for repeated queries
 
-**Example Flow:**
-```
-User: "What is the price of AAPL?"
-   ↓
-Intent: ASK_MARKET (LOW risk)
-   ↓
-Market Agent extracts ticker: AAPL
-   ↓
-Calls: get_quote('AAPL')
-   ↓
-Returns: Price $278.28, +0.09% change
-```
+### 3. Risk Profiler Agent
+**Purpose:** Compute portfolio volatility, Sharpe ratio, and concentration risk
 
-### 3. Compliance Agent
-**Purpose:** Deterministic safety filtering based on risk level
+**Module:** `app/agents/risk_profiler.py`
+
+**Data Source:** Portfolio MCP Server (mock data; see Portfolio Data Layer section above)
+
+### 4. Portfolio Coach Agent
+**Purpose:** Analyse diversification (0–100 scoring), detect concentration, suggest rebalancing
+
+**Module:** `app/agents/portfolio_coach.py`
+
+**Data Source:** Portfolio MCP Server (mock data)
+
+### 5. Strategy Agent
+**Purpose:** Screen for dividend, growth, and value opportunities
+
+**Module:** `app/agents/strategy.py`
+
+**Data Source:** Market MCP Server
+
+### 6. Goal Planning Agent
+**Purpose:** Extract savings targets, suggest milestones and monthly contribution estimates
+
+**Module:** `app/agents/goal_planning.py`
+
+### 7. News Synthesizer Agent
+**Purpose:** Query Alpha Vantage for ticker-specific and general market news; 3-tier fallback
+
+**Module:** `app/agents/news_synthesizer.py`
+
+**Data Source:** News MCP Server (`app/mcp/`)
+
+### 8. Tax Education Agent
+**Purpose:** Cover tax-advantaged accounts (IRA, Roth, 401k), capital gains, tax-loss harvesting
+
+**Module:** `app/agents/tax_education.py`
+
+### 9. Compliance Agent
+**Purpose:** Deterministic safety filtering — always runs last
 
 **Module:** `app/agents/compliance.py`
 
 **Rules:**
 - **LOW risk:** Pass through unchanged
-- **MED risk:** Add warning disclaimers
-- **HIGH risk:** Block/reject response
-
-**Example Flow:**
-```
-User: "Should I buy Tesla stock?"
-   ↓
-Intent: ADVICE (HIGH risk)
-   ↓
-LLM generates response
-   ↓
-Output Guardrails block HIGH risk
-   ↓
-Compliance Agent returns:
-"I can't provide investment advice, but I can explain..."
-```
+- **MED risk:** Add warning disclaimers (deduplication applied)
+- **HIGH risk:** Block direct advice
 
 ---
 
@@ -337,10 +312,10 @@ Compliance Agent returns:
 - **Data:** Stock prices, % change, currency
 - **No auth required** (public API)
 
-### 3. Knowledge Base: Local ChromaDB
-- **Storage:** `chroma/embeddings.pkl`
+### 3. Knowledge Base: TF-IDF + sentence-transformers (pickle-based storage)
+- **Storage:** `chroma/embeddings.pkl` (pickle file, not a ChromaDB database)
 - **Content:** `data/finance_kb.txt`
-- **Embedding Method:** TF-IDF (scikit-learn)
+- **Embedding Method:** TF-IDF (scikit-learn) with sentence-transformers semantic fallback
 - **No external auth** (local file storage)
 
 ---
@@ -411,42 +386,41 @@ Compliance Agent returns:
 
 ---
 
-## Future Enhancements (v2+)
+## Future Enhancements
 
-- [ ] Portfolio Agent (analyze user holdings)
-- [ ] Strategy Agent (screening & ideas)
-- [ ] Risk Profiler Agent
-- [ ] MCP Server integration (advanced analytics)
-- [ ] Persistent user sessions
-- [ ] Conversation memory/context
-- [ ] Multi-turn dialog support
-- [ ] Backend database (PostgreSQL for user data)
+- [ ] Wire `app/portfolio_mcp_db.py` into agents (replace mock portfolio server)
+- [ ] Scaffold Alembic migrations and run initial migration
+- [ ] Redis-backed quote cache with hit/miss metrics
+- [ ] OTel tracing + Grafana dashboards
+- [ ] Raise test coverage to ≥90% (DeepEval expansion)
+- [ ] Docker deployment and canary rollout
 
 ---
 
 ## Current Status
 
-✅ **Completed:**
-- FastAPI server running on http://127.0.0.1:8000
-- Input/output guardrails
-- Intent classification
-- Educator Agent (RAG with TF-IDF)
-- Market Agent (yFinance)
-- Compliance filtering
-- Environment variable loading from `.env`
-- OpenAI API integration (lazy-loaded)
+✅ **Implemented:**
+- FastAPI backend on http://localhost:8000
+- 9 specialized agents (Educator, Market, Risk Profiler, Portfolio Coach, Strategy, Goal Planning, News Synthesizer, Tax Education, Compliance)
+- Multi-provider LLM gateway (OpenAI, Gemini, Anthropic)
+- Conversation memory with persistence
+- RAG engine (TF-IDF + sentence-transformers)
+- SQLAlchemy database layer with portfolio sync
+- Streamlit frontend (Chat, Portfolio, Market, About)
+- Observability (LangSmith, Arize optional)
+- Test suite: 452 passed, 1 known failure
 
-🚀 **Ready to Test:**
+⚠️ **Pending:**
+- Portfolio MCP: agents use mock data; DB-backed variant (`app/portfolio_mcp_db.py`) not yet wired
+- Alembic migrations: dependency present, files not yet configured
+
+🚀 **Start locally:**
 ```powershell
-# Terminal 1: Start server
+# Backend
 .\venv\Scripts\python.exe -m uvicorn app.main:app --reload
 
-# Terminal 2: Visit browser
-# http://127.0.0.1:8000/docs
+# Frontend (separate terminal)
+pip install streamlit
+streamlit run frontend/Home.py
 ```
-
-Try asking:
-- "What is portfolio diversification?"
-- "What is the price of AAPL today?"
-- "Should I buy Tesla?" (will be blocked as HIGH risk)
 

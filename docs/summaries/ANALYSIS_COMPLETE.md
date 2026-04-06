@@ -1,8 +1,10 @@
 # 🎯 Finnie-Chat: Analysis Complete
 
+> ⚠️ **Archived Document** — This was written at an early stage of the project. Status descriptions in this file reflect the codebase at time of writing, **not** the current implementation.
+
 ## Final Delivery Note
 
-The project is delivered and production-ready as of December 2025. All prior gaps and timelines are closed. The materials below are retained for historical context and reference.
+This document summarises the analysis phase. Some components described as delivered (e.g., portfolio MCP database integration) are still partially complete. See `UPDATES.md` and `ARCHITECTURE.md` for current accurate status.
 
 ### 📄 Key Documents (current state)
 
@@ -21,229 +23,27 @@ The project is delivered and production-ready as of December 2025. All prior gap
 
 ---
 
-## 🎯 Key Findings
+## What Was Delivered (December 2025 Sprint)
 
-### Status: 41% Complete (Running Well for Phase 1)
+All major gaps identified in the original analysis have been resolved:
 
-```
-✅ DONE (70%)
-├─ Backend framework (FastAPI)
-├─ LLM integration (3 providers with fallback)
-├─ Conversation memory (persistent)
-├─ Market data (yFinance)
-├─ RAG engine (TF-IDF)
-├─ Guardrails & compliance
-└─ 34 unit tests
+| Area | Status |
+|------|--------|
+| Backend (FastAPI) | ✅ Complete |
+| 9 specialized agents | ✅ Complete |
+| Multi-provider LLM gateway (OpenAI, Gemini, Anthropic) | ✅ Complete |
+| Conversation memory with persistence | ✅ Complete |
+| RAG engine (TF-IDF + sentence-transformers) | ✅ Complete |
+| SQLAlchemy database layer (SQLite/PostgreSQL) | ✅ Complete |
+| Portfolio sync (Mock/Robinhood/Fidelity providers) | ✅ Complete |
+| Background scheduler (hourly sync) | ✅ Complete |
+| Streamlit frontend (Chat, Portfolio, Market, About) | ✅ Complete |
+| Observability (LangSmith tracing, Arize optional) | ✅ Complete |
+| Test suite | ✅ 452 passed, 1 known failure |
+| Portfolio MCP → database | ⚠️ DB-backed variant built; not yet wired to agents |
+| Alembic migrations | ⚠️ Dependency present; files not yet configured |
 
-❌ NOT DONE (60%)
-├─ Frontend UI (0%)
-├─ Portfolio system (0%)
-├─ Advanced agents (50%)
-├─ User authentication (0%)
-└─ Production deployment (0%)
-```
-
-### What's Missing
-
-1. **Frontend UI** (Biggest Gap)
-   - Chat tab
-   - Portfolio tab  
-   - Market trends tab
-   - **Timeline:** 3-4 weeks (Streamlit) or 6-8 weeks (React)
-
-2. **Portfolio System** (Important for v1.0)
-   - PostgreSQL database
-   - Holdings tracking
-   - Risk calculations
-   - Portfolio analysis UI
-   - **Timeline:** 3 weeks
-
-3. **Advanced Agents** (Partial - need 2 more)
-   - Portfolio Coach (needs implementation)
-   - Risk Profiler (needs implementation)
-   - Strategy (needs implementation)
-   - **Timeline:** 1 week
-
----
-
-## 📊 Timeline to Launch
-
-### MVP (Weeks 1-5) - 41% → 70%
-- ✅ Complete all 6 agents
-- ✅ Build chat UI (Streamlit)
-- ✅ Portfolio/Market tabs (placeholders)
-- Ready for internal testing
-
-### v1.0 (Weeks 6-10) - 70% → 100%
-- ✅ Portfolio database + tracking
-- ✅ Portfolio analysis & UI
-- ✅ Market trends + screeners
-- Ready for beta users
-
-### Production (Weeks 11-12) - Polish & Deploy
-- ✅ 80%+ test coverage
-- ✅ Docker deployment
-- ✅ Production configuration
-- Ready for public launch
-
----
-
-## 🚀 Immediate Next Steps (THIS WEEK)
-
-### Priority 1: Choose Your Path
-- [ ] Read `EXECUTIVE_SUMMARY.md` (5 min)
-- [ ] Decide: Streamlit (fast) or React (better)
-- [ ] Recommendation: **Streamlit for MVP**
-
-### Priority 2: Understand the Gaps
-- [ ] Read `REQUIREMENTS_ANALYSIS.md` (15 min)
-- [ ] Understand what's built vs. missing
-
-### Priority 3: Plan Week 1-2
-- [ ] Review `ROADMAP.md` Phase 1 (10 min)
-- [ ] Check `IMPLEMENTATION_GUIDE.md` for code templates
-
-### Priority 4: Start Coding
-- [ ] Implement Risk Profiler Agent (2-3 hours)
-- [ ] Implement Portfolio Coach Agent (2-3 hours)
-- [ ] Implement Strategy Agent (2-3 hours)
-- [ ] Add 15 unit tests
-- [ ] Commit to git
-
----
-
-## 📈 Success Metrics
-
-### Week 2 Checkpoint
-- ✅ 3 new agents implemented
-- ✅ Database schema designed
-- ✅ 50+ tests passing
-- ✅ Commit #N with "Complete backend core"
-
-### Week 5 Checkpoint  
-- ✅ Chat UI fully working
-- ✅ Connected to backend
-- ✅ MVP ready for testing
-
-### Week 10 Checkpoint
-- ✅ Portfolio system live
-- ✅ Market screeners working
-- ✅ v1.0 ready for beta
-
-### Week 12 Checkpoint
-- ✅ 80%+ test coverage
-- ✅ Production deployed
-- ✅ Ready for public launch
-
----
-
-## 📚 Documentation Guide
-
-### For Different Audiences
-
-**👨‍💼 Project Managers/Decision Makers:**
-1. Read: `EXECUTIVE_SUMMARY.md`
-2. Check: Timeline and effort estimates
-3. Review: Risk mitigation strategies
-
-**👨‍💻 Developers Starting:**
-1. Read: `EXECUTIVE_SUMMARY.md`
-2. Review: `IMPLEMENTATION_GUIDE.md` Week 1-2
-3. Copy: Code examples for agents
-4. Start: Risk Profiler implementation
-
-**🏗️ Architects/Tech Leads:**
-1. Study: `ARCHITECTURE.md`
-2. Review: `REQUIREMENTS_ANALYSIS.md`
-3. Assess: `GATEWAY.md` for LLM setup
-4. Plan: `ROADMAP.md` for phases
-
-**📊 QA/Testing:**
-1. Check: `IMPLEMENTATION_GUIDE.md` testing section
-2. Review: `tests/` directory for patterns
-3. Plan: 80%+ coverage targets
-4. Execute: Test matrix from `ROADMAP.md`
-
----
-
-## 🎓 What I've Provided
-
-### Analysis Documents
-- ✅ Current state vs. requirements breakdown
-- ✅ Gap analysis for each feature
-- ✅ Effort estimation (270 hours total)
-- ✅ 12-week timeline with milestones
-- ✅ Risk assessment and mitigation
-
-### Implementation Guides
-- ✅ Week 1-2 specific tasks with code
-- ✅ 3 complete agent implementations (copy-paste ready)
-- ✅ Database schema with SQLAlchemy models
-- ✅ Streamlit UI templates
-- ✅ Testing patterns and examples
-
-### Planning Tools
-- ✅ Visual roadmap with progress bars
-- ✅ Feature completeness matrix
-- ✅ Technology decision framework
-- ✅ Success criteria checklists
-
-### Configuration References
-- ✅ Frontend framework comparison (Streamlit vs React vs Vue)
-- ✅ Database setup (PostgreSQL setup)
-- ✅ Deployment strategy (Docker container)
-- ✅ Testing coverage targets (80%+)
-
----
-
-## 💡 Key Insights
-
-1. **Your backend is solid** — FastAPI, LLM gateway, memory are production-ready
-
-2. **Frontend is the biggest blocker** — Choose Streamlit for speed (MVP ready in 3 weeks)
-
-3. **Portfolio system is achievable** — Clear requirements, straightforward DB design
-
-4. **Timeline is realistic** — 12 weeks to production with standard tech stack
-
-5. **No major rewrites needed** — Incremental, additive development path
-
-6. **Testing is good** — 34 tests provide confidence for changes
-
----
-
-## ✨ Next Action
-
-**This is a choice point:**
-
-### Option A: Streamlit MVP (Recommended)
-- ✅ Fastest path to working UI (3-4 weeks)
-- ✅ No Node.js/npm complexity
-- ✅ Great for dashboards
-- ✅ Migrate to React later if needed
-- Timeline: **5-6 weeks to MVP, 10-12 weeks to v1.0**
-
-### Option B: React v2 (Better Long-term)
-- ✅ Production-grade UX
-- ✅ Mobile-friendly architecture
-- ✅ Better performance
-- ✅ Larger upfront investment
-- Timeline: **6-8 weeks frontend alone**
-
-### Option C: Hybrid (Middle Ground)
-- ✅ FastAPI + Vue.js
-- ✅ Good balance of speed and quality
-- Timeline: **5-6 weeks to MVP**
-
----
-
-## 📞 Questions Answered by Documentation
-
-| Question | Document |
-|----------|-----------|
-| "How much work is left?" | `EXECUTIVE_SUMMARY.md` |
-| "What's specifically missing?" | `REQUIREMENTS_ANALYSIS.md` |
-| "What's the timeline?" | `ROADMAP.md` |
+See `UPDATES.md` for detailed change log and `ARCHITECTURE.md` for current data-flow diagrams.
 | "How do I implement agents?" | `IMPLEMENTATION_GUIDE.md` |
 | "How does the system work?" | `ARCHITECTURE.md` |
 | "How is LLM routing configured?" | `GATEWAY.md` |
@@ -264,18 +64,13 @@ The project is delivered and production-ready as of December 2025. All prior gap
 
 ---
 
-## 📊 Project Stats
+## 📊 Project Stats (Historical — December 20, 2025)
 
-- **Backend completion:** 70%
-- **Overall completion:** 41%
-- **Lines of backend code:** ~2,000 (done)
-- **Lines of frontend code:** ~1,500 (to do)
-- **Unit tests:** 34 (target: 100+)
-- **Test coverage:** 65% (target: 80%+)
-- **Timeline to MVP:** 5-6 weeks
-- **Timeline to v1.0:** 10-12 weeks
-- **Timeline to production:** 12-14 weeks
-- **Estimated total effort:** 270 hours
+> These figures reflect the codebase at time of writing, before the December 2025 sprint. For current state see `ARCHITECTURE.md` and `UPDATES.md`.
+
+- **Backend completion (at time of writing):** ~70%
+- **Unit tests (at time of writing):** 34
+- **Estimated total effort:** ~270 hours
 - **Recommended pace:** 22.5 hrs/week
 
 ---
@@ -325,7 +120,5 @@ finnie-chat/
 ---
 
 **Analysis Date:** December 20, 2025  
-**Project Status:** 41% complete (MVP ready in 5-6 weeks)  
-**Estimated v1.0:** Mid-February 2026  
 
-**Good luck! Build something amazing! 🎉**
+> *Status figures above are historical (before the December 2025 sprint). The system is largely implemented; see `docs/INDEX.md` and `docs/architecture/ARCHITECTURE.md` for current status, including tracked open items (portfolio MCP wiring, Alembic migrations).*

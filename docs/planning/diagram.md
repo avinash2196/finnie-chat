@@ -1,5 +1,7 @@
 # Financial AI Assistant Architecture
 
+> ⚠️ **Archived document** — reflects an earlier development stage and not the current implementation state. Technology choices shown (e.g. vector DB options, UI framework proposals) are planning-stage candidates; see `docs/architecture/ARCHITECTURE.md` for the actual implementation.
+
 ---
 
 ## 1. User Interface Layer
@@ -73,7 +75,7 @@ flowchart TB
     subgraph DATA["📚 Data & Knowledge Layer"]
         direction TB
         KB["Knowledge Base<br/>(Docs, FAQs, Guides)"]
-        VDB["Vector DB<br/>(FAISS/Chroma/Pinecone)<br/>RAG Search"]
+        VDB["Embedding Search<br/>(TF-IDF + sentence-transformers)<br/>RAG Search"]
         PROF["User Profile DB<br/>(Risk, Goals, Prefs)"]
         PDATA["Portfolio Store<br/>(Broker APIs/Cache)"]
         MKTAPI["Market APIs<br/>(yFinance/Alpha Vantage)"]

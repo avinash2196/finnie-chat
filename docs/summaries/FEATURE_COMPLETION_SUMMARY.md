@@ -1,4 +1,4 @@
-# 🎉 FINNIE-CHAT: FEATURE COMPLETION SUMMARY
+# Finnie-Chat: Feature Completion Summary
 
 ## Date: December 22, 2025
 
@@ -6,7 +6,7 @@
 
 ## ✅ COMPLETED TASKS
 
-All missing features from the roadmap have been successfully implemented!
+The core features identified in the roadmap have been implemented. Two items remain as tracked open work: portfolio MCP database wiring (the DB-backed module exists but is not yet active in the agent flow) and Alembic migration configuration.
 
 ### **Task 1: Portfolio Tab Enhancements** ✅
 
@@ -44,14 +44,14 @@ Portfolio Analytics Includes:
 ### **Task 2: Market Trends Tab** ✅
 
 #### 2.1 New Frontend Page Created
-**File:** `frontend/pages/2_📈_Market_Trends.py`
+**File:** `frontend/pages/2_📈_Market.py`
 
 Features:
 - ✅ **Market Overview** - Major indices, top gainers/losers, sector heatmap
 - ✅ **Stock Screeners** - Dividend, Growth, Value, Momentum, High Volume
 - ✅ **Strategy Ideas** - Income, Growth, Value strategies by risk level
 - ✅ **Sector Analysis** - Sector performance, leaders, trends
- - ✅ **Agent Caption** - Sidebar now lists all agents (Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator, Compliance)
+ - ✅ **Agent Caption** - Sidebar now lists all agents (Orchestrator, Educator, Market, Risk Profiler, Portfolio Coach, Strategy, Goal Planning, News Synthesizer, Tax Education, Compliance)
 
 #### 2.2 API Endpoints Added
 - ✅ `/market/quote` - Real-time quotes for multiple symbols
@@ -92,7 +92,7 @@ import numpy as np
 - Total tabs: 5 (Holdings, Allocation, Transactions, Performance, Manage)
 - New features: ~150 lines of code
 
-**New Market Trends Tab** (`frontend/pages/2_📈_Market_Trends.py`)
+**New Market Tab** (`frontend/pages/2_📈_Market.py`)
 - Complete new page: ~450 lines of code
 - 4 views: Overview, Screeners, Strategy Ideas, Sector Analysis
 - Interactive visualizations with Plotly
@@ -119,19 +119,19 @@ import numpy as np
   - Buy/Sell/Dividend tracking
   - Transaction summary
 
-📉 Performance Tab (NEW!)
+📉 Performance Tab
   - Sharpe Ratio
   - Volatility metrics
   - 30-day performance chart
   - Returns analysis
 
-⚙️ Manage Tab (NEW!)
+⚙️ Manage Tab
   - Add new holdings
   - Update prices
   - Portfolio management
 ```
 
-### Market Trends Tab (NEW!)
+### Market Trends Tab
 ```
 📊 Market Overview
   - Major indices (S&P 500, Dow, NASDAQ, Russell 2000)
@@ -242,7 +242,7 @@ While all critical features are complete, these would further polish the app:
 3. `requirements.txt` - Verified dependencies
 
 ### New Files (4):
-1. `frontend/pages/2_📈_Market_Trends.py` - Complete market trends page
+1. `frontend/pages/2_📈_Market.py` - Market page (renamed from Market_Trends)
 2. `test_new_features.py` - Comprehensive test suite
 3. `create_user_001.py` - User creation utility
 4. `check_db.py` - Database verification utility
@@ -271,7 +271,7 @@ While all critical features are complete, these would further polish the app:
 
 ## 🎊 CONCLUSION
 
-**All requested features have been successfully implemented!**
+**The major requested features have been implemented.** Two tracked items remain open: portfolio MCP database wiring and Alembic migration setup. See `docs/INDEX.md` for current status.
 
 The application now includes:
 - ✅ Complete Portfolio Management (5 tabs)
@@ -285,7 +285,7 @@ The application now includes:
 **New API Endpoints:** 8
 **New Frontend Pages/Tabs:** 1 page + 2 tabs
 
-The project is now at **88% completion** and ready for production deployment!
+The project is now at **88% feature completion** (prototype with production-oriented design). Note: portfolio MCP uses mock data and Alembic migrations are not yet configured.
 
 ---
 

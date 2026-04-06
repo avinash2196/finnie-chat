@@ -6,11 +6,10 @@ The AI Gateway provides intelligent LLM request routing with multi-provider supp
 
 ## Key Features
 
-- **Multi-Provider Support**: OpenAI, Azure OpenAI, Anthropic
- - **Multi-Provider Support**: OpenAI, Gemini, Anthropic
+- **Multi-Provider Support**: OpenAI, Gemini, Anthropic
 - **Intelligent Failover**: Automatic fallback to secondary providers on failure
 - **Circuit Breaker**: Prevents cascading failures by temporarily disabling failed providers
-- **Request Caching**: TTL-based caching with configurable expiry (default 3600s)
+- **Request Caching**: TTL-based caching with configurable expiry (default 3600s for LLM responses; short-TTL cache for market quotes in `app/main.py`)
 - **Provider Priority**: Routes requests to higher-priority providers first
 - **Metrics**: Track cache hit rate, failure count, and active providers
 

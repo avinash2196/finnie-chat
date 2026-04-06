@@ -15,7 +15,7 @@ Repository docs: https://github.com/avinash2196/finnie-chat/tree/main/docs
 Before running the application, ensure the database is initialized:
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\python.exe -c "from app.database import init_db; init_db()"
 ```
 
@@ -28,7 +28,7 @@ You can use the startup script (recommended) or run backend and frontend separat
 ### Option A: Start Both (Recommended)
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 start.bat
 ```
 
@@ -41,7 +41,7 @@ This opens two terminals:
 Open **Terminal 1** and run:
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
 
@@ -58,7 +58,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 Open **Terminal 2** and run:
 
 ```powershell
-cd C:\Users\avina\Codes\finnie-chat
+cd finnie-chat
 .\venv\Scripts\python.exe -m streamlit run frontend/Home.py
 ```
 

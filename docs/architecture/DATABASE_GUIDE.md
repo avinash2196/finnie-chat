@@ -4,26 +4,28 @@
 
 Finnie Chat includes a complete database layer with:
 - **SQLite (dev) / PostgreSQL (prod)** — SQLAlchemy ORM with dual backend support
-- **Agent-driven Portfolio Access** — Agents query database via Portfolio MCP Server
+- **Agent-driven Portfolio Access** — `app/portfolio_mcp_db.py` is built and tested; agents currently call the mock MCP server (`app/mcp/portfolio.py`) pending wiring to the DB-backed variant
 - **External API Integration** — Sync from Robinhood, Fidelity, or mock data
 - **Provider Pattern** — Easily switch between data sources
 - **Background Sync Tasks** — Automatic hourly portfolio updates
 - **Comprehensive REST API** — Full CRUD operations for portfolios
-- **Real User Context in Chat** — Portfolio agents see actual user holdings
+- **Real User Context in Chat** — `/chat` endpoint passes `user_id` to the orchestrator; agents receive it, but portfolio data is currently mock pending MCP wiring
 
-## What's New (Dec 2025)
+## Status Note
 
-✅ **Portfolio MCP is Database-Backed** — No more mock data. The Portfolio MCP server now queries the real SQLite database for all user holdings, transactions, and profiles.
+⚠️ **Portfolio MCP uses mock data** — `app/mcp/portfolio.py` (used by all agents) serves hardcoded data for `user_123`. A database-backed implementation exists in `app/portfolio_mcp_db.py` but is not yet integrated into the agent pipeline.
 
-✅ **Chat Agents See Real Portfolios** — The `/chat` endpoint now passes user_id to the orchestrator, enabling agents to access actual user holdings.
+✅ **Chat passes user_id to orchestrator** — The `/chat` endpoint passes `user_id` to `handle_message()`; agents receive it and forward it to the Portfolio MCP server.
 
-✅ **UUID & Username Support** — All portfolio MCP functions support both lookup methods (by UUID or username).
+✅ **UUID & Username Support** — The database-backed variant (`app/portfolio_mcp_db.py`) supports both lookup methods (by UUID or username).
 
-✅ **Testing & Coverage** — Full suite stabilized with 618 passing tests; database APIs verified by unit and integration tests. Overall coverage is 88% across `app/` modules.
+ℹ️ **Test results** — Latest full test run: 452 passed, 1 failed (see `test_results_full.txt`). Database APIs verified by unit and integration tests.
 
 ℹ️ **Observability** — Logging/tracing is optional: LangSmith tracing active when configured; Arize logging optional; OTEL is deferred in the current release. See [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ## Architecture
+
+The diagram below shows the architecture of `app/portfolio_mcp_db.py` — the database-backed MCP variant. **This module is not yet wired into the active agent flow.** Agents currently call `app/mcp/portfolio.py` (mock data).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -32,7 +34,8 @@ Finnie Chat includes a complete database layer with:
 │                   Orchestrator Layer                          │
 │  (Routes to Portfolio Coach, Risk Profiler, Strategy, etc.)  │
 ├─────────────────────────────────────────────────────────────┤
-│              Portfolio MCP Server (Database-Backed)           │
+│     Portfolio MCP DB Variant (app/portfolio_mcp_db.py)       │
+│     ⚠️ NOT YET WIRED -- agents still call mock MCP server    │
 │  ├─ get_user_holdings(user_id)  ◄─ Query Holding table      │
 │  ├─ get_user_profile(user_id)   ◄─ Query User table         │
 │  ├─ get_transaction_history()   ◄─ Query Transaction table  │
@@ -388,7 +391,7 @@ await fetch(`/users/${userId}/sync`, {
 - **Sync time**: < 2 seconds for 10 holdings (mock)
 - **Price update**: < 1 second for 20 holdings
 - **Database queries**: Indexed on user_id, ticker, dates
-- **Concurrent users**: Tested with 50+ simultaneous syncs
+- **Concurrent users**: Designed for multi-user concurrent sync; integration tests validate provider switching and sync correctness
 
 ## Security
 
@@ -405,11 +408,11 @@ await fetch(`/users/${userId}/sync`, {
 - ✅ Background sync tasks
 - ✅ REST API endpoints
 - ✅ Comprehensive tests (70+ tests)
-- ✅ Real-time price updates (WebSocket)
+- ⏳ Real-time price updates via WebSocket (not yet implemented)
 - ✅ Portfolio analytics (Sharpe ratio, volatility)
-- ✅ Database migrations (Alembic)
-- ✅ Schwab/TD Ameritrade providers
-- ✅ Redis caching layer
+- ⏳ Database migrations (Alembic is listed as a dependency; migration files not yet configured)
+- ⏳ Schwab/TD Ameritrade providers (planned)
+- ⏳ Redis caching layer (optional, via REDIS_URL env var)
 
 ## Troubleshooting
 
