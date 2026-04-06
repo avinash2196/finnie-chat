@@ -1,11 +1,20 @@
-﻿![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-green)
-![Tests](https://img.shields.io/badge/Tests-453%20passed-brightgreen)
+﻿![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-453%20passed-brightgreen?logo=pytest&logoColor=white)
+![DeepEval](https://img.shields.io/badge/DeepEval-12%20tests-blueviolet)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-# Finnie Chat
+# Finnie Chat — Multi-Agent Financial AI
 
-A multi-agent financial AI assistant built on FastAPI and Streamlit. An LLM-driven orchestrator routes natural-language queries across nine purpose-built agents covering portfolio analysis, market data, education, goal planning, tax concepts, news synthesis, and compliance — backed by a hybrid RAG engine, a multi-provider LLM gateway with circuit-breaker failover, and optional observability via LangSmith and Arize AI.
+> A production-oriented financial assistant where an LLM orchestrator routes questions across **9 specialized agents** — each with its own data source, retrieval layer, and compliance guardrails. Built to demonstrate real system design, not just prompt engineering.
+
+Covers: portfolio analysis · live market quotes · concept education (RAG) · goal planning · tax concepts · news synthesis · risk profiling · strategy screening · compliance filtering.
+
+---
+
+## Why This Architecture?
+
+Most AI chatbot demos use a single model with a system prompt. Finnie Chat is different: intent classification determines the domain, a planner LLM assembles the right agent pipeline, and each agent accesses appropriate data sources (live market quotes, relational database holdings, a curated knowledge base). The result handles concept explanations, real-time prices, portfolio risk, investment screening, and news — all in one conversation — with compliance guardrails on every response.
 
 ---
 
@@ -23,12 +32,6 @@ A multi-agent financial AI assistant built on FastAPI and Streamlit. An LLM-driv
 | Test suite | ✅ 453 passed |
 | Portfolio MCP server | ⚠️ Agents use mock data; DB-backed variant built, not yet wired |
 | Alembic migrations | ⚠️ Dependency present; migration files not yet configured |
-
----
-
-## Why This Project Matters
-
-Most AI chatbot demos use a single general-purpose model with a system prompt. Finnie Chat is architected differently: intent classification determines the domain, a planner LLM assembles the right agent pipeline, and each agent has access to appropriate data sources (live market quotes, portfolio holdings from a relational database, a curated knowledge base). The result is a system that can explain concepts, retrieve real-time prices, analyse portfolio risk, screen for investment opportunities, and synthesise news — all in the same conversation — while compliance guardrails run on every response.
 
 ---
 
