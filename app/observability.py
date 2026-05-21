@@ -67,7 +67,7 @@ class ObservabilityManager:
                 api_key=self.langsmith_api_key
             )
             self.langsmith_enabled = True
-            logger.info(f"✅ LangSmith initialized (project={self.langsmith_project})")
+            logger.info(f"LangSmith initialized (project={self.langsmith_project})")
         except Exception as e:
             logger.error(f"LangSmith initialization failed: {e}")
 
@@ -148,7 +148,7 @@ class ObservabilityManager:
 
                 self._arize_client = ArizeClient(**kwargs)
                 self.arize_enabled = True
-                logger.info("✅ Arize AI configured")
+                logger.info("Arize AI configured")
             else:
                 self._arize_client = None
         except Exception:

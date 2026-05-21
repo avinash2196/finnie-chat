@@ -31,6 +31,31 @@ import logging
 import time
 import functools
 
+# Configure structured JSON logging so log parsers (Datadog, Splunk, CloudWatch)
+# can parse fields without regex. Falls back to plain text if library is absent.
+def _configure_logging():
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    try:
+        from pythonjsonlogger import jsonlogger  # type: ignore
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            jsonlogger.JsonFormatter(
+                fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+                datefmt="%Y-%m-%dT%H:%M:%S",
+            )
+        )
+        logging.root.handlers = []
+        logging.root.addHandler(handler)
+        logging.root.setLevel(log_level)
+    except ImportError:
+        logging.basicConfig(
+            level=log_level,
+            format="%(asctime)s %(name)s %(levelname)s %(message)s",
+            datefmt="%Y-%m-%dT%H:%M:%S",
+        )
+
+_configure_logging()
+
 # Initialize database
 init_db()
 
@@ -47,13 +72,14 @@ observability.instrument_httpx()
 observability.instrument_sqlalchemy(engine)
 
 logger = logging.getLogger(__name__)
-logger.info("🚀 Finnie Chat starting with observability enabled")
+logging.info("Finnie Chat starting with observability enabled")
 logger.info(f"Observability status: {observability.get_status()}")
 
 
 # Lightweight HTTP timing middleware: records request durations, logs, and reports minimal metrics
 @app.middleware("http")
 async def http_timing_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     start = time.time()
     try:
         response = await call_next(request)
@@ -61,17 +87,25 @@ async def http_timing_middleware(request: Request, call_next):
     finally:
         duration_ms = (time.time() - start) * 1000
         try:
-            logger.info(f"{request.method} {request.url.path} completed_in={duration_ms:.2f}ms status={getattr(response, 'status_code', 'unknown')}")
+            logger.info(
+                "http_request",
+                extra={
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status": getattr(response, "status_code", "unknown"),
+                    "duration_ms": round(duration_ms, 2),
+                },
+            )
         except Exception:
             logger.info(f"{request.method} {request.url.path} completed_in={duration_ms:.2f}ms")
-        # Attach a simple header so clients/ops can see processing time
         try:
             if 'response' in locals() and hasattr(response, 'headers'):
+                response.headers['X-Request-ID'] = request_id
                 response.headers['X-Process-Time-ms'] = str(int(duration_ms))
         except Exception:
             pass
 
-        # Report to observability if available
         try:
             observability.track_metric("http_request_duration_ms", duration_ms, {
                 "path": request.url.path,
@@ -119,6 +153,57 @@ class ChatRequest(BaseModel):
     conversation_id: str = None  # Optional; generates new if not provided
     user_id: str = "user_001"  # User ID for portfolio tracking
     verify_sources: bool = False  # Enable RAG verification in response
+
+
+# ==================== HEALTH & READINESS ENDPOINTS ====================
+
+@app.get("/health")
+def health():
+    """Liveness probe — returns 200 when the process is running."""
+    return {"status": "ok", "version": os.getenv("SERVICE_VERSION", "1.0.0")}
+
+
+@app.get("/ready")
+def ready():
+    """
+    Readiness probe — returns 200 only when all dependencies are reachable.
+    Returns 503 with a degraded status when any dependency is unavailable.
+    Used by load balancers and k8s readiness probes.
+    """
+    from sqlalchemy import text as sa_text
+    from fastapi.responses import JSONResponse
+
+    checks: dict = {}
+    http_status = 200
+
+    # Database connectivity
+    try:
+        with engine.connect() as conn:
+            conn.execute(sa_text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+        http_status = 503
+
+    # Gateway provider availability
+    try:
+        metrics = get_gateway_metrics()
+        active = metrics.get("providers_active", 0)
+        checks["gateway_providers_active"] = active
+        checks["gateway"] = "ok" if active > 0 else "no providers configured"
+        if active == 0:
+            http_status = 503
+    except Exception as e:
+        checks["gateway"] = f"error: {e}"
+        http_status = 503
+
+    return JSONResponse(
+        status_code=http_status,
+        content={
+            "status": "ok" if http_status == 200 else "degraded",
+            "checks": checks,
+        },
+    )
 
 
 # ==================== PORTFOLIO DATABASE ENDPOINTS ====================
@@ -468,7 +553,7 @@ def get_allocation(user_id: str, db: Session = Depends(get_db)):
 
 
 @app.post("/chat")
-def chat(req: ChatRequest, db: Session = Depends(get_db)):
+async def chat(req: ChatRequest, db: Session = Depends(get_db)):
     import time
     start_time = time.time()
     
@@ -519,7 +604,7 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
         context = memory.get_context(conversation_id, limit=10)
 
         # Handle message with context and user_id for portfolio access
-        reply, intent, risk = handle_message(msg, conversation_context=context, user_id=req.user_id, root_run_id=root_run_id)
+        reply, intent, risk = await handle_message(msg, conversation_context=context, user_id=req.user_id, root_run_id=root_run_id)
         reply = output_guardrails(reply, risk)
 
         # Store in conversation memory
@@ -628,16 +713,6 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
             pass
         raise
     
-
-
-@app.get("/health")
-def health():
-    """Health check endpoint with observability status."""
-    obs_status = observability.get_status()
-    return {
-        "status": "ok",
-        "observability": obs_status
-    }
 
 
 @app.get("/observability/status")

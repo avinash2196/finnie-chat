@@ -36,58 +36,58 @@ class TestOrchestratorIntegration:
         intent, risk = classify_intent(message)
         assert intent == "ASK_STRATEGY", f"Expected ASK_STRATEGY, got {intent}"
 
-    def test_orchestrator_handles_portfolio_query(self):
+    async def test_orchestrator_handles_portfolio_query(self):
         """Test orchestrator handles portfolio diversification query end-to-end."""
         message = "How well is my portfolio diversified?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0, "Response should not be empty"
         assert intent == "ASK_PORTFOLIO"
         assert risk in ["LOW", "MED", "HIGH"]
 
-    def test_orchestrator_handles_risk_query(self):
+    async def test_orchestrator_handles_risk_query(self):
         """Test orchestrator handles portfolio risk query end-to-end."""
         message = "What is my portfolio volatility?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
         assert intent == "ASK_RISK"
 
-    def test_orchestrator_handles_strategy_query(self):
+    async def test_orchestrator_handles_strategy_query(self):
         """Test orchestrator handles strategy query end-to-end."""
         message = "What dividend investment opportunities do I have?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
         assert intent == "ASK_STRATEGY"
 
-    def test_orchestrator_handles_concept_query(self):
+    async def test_orchestrator_handles_concept_query(self):
         """Test orchestrator still handles concept queries."""
         message = "What is diversification?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
         assert intent == "ASK_CONCEPT"
         assert risk in ["LOW", "MED", "HIGH"]
 
-    def test_orchestrator_handles_market_query(self):
+    async def test_orchestrator_handles_market_query(self):
         """Test orchestrator still handles market queries."""
         message = "What is the current price of Apple stock?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
         assert intent == "ASK_MARKET"
 
-    def test_orchestrator_with_conversation_context(self):
+    async def test_orchestrator_with_conversation_context(self):
         """Test orchestrator respects conversation context."""
         context = "User previously asked about tech stocks.\n"
         message = "How is my tech allocation?"
-        response, intent, risk = handle_message(message, conversation_context=context, user_id="user_123")
+        response, intent, risk = await handle_message(message, conversation_context=context, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
@@ -114,11 +114,11 @@ class TestOrchestratorIntegration:
         # Allow empty portfolios depending on environment
         assert len(portfolio_result['holdings']) >= 0
 
-    def test_portfolio_agent_receives_correct_data(self):
+    async def test_portfolio_agent_receives_correct_data(self):
         """Test that portfolio agents receive data from MCP."""
         # This tests the integration indirectly
         message = "Is my portfolio too concentrated?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         # Response should mention specific holdings or concentration analysis
         assert isinstance(response, str)
@@ -126,62 +126,62 @@ class TestOrchestratorIntegration:
         # Should not be error message
         assert "Unable to fetch" not in response or "No holdings" not in response
 
-    def test_orchestrator_default_user_id(self):
+    async def test_orchestrator_default_user_id(self):
         """Test that orchestrator uses default user_id."""
         message = "Analyze my portfolio allocation"
-        response, intent, risk = handle_message(message)  # No user_id provided
+        response, intent, risk = await handle_message(message)  # No user_id provided
         
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_orchestrator_handles_dividend_strategy(self):
+    async def test_orchestrator_handles_dividend_strategy(self):
         """Test orchestrator auto-detects dividend strategy."""
         message = "Show me dividend opportunities in my portfolio"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert intent == "ASK_STRATEGY"
 
-    def test_orchestrator_handles_growth_strategy(self):
+    async def test_orchestrator_handles_growth_strategy(self):
         """Test orchestrator auto-detects growth strategy."""
         message = "What are growth stocks in my portfolio?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         # Growth strategy can be classified as ASK_STRATEGY or ASK_PORTFOLIO depending on phrasing
         assert intent in ["ASK_STRATEGY", "ASK_PORTFOLIO"]
 
-    def test_orchestrator_handles_value_strategy(self):
+    async def test_orchestrator_handles_value_strategy(self):
         """Test orchestrator auto-detects value strategy."""
         message = "Which of my holdings are value stocks?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         # Value strategy can be classified as ASK_STRATEGY or ASK_PORTFOLIO depending on phrasing
         assert intent in ["ASK_STRATEGY", "ASK_PORTFOLIO"]
 
-    def test_orchestrator_response_includes_compliance(self):
+    async def test_orchestrator_response_includes_compliance(self):
         """Test that orchestrator responses include compliance disclaimers."""
         message = "Is my portfolio risky?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         # Response should be filtered through compliance agent
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_orchestrator_handles_invalid_user_id(self):
+    async def test_orchestrator_handles_invalid_user_id(self):
         """Test orchestrator gracefully handles missing user portfolio."""
         message = "Analyze my portfolio"
         # Use non-existent user_id
-        response, intent, risk = handle_message(message, user_id="nonexistent_user")
+        response, intent, risk = await handle_message(message, user_id="nonexistent_user")
         
         # Should either return data (if MCP has default) or error message
         assert isinstance(response, str)
 
-    def test_orchestrator_multi_topic_query(self):
+    async def test_orchestrator_multi_topic_query(self):
         """Test orchestrator handles queries about multiple topics."""
         message = "What is diversification and how diversified is my portfolio?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
@@ -197,10 +197,10 @@ class TestOrchestratorIntegration:
         assert isinstance(intent, str)
         assert isinstance(risk, str)
 
-    def test_orchestrator_returns_tuple(self):
+    async def test_orchestrator_returns_tuple(self):
         """Test that handle_message returns (response, intent, risk) tuple."""
         message = "Tell me about my portfolio"
-        result = handle_message(message, user_id="user_123")
+        result = await handle_message(message, user_id="user_123")
         
         assert isinstance(result, tuple)
         assert len(result) == 3
@@ -209,10 +209,10 @@ class TestOrchestratorIntegration:
         assert isinstance(intent, str)
         assert isinstance(risk, str)
 
-    def test_risk_profiler_integration(self):
+    async def test_risk_profiler_integration(self):
         """Test Risk Profiler agent is properly integrated."""
         message = "What is the risk in my portfolio?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert intent == "ASK_RISK"
         assert isinstance(response, str)
@@ -220,44 +220,44 @@ class TestOrchestratorIntegration:
         assert len(response) > 0
         assert "Error" not in response or len(response) > 20  # Allow "Error" in explanation
 
-    def test_portfolio_coach_integration(self):
+    async def test_portfolio_coach_integration(self):
         """Test Portfolio Coach agent is properly integrated."""
         message = "How should I rebalance my portfolio?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert intent == "ASK_PORTFOLIO"
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_strategy_agent_integration(self):
+    async def test_strategy_agent_integration(self):
         """Test Strategy agent is properly integrated."""
         message = "What investment opportunities does my portfolio have?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         # Investment opportunities can be classified as ASK_STRATEGY or ASK_PORTFOLIO
         assert intent in ["ASK_STRATEGY", "ASK_PORTFOLIO"]
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_educator_agent_integration(self):
+    async def test_educator_agent_integration(self):
         """Test Educator agent still works."""
         message = "Explain what a stock is"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert intent == "ASK_CONCEPT"
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_market_agent_integration(self):
+    async def test_market_agent_integration(self):
         """Test Market agent still works."""
         message = "What is the price of Tesla?"
-        response, intent, risk = handle_message(message, user_id="user_123")
+        response, intent, risk = await handle_message(message, user_id="user_123")
         
         assert intent == "ASK_MARKET"
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_long_conversation_context(self):
+    async def test_long_conversation_context(self):
         """Test orchestrator with extended conversation history."""
         context = """
         User: What is diversification?
@@ -266,17 +266,17 @@ class TestOrchestratorIntegration:
         Assistant: You can diversify across sectors, asset classes...
         """
         message = "How diversified is my current portfolio?"
-        response, intent, risk = handle_message(message, conversation_context=context, user_id="user_123")
+        response, intent, risk = await handle_message(message, conversation_context=context, user_id="user_123")
         
         assert isinstance(response, str)
         assert len(response) > 0
 
-    def test_orchestrator_consistency(self):
+    async def test_orchestrator_consistency(self):
         """Test that multiple calls with same input produce consistent results."""
         message = "Analyze my portfolio risk"
         
-        response1, intent1, risk1 = handle_message(message, user_id="user_123")
-        response2, intent2, risk2 = handle_message(message, user_id="user_123")
+        response1, intent1, risk1 = await handle_message(message, user_id="user_123")
+        response2, intent2, risk2 = await handle_message(message, user_id="user_123")
         
         # Intent and risk should be consistent
         assert intent1 == intent2

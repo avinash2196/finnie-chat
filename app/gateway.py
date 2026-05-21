@@ -3,7 +3,10 @@ AI Gateway for managing LLM requests with resilience, caching, and routing.
 Supports multiple providers, fallbacks, and intelligent retry strategies.
 """
 
+import asyncio
+import hashlib
 import os
+import threading
 import time
 import logging
 from typing import Optional, List, Dict, Any
@@ -55,7 +58,8 @@ class RequestCache:
         self._max_size = max_size
 
     def _cache_key(self, system: str, user: str, model: str) -> str:
-        return f"{model}:{hash(system + user)}"
+        digest = hashlib.sha256(f"{system}\x00{user}".encode("utf-8")).hexdigest()
+        return f"{model}:{digest}"
 
     def get(self, system: str, user: str, model: str) -> Optional[str]:
         """Retrieve cached response if valid."""
@@ -86,35 +90,39 @@ class CircuitBreaker:
         self._failure_count = 0
         self._failure_threshold = failure_threshold
         self._reset_timeout = reset_timeout_seconds
-        self._last_failure_time = None
+        self._last_failure_time: Optional[float] = None
         self._is_open = False
+        self._lock = threading.Lock()
 
     def record_success(self):
         """Reset breaker on success."""
-        self._failure_count = 0
-        self._is_open = False
+        with self._lock:
+            self._failure_count = 0
+            self._is_open = False
 
     def record_failure(self):
-        """Increment failure count."""
-        self._failure_count += 1
-        self._last_failure_time = time.time()
-        if self._failure_count >= self._failure_threshold:
-            self._is_open = True
-            logger.warning(f"Circuit breaker opened after {self._failure_count} failures")
+        """Increment failure count, open breaker when threshold is reached."""
+        with self._lock:
+            self._failure_count += 1
+            self._last_failure_time = time.time()
+            if self._failure_count >= self._failure_threshold:
+                self._is_open = True
+                logger.warning(f"Circuit breaker opened after {self._failure_count} failures")
 
     def is_open(self) -> bool:
         """Check if breaker is open (and potentially ready to close)."""
-        if not self._is_open:
-            return False
-        
-        # Check if reset timeout has elapsed
-        if self._last_failure_time and time.time() - self._last_failure_time > self._reset_timeout:
-            logger.info("Circuit breaker attempting reset")
-            self._is_open = False
-            self._failure_count = 0
-            return False
-        
-        return True
+        with self._lock:
+            if not self._is_open:
+                return False
+
+            # Check if reset timeout has elapsed
+            if self._last_failure_time and time.time() - self._last_failure_time > self._reset_timeout:
+                logger.info("Circuit breaker attempting reset")
+                self._is_open = False
+                self._failure_count = 0
+                return False
+
+            return True
 
 
 class AIGateway:
@@ -345,6 +353,10 @@ class AIGateway:
         error_msg = f"All LLM providers failed. Last error: {last_error}"
         logger.error(error_msg)
         raise Exception(error_msg)
+
+    async def acall_llm(self, system: str, user: str, temperature: float = 0) -> str:
+        """Async wrapper: runs call_llm in a thread pool so the event loop is not blocked."""
+        return await asyncio.to_thread(self.call_llm, system, user, temperature)
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get gateway metrics."""

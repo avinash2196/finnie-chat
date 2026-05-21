@@ -88,7 +88,7 @@ def test_chat_guardrail_and_exception(monkeypatch):
     def fake_guard(msg):
         return True, msg
     monkeypatch.setattr("app.main.input_guardrails", fake_guard)
-    def broken_handle_message(msg, conversation_context=None, user_id=None, root_run_id=None):
+    async def broken_handle_message(msg, conversation_context=None, user_id=None, root_run_id=None):
         raise RuntimeError("boom")
     monkeypatch.setattr("app.main.handle_message", broken_handle_message)
 

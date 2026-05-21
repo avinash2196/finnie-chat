@@ -1,5 +1,4 @@
 import json
-import os
 from app.llm import call_llm
 
 INTENT_SYSTEM_PROMPT = """
@@ -84,11 +83,18 @@ def _rule_based_intent(message: str):
   return "OTHER", "LOW"
 
 
-def classify_intent(message: str):
+def classify_intent(message: str, use_llm: bool = True):
+  """Classify message intent and risk level.
+
+  Args:
+      message: User message to classify.
+      use_llm: When False, skip the LLM classifier and use rule-based fallback
+               directly. Pass False in test fixtures to keep tests deterministic
+               without environment variable checks in production code.
+  """
   rule_intent, rule_risk = _rule_based_intent(message)
 
-  # In test runs, prefer deterministic rule-based to avoid flaky LLM outputs
-  if os.getenv("PYTEST_CURRENT_TEST"):
+  if not use_llm:
     return rule_intent, rule_risk
 
   try:

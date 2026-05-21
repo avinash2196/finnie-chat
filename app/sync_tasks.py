@@ -24,13 +24,13 @@ class PortfolioSyncScheduler:
     async def start(self):
         """Start background sync scheduler"""
         self.is_running = True
-        logger.info("🔄 Portfolio sync scheduler started")
+        logger.info("Portfolio sync scheduler started")
         
         while self.is_running:
             try:
                 await self.sync_all_users()
             except Exception as e:
-                logger.error(f"❌ Sync error: {str(e)}")
+                logger.error(f"Sync error: {str(e)}")
             
             # Wait before next sync
             await asyncio.sleep(self.sync_interval_minutes * 60)
@@ -38,7 +38,7 @@ class PortfolioSyncScheduler:
     async def stop(self):
         """Stop background sync scheduler"""
         self.is_running = False
-        logger.info("🛑 Portfolio sync scheduler stopped")
+        logger.info("Portfolio sync scheduler stopped")
     
     async def sync_all_users(self):
         """Sync all users' portfolios from their configured sources"""
@@ -74,9 +74,9 @@ class PortfolioSyncScheduler:
             result = await sync_portfolio(user.id, db, provider_type, credentials)
             
             if result["status"] == "SUCCESS":
-                logger.info(f"✅ {user.email}: Synced {result['synced_items']} holdings")
+                logger.info(f"Synced {result['synced_items']} holdings for {user.email}")
             else:
-                logger.warning(f"⚠️ {user.email}: {result['message']}")
+                logger.warning(f"Sync warning for {user.email}: {result['message']}")
         
         except Exception as e:
             logger.error(f"Error syncing {user.email}: {str(e)}")

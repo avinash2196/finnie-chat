@@ -18,7 +18,7 @@ class DummyResp:
         return self._payload
 
 
-def test_orchestrator_news_intent_with_mcp(monkeypatch):
+async def test_orchestrator_news_intent_with_mcp(monkeypatch):
     """Test full orchestration path for ASK_NEWS intent with MCP data"""
     payload = {
         "feed": [
@@ -43,17 +43,17 @@ def test_orchestrator_news_intent_with_mcp(monkeypatch):
     os.environ.setdefault("ALPHA_VANTAGE_API_KEY", "testkey")
 
     message = "What are the latest headlines for AAPL?"
-    reply, intent, risk = handle_message(message, user_id="user_123")
+    reply, intent, risk = await handle_message(message, user_id="user_123")
 
     assert isinstance(reply, str)
     assert len(reply) > 0
-    # MCP path is working (test shows news fetched), but LLM might fail due to circuit breaker
+    # MCP path is working(test shows news fetched), but LLM might fail due to circuit breaker
     # Just verify reply exists and intent/risk are reasonable
     assert intent in ["ASK_NEWS", "ASK_MARKET", "ASK_CONCEPT", "UNKNOWN"]  # Intent classifier may vary
     assert risk in ["LOW", "MEDIUM", "HIGH"]  # Any risk level is ok
 
 
-def test_orchestrator_news_intent_fallback_path(monkeypatch):
+async def test_orchestrator_news_intent_fallback_path(monkeypatch):
     """Test orchestrator with news intent when MCP returns empty feed"""
     payload = {"feed": []}
 
@@ -67,30 +67,30 @@ def test_orchestrator_news_intent_fallback_path(monkeypatch):
     os.environ.setdefault("ALPHA_VANTAGE_API_KEY", "testkey")
 
     message = "MSFT earnings beat expectations. Revenue up 20%. Cloud growth strong."
-    reply, intent, risk = handle_message(message, user_id="user_123")
+    reply, intent, risk = await handle_message(message, user_id="user_123")
 
     assert isinstance(reply, str)
     assert len(reply) > 0
-    # Just verify a response is returned (regardless of circuit breaker status)
+    # Just verify a response is returned(regardless of circuit breaker status)
     assert len(reply) > 10  # Substantial response
 
 
-def test_orchestrator_news_with_context():
+async def test_orchestrator_news_with_context():
     """Test orchestrator with conversation context for news query"""
     context = "User: What's AAPL's current price?\nAssistant: AAPL is trading at $185.50."
     message = "Any recent news about this stock?"
     
-    reply, intent, risk = handle_message(message, conversation_context=context, user_id="user_123")
+    reply, intent, risk = await handle_message(message, conversation_context=context, user_id="user_123")
 
     assert isinstance(reply, str)
     assert len(reply) > 0
-    # Should handle contextual reference to "this stock"
+    # Should handle contextual referenceto "this stock"
 
 
-def test_orchestrator_news_compliance_check():
+async def test_orchestrator_news_compliance_check():
     """Test that compliance agent is always called for news"""
     message = "Show me TSLA headlines"
-    reply, intent, risk = handle_message(message, user_id="user_123")
+    reply, intent, risk = await handle_message(message, user_id="user_123")
 
     assert isinstance(reply, str)
     # Compliance agent should add disclaimer
@@ -101,17 +101,17 @@ def test_orchestrator_news_compliance_check():
     assert len(reply) > 0
 
 
-def test_orchestrator_news_no_tickers():
+async def test_orchestrator_news_no_tickers():
     """Test orchestrator with news-like query but no tickers"""
     message = "Summarize today's market news"
-    reply, intent, risk = handle_message(message, user_id="user_123")
+    reply, intent, risk = await handle_message(message, user_id="user_123")
 
     assert isinstance(reply, str)
     assert len(reply) > 0
     # Should provide some response even without specific tickers
 
 
-def test_orchestrator_news_multiple_agents(monkeypatch):
+async def test_orchestrator_news_multiple_agents(monkeypatch):
     """Test orchestrator routes to multiple agents when needed"""
     payload = {
         "feed": [
@@ -137,14 +137,14 @@ def test_orchestrator_news_multiple_agents(monkeypatch):
 
     # Query that could trigger both news and educator agents
     message = "What does the latest NVDA news mean for my portfolio?"
-    reply, intent, risk = handle_message(message, user_id="user_123")
+    reply, intent, risk = await handle_message(message, user_id="user_123")
 
     assert isinstance(reply, str)
     assert len(reply) > 50  # Should have substantive response
     # Should combine information from multiple agents
 
 
-def test_orchestrator_news_error_handling(monkeypatch):
+async def test_orchestrator_news_error_handling(monkeypatch):
     """Test orchestrator handles MCP errors gracefully"""
     def fake_get(url, timeout=6):
         raise Exception("Network timeout")
@@ -158,7 +158,7 @@ def test_orchestrator_news_error_handling(monkeypatch):
     message = "Latest news for AAPL"
     # Should not crash, should return some response
     try:
-        reply, intent, risk = handle_message(message, user_id="user_123")
+        reply, intent, risk = await handle_message(message, user_id="user_123")
         assert isinstance(reply, str)
         # Might be error message or fallback response
         assert len(reply) > 0

@@ -1,5 +1,6 @@
-﻿import json
-from app.llm import call_llm
+import asyncio
+import json
+from app.llm import call_llm, acall_llm
 from app.observability import observability
 from app.intent import classify_intent
 from app.agents.educator import run as educator_run
@@ -56,7 +57,7 @@ Respond ONLY in valid JSON:
 
 # MAIN ORCHESTRATION FUNCTION
 # --------------------------------
-def handle_message(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
+async def handle_message(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
     """
     Full agentic orchestration with support for all 6 agents and Portfolio MCP.
     
@@ -94,7 +95,7 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
         tags=["router"],
     )
     try:
-        plan_json = call_llm(
+        plan_json = await acall_llm(
             system_prompt=PLANNER_PROMPT,
             user_prompt=f"{context_info}User message: {message}\nIntent: {intent}",
             temperature=0
@@ -131,10 +132,11 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
     portfolio_result = portfolio_client.get_holdings()
     holdings_dict = portfolio_result.get('holdings', {})
 
-    # 4. Execute agents in plan
-    context = {}
-
-    for step in plan:
+    # 4. Execute agents concurrently (ComplianceAgent is always run last, synchronously)
+    # Each agent call runs in a thread pool via asyncio.to_thread so blocking LLM I/O
+    # does not stall the event loop. Independent agents execute in parallel.
+    async def _run_step(step: str) -> tuple[str, object]:
+        """Run one agent step in a thread pool; return (context_key, result)."""
         run_step_id = observability.start_langsmith_run(
             name=step,
             run_type="chain",
@@ -142,49 +144,57 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
             parent_run_id=root_run_id,
             tags=["agent", step],
         )
-        if step == "EducatorAgent":
-            context["educator"] = educator_run(message)
+        try:
+            if step == "EducatorAgent":
+                result = await asyncio.to_thread(educator_run, message)
+                return "educator", result
+            elif step == "MarketAgent":
+                result = await asyncio.to_thread(market_run, message)
+                return "market", result
+            elif step == "RiskProfilerAgent":
+                result = await asyncio.to_thread(risk_profiler_run, message, user_id=user_id)
+                return "risk_analysis", result
+            elif step == "GoalPlanningAgent":
+                result = await asyncio.to_thread(goal_planning_run, message, user_id)
+                return "goal_plan", result
+            elif step == "NewsSynthesizerAgent":
+                result = await asyncio.to_thread(news_synthesizer_run, message, user_id)
+                return "news_summary", result
+            elif step == "TaxEducationAgent":
+                result = await asyncio.to_thread(tax_education_run, message, user_id)
+                return "tax_education", result
+            elif step == "PortfolioCoachAgent":
+                result = await asyncio.to_thread(portfolio_coach_run, message, user_id=user_id)
+                return "portfolio_analysis", result
+            elif step == "StrategyAgent":
+                strategy_type = "balanced"
+                m_lower = message.lower()
+                if "dividend" in m_lower:
+                    strategy_type = "dividend"
+                elif "growth" in m_lower:
+                    strategy_type = "growth"
+                elif "value" in m_lower:
+                    strategy_type = "value"
+                result = await asyncio.to_thread(strategy_run, message, None, strategy_type, user_id)
+                return "strategy", result
+            return step, None
+        finally:
+            observability.end_langsmith_run(
+                run_id=run_step_id,
+                outputs={"context_keys": [step]},
+            )
 
-        elif step == "MarketAgent":
-            context["market"] = market_run(message)
-
-        elif step == "RiskProfilerAgent":
-            # Risk Profiler analyzes volatility and Sharpe ratio
-            context["risk_analysis"] = risk_profiler_run(message, user_id=user_id)
-
-        elif step == "GoalPlanningAgent":
-            # Goal Planning agent assists with financial goal setting
-            context["goal_plan"] = goal_planning_run(message, user_id=user_id)
-
-        elif step == "NewsSynthesizerAgent":
-            # News Synthesizer agent summarizes and contextualizes financial news
-            context["news_summary"] = news_synthesizer_run(message, user_id=user_id)
-
-        elif step == "TaxEducationAgent":
-            # Tax Education agent explains tax concepts and account types
-            context["tax_education"] = tax_education_run(message, user_id=user_id)
-
-        elif step == "PortfolioCoachAgent":
-            # Portfolio Coach analyzes diversification and allocation
-            context["portfolio_analysis"] = portfolio_coach_run(message, user_id=user_id)
-
-        elif step == "StrategyAgent":
-            # Strategy agent identifies opportunities (dividend/growth/value)
-            # Auto-detect strategy type from message
-            strategy_type = "balanced"  # default
-            if "dividend" in message.lower():
-                strategy_type = "dividend"
-            elif "growth" in message.lower():
-                strategy_type = "growth"
-            elif "value" in message.lower():
-                strategy_type = "value"
-            
-            context["strategy"] = strategy_run(message, strategy_type=strategy_type, user_id=user_id)
-
-        observability.end_langsmith_run(
-            run_id=run_step_id,
-            outputs={"context_keys": list(context.keys())}
-        )
+    context = {}
+    non_compliance_steps = [s for s in plan if s != "ComplianceAgent"]
+    step_results = await asyncio.gather(
+        *[_run_step(s) for s in non_compliance_steps],
+        return_exceptions=True,
+    )
+    for item in step_results:
+        if isinstance(item, tuple):
+            key, val = item
+            if val is not None:
+                context[key] = val
 
     # 5. HARD GUARD: For ASK_CONCEPT, RAG MUST exist
     if intent == "ASK_CONCEPT":
@@ -252,7 +262,7 @@ Provide a clear, beginner-friendly response synthesizing all available informati
         tags=["composer"],
     )
     try:
-        draft_response = call_llm(
+        draft_response = await acall_llm(
             system_prompt="You explain finance concepts clearly and safely using only provided information.",
             user_prompt=synthesis_prompt,
             temperature=0.3

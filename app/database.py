@@ -3,8 +3,7 @@ Database Models for Finnie Chat
 Uses SQLAlchemy ORM with PostgreSQL (or SQLite for development)
 """
 from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Enum, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from datetime import datetime
 import uuid
 import os
@@ -19,7 +18,10 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+
+
+class Base(DeclarativeBase):
+    pass
 
 # ==================== MODELS ====================
 
@@ -129,7 +131,7 @@ class SyncLog(Base):
 def init_db():
     """Initialize database tables"""
     Base.metadata.create_all(bind=engine)
-    logging.info("✅ Database tables created")
+    logging.info("Database tables created")
 
 
 def get_db():
