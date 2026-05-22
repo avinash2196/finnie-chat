@@ -84,7 +84,7 @@ async def test_orchestrator_news_with_context():
 
     assert isinstance(reply, str)
     assert len(reply) > 0
-    # Should handle contextual referenceto "this stock"
+    # Should handle contextual reference to "this stock"
 
 
 async def test_orchestrator_news_compliance_check():
