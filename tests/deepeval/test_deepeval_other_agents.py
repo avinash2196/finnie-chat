@@ -100,7 +100,8 @@ def test_deepeval_risk_profiler():
     _assert_results(results)
 
 
-def test_deepeval_orchestrator_router():
+@pytest.mark.asyncio
+async def test_deepeval_orchestrator_router():
     from app.agents import orchestrator
 
     # Mock intent classification and agent responses to keep deterministic
@@ -110,7 +111,7 @@ def test_deepeval_orchestrator_router():
         "app.agents.orchestrator.get_portfolio_client"
     ) as mock_client, patch("app.agents.orchestrator.compliance_run", return_value="Quote: 100"):
         mock_client.return_value.get_holdings.return_value = {"holdings": {}}
-        actual, intent, risk = orchestrator.handle_message("What is AAPL price?", conversation_context=[])
+        actual, intent, risk = await orchestrator.handle_message("What is AAPL price?", conversation_context="")
 
     expected = "Quote: 100"
     case = LLMTestCase(

@@ -1,6 +1,7 @@
 import asyncio
 import json
-from app.llm import call_llm, acall_llm
+import logging
+from app.llm import call_llm
 from app.observability import observability
 from app.intent import classify_intent
 from app.agents.educator import run as educator_run
@@ -12,7 +13,22 @@ from app.agents.compliance import run as compliance_run
 from app.agents.goal_planning import run as goal_planning_run
 from app.agents.news_synthesizer import run as news_synthesizer_run
 from app.agents.tax_education import run as tax_education_run
-from app.mcp.portfolio import get_portfolio_client
+from app.mcp.portfolio import get_portfolio_client as _get_portfolio_client
+
+
+def get_portfolio_client(user_id: str):
+    """Compatibility wrapper retained for tests that patch this symbol."""
+    return _get_portfolio_client(user_id)
+
+
+async def acall_llm(system_prompt: str, user_prompt: str, temperature: float = 0.0):
+    """Async compatibility wrapper over synchronous call_llm."""
+    return await asyncio.to_thread(
+        call_llm,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        temperature=temperature,
+    )
 
 
 # LLM PLANNER PROMPT
@@ -57,7 +73,32 @@ Respond ONLY in valid JSON:
 
 # MAIN ORCHESTRATION FUNCTION
 # --------------------------------
-async def handle_message(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
+def handle_message(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
+    """Sync/async-compatible entry point.
+
+    - In async contexts, returns a coroutine and should be awaited.
+    - In sync contexts, runs the coroutine to completion and returns the tuple.
+    """
+    try:
+        asyncio.get_running_loop()
+        return _handle_message_async(
+            message,
+            conversation_context=conversation_context,
+            user_id=user_id,
+            root_run_id=root_run_id,
+        )
+    except RuntimeError:
+        return asyncio.run(
+            _handle_message_async(
+                message,
+                conversation_context=conversation_context,
+                user_id=user_id,
+                root_run_id=root_run_id,
+            )
+        )
+
+
+async def _handle_message_async(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
     """
     Full agentic orchestration with support for all 6 agents and Portfolio MCP.
     
@@ -98,7 +139,7 @@ async def handle_message(message: str, conversation_context: str = "", user_id: 
         plan_json = await acall_llm(
             system_prompt=PLANNER_PROMPT,
             user_prompt=f"{context_info}User message: {message}\nIntent: {intent}",
-            temperature=0
+            temperature=0,
         )
         plan = json.loads(plan_json)["plan"]
     except Exception:
@@ -127,10 +168,16 @@ async def handle_message(message: str, conversation_context: str = "", user_id: 
             outputs={"plan": plan},
         )
 
-    # 3. Get user's portfolio data (for portfolio agents)
-    portfolio_client = get_portfolio_client(user_id)
-    portfolio_result = portfolio_client.get_holdings()
-    holdings_dict = portfolio_result.get('holdings', {})
+    # 3. Fetch holdings once when portfolio-dependent agents are in the plan.
+    holdings_dependent_steps = {"RiskProfilerAgent", "PortfolioCoachAgent", "StrategyAgent"}
+    shared_holdings = None
+    if any(step in holdings_dependent_steps for step in plan):
+        try:
+            portfolio_client = get_portfolio_client(user_id)
+            portfolio_result = portfolio_client.get_holdings()
+            shared_holdings = portfolio_result.get("holdings") or {}
+        except Exception:
+            shared_holdings = None
 
     # 4. Execute agents concurrently (ComplianceAgent is always run last, synchronously)
     # Each agent call runs in a thread pool via asyncio.to_thread so blocking LLM I/O
@@ -152,7 +199,12 @@ async def handle_message(message: str, conversation_context: str = "", user_id: 
                 result = await asyncio.to_thread(market_run, message)
                 return "market", result
             elif step == "RiskProfilerAgent":
-                result = await asyncio.to_thread(risk_profiler_run, message, user_id=user_id)
+                result = await asyncio.to_thread(
+                    risk_profiler_run,
+                    message,
+                    holdings_dict=shared_holdings,
+                    user_id=user_id,
+                )
                 return "risk_analysis", result
             elif step == "GoalPlanningAgent":
                 result = await asyncio.to_thread(goal_planning_run, message, user_id)
@@ -164,7 +216,12 @@ async def handle_message(message: str, conversation_context: str = "", user_id: 
                 result = await asyncio.to_thread(tax_education_run, message, user_id)
                 return "tax_education", result
             elif step == "PortfolioCoachAgent":
-                result = await asyncio.to_thread(portfolio_coach_run, message, user_id=user_id)
+                result = await asyncio.to_thread(
+                    portfolio_coach_run,
+                    message,
+                    holdings_dict=shared_holdings,
+                    user_id=user_id,
+                )
                 return "portfolio_analysis", result
             elif step == "StrategyAgent":
                 strategy_type = "balanced"
@@ -175,7 +232,13 @@ async def handle_message(message: str, conversation_context: str = "", user_id: 
                     strategy_type = "growth"
                 elif "value" in m_lower:
                     strategy_type = "value"
-                result = await asyncio.to_thread(strategy_run, message, None, strategy_type, user_id)
+                result = await asyncio.to_thread(
+                    strategy_run,
+                    message,
+                    shared_holdings,
+                    strategy_type,
+                    user_id,
+                )
                 return "strategy", result
             return step, None
         finally:
@@ -190,7 +253,13 @@ async def handle_message(message: str, conversation_context: str = "", user_id: 
         *[_run_step(s) for s in non_compliance_steps],
         return_exceptions=True,
     )
+    # Surface failures from parallel agent execution instead of dropping them silently.
+    logger = logging.getLogger(__name__)
     for item in step_results:
+        if isinstance(item, Exception):
+            logger.exception("agent_step_failed", exc_info=item)
+            context.setdefault("agent_errors", []).append(str(item))
+            continue
         if isinstance(item, tuple):
             key, val = item
             if val is not None:
@@ -265,7 +334,7 @@ Provide a clear, beginner-friendly response synthesizing all available informati
         draft_response = await acall_llm(
             system_prompt="You explain finance concepts clearly and safely using only provided information.",
             user_prompt=synthesis_prompt,
-            temperature=0.3
+            temperature=0.3,
         )
     except Exception:
         parts = []

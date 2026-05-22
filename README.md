@@ -313,13 +313,13 @@ Three independent cache layers operate at different granularities:
 
 | Layer | Location | Key | TTL | Eviction |
 |---|---|---|---|---|
-| LLM response cache | `gateway.py` `RequestCache` | `model + hash(system + user)` | 3 600 s (1 h) | LRU (oldest-first, max 1 000 entries) |
+| LLM response cache | `gateway.py` `RequestCache` | `model + sha256(system + user)` | 3 600 s (1 h) | LRU (oldest-first, max 1 000 entries) |
 | Market aggregation cache | `main.py` `_quote_agg_cache` | `sorted(symbols)` tuple | 5 s | Timestamp check on read |
 | Redis (optional) | External | same as aggregation | configurable | Redis TTL |
 
 **Cache invalidation:** TTL-based expiry only. No explicit invalidation is implemented, which is intentional for read-heavy, eventually-consistent market data.
 
-**Known limitation:** The LLM cache key uses Python's built-in `hash()`, which is non-deterministic across processes (randomised by `PYTHONHASHSEED`). In a multi-worker deployment this means cache misses between workers for identical prompts. The correct fix is SHA-256 over the concatenated prompt bytes — tracked in [Known Trade-offs](#known-trade-offs--future-work).
+**Known limitation:** The LLM response cache is process-local in memory. In multi-worker deployments, identical requests on different workers do not share cache entries unless cache state is externalized (for example Redis).
 
 ---
 
@@ -365,17 +365,15 @@ flowchart LR
 
 **Current state:**
 
-- FastAPI runs on Uvicorn with a single worker by default. The async event loop is used for HTTP I/O, but all LLM calls (`call_llm`) are synchronous and block the event loop. Under concurrent requests, this produces head-of-line blocking.
-- The orchestrator executes agents **sequentially** even when agents are independent (e.g., `MarketAgent` and `EducatorAgent` do not share state). Sequential execution adds latency proportional to the number of agents in the plan.
-- `CircuitBreaker` is not thread-safe — no locking around `_failure_count` mutations.
+- FastAPI runs on Uvicorn with a single worker by default. The `/chat` path is async and LLM calls are wrapped with `acall_llm`/`asyncio.to_thread`, reducing event-loop blocking for network-bound model calls.
+- The orchestrator executes independent non-compliance agents concurrently via `asyncio.gather(...)`, then enforces `ComplianceAgent` as the final step.
+- `CircuitBreaker` updates are protected with a thread lock to avoid race conditions under concurrent access.
 - `ConversationMemory` is stored in a process-local Python dict. Multiple Uvicorn workers would each maintain separate memory states, breaking conversation continuity across requests.
 
 **Planned improvements (tracked below):**
 
-1. Wrap `call_llm` in `asyncio.to_thread()` to avoid blocking the event loop
-2. Execute independent agents concurrently with `asyncio.gather()`
-3. Add `threading.Lock()` to `CircuitBreaker._failure_count`
-4. Move `ConversationMemory` to Redis for cross-worker session consistency
+1. Move `ConversationMemory` to Redis for cross-worker session consistency
+2. Add per-agent timeout/cancellation controls for long-running parallel steps
 
 ---
 
@@ -410,11 +408,11 @@ The blocking path to horizontal scaling is the in-process `ConversationMemory` a
 | Authorization | None | Per-user resource scoping |
 | Rate limiting | None | Per-IP and per-user request quotas |
 | Secret storage | Brokerage tokens stored as plaintext in DB columns | Envelope encryption (AWS KMS, Vault) |
-| Input validation | Keyword blocklist (2 terms: `ssn`, `account number`) | Regex PII patterns + semantic safety classifier |
+| Input validation | Regex-based PII patterns plus blocked phrase filtering | Semantic safety classifier + policy service |
 | HTTPS | Not configured in deploy scripts | TLS termination at load balancer or reverse proxy |
 | Dependency scanning | None | Dependabot or `pip-audit` in CI |
 
-**Guardrails architecture (current):** `input_guardrails()` is a 15-line function with a two-term blocklist. `output_guardrails()` prepends a disclaimer for `HIGH`-risk responses. These are functional placeholders. A production guardrails layer would apply:
+**Guardrails architecture (current):** `input_guardrails()` now applies regex-based PII detection (for identifiers such as SSN/email/phone/account patterns) plus blocked phrase checks. `output_guardrails()` prepends a disclaimer for `HIGH`-risk responses. Additional production hardening would apply:
 
 - Regex-based PII detection (SSN, credit card, phone, email patterns)
 - A semantic safety classifier to catch prompt injection and out-of-domain advice requests
@@ -430,7 +428,7 @@ The blocking path to horizontal scaling is the in-process `ConversationMemory` a
 |---|---|---|
 | Unit — gateway, circuit breaker, cache | ~40 | Mocked LLM clients; tests circuit state machine directly |
 | Unit — RAG retrieval, score blending | ~30 | In-memory document store; no disk I/O |
-| Unit — intent classifier | ~25 | Deterministic fallback tested in isolation; `PYTEST_CURRENT_TEST` env bypasses LLM |
+| Unit — intent classifier | ~25 | Deterministic fallback and explicit non-LLM test mode (`use_llm=False`) |
 | Unit — agents | ~120 | Each agent mocked at LLM boundary; data sources stubbed |
 | Integration — database & sync | ~40 | SQLite in-memory; provider sync round-trip |
 | Integration — MCP servers | ~30 | yFinance mocked; asserts on response schema |
@@ -492,9 +490,7 @@ flowchart TD
 ```
 
 **Missing infrastructure (tracked in roadmap):**
-- `Dockerfile` and `docker-compose.yml` for local parity
 - Kubernetes manifests or Helm chart for the target architecture
-- GitHub Actions CI pipeline (lint, test, build, scan)
 - Alembic migration files for schema evolution
 
 ---
@@ -508,14 +504,8 @@ These are documented engineering debts, not undiscovered bugs.
 | Trade-off | Current choice | Implication |
 |---|---|---|
 | In-process `ConversationMemory` | Simple; no Redis dependency | Broken across multiple workers |
-| `hash()` for cache keys | Less code | Non-deterministic across processes; fix: SHA-256 |
-| Sequential agent execution | Simpler error handling | Adds latency when plan has independent agents |
-| `CircuitBreaker` without locking | No `threading.Lock` import | Race condition under concurrent requests |
 | Plaintext brokerage tokens in DB | Faster iteration | Must encrypt before handling real credentials |
 | No authentication | Easier local development | Blocks any multi-user deployment |
-| `declarative_base()` (deprecated in SQLAlchemy 2) | Minimal migration effort | Should migrate to `DeclarativeBase` class |
-| Emoji in log messages | Readable in development | Breaks structured log parsing in production |
-| `PYTEST_CURRENT_TEST` check in `intent.py` | Deterministic tests | Test-environment state leaks into production code |
 | Mock portfolio data in agents | Enables demo without DB | Disconnects agent output from real user holdings |
 
 ### Roadmap
@@ -526,16 +516,9 @@ These are documented engineering debts, not undiscovered bugs.
 - [ ] Implement rate limiting middleware (per-IP, per-user)
 - [ ] Configure Alembic migrations and run against PostgreSQL
 - [ ] Wire `portfolio_mcp_db.py` to agents (replace mock MCP)
-- [ ] SHA-256 cache keys in `RequestCache`
-- [ ] Add `threading.Lock` to `CircuitBreaker`
 
 **Medium priority (production hardening):**
-- [ ] Make `call_llm` async (`asyncio.to_thread` or full async gateway)
-- [ ] Concurrent agent execution via `asyncio.gather` for independent plan steps
-- [ ] Structured JSON logging (`python-json-logger` or `structlog`)
 - [ ] Prometheus `/metrics` endpoint (counter, histogram, gauge types)
-- [ ] Docker Compose for local development
-- [ ] GitHub Actions CI pipeline (test → lint → build → container scan)
 - [ ] Expand guardrails: regex PII patterns, semantic safety classifier
 
 **Lower priority (quality and scale):**

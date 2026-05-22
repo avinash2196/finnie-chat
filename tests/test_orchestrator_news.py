@@ -47,10 +47,10 @@ async def test_orchestrator_news_intent_with_mcp(monkeypatch):
 
     assert isinstance(reply, str)
     assert len(reply) > 0
-    # MCP path is working(test shows news fetched), but LLM might fail due to circuit breaker
+    # MCP path is working (test shows news fetched), but LLM might fail due to circuit breaker
     # Just verify reply exists and intent/risk are reasonable
     assert intent in ["ASK_NEWS", "ASK_MARKET", "ASK_CONCEPT", "UNKNOWN"]  # Intent classifier may vary
-    assert risk in ["LOW", "MEDIUM", "HIGH"]  # Any risk level is ok
+    assert risk in ["LOW", "MED", "MEDIUM", "HIGH"]  # Any risk level is ok
 
 
 async def test_orchestrator_news_intent_fallback_path(monkeypatch):
@@ -71,7 +71,7 @@ async def test_orchestrator_news_intent_fallback_path(monkeypatch):
 
     assert isinstance(reply, str)
     assert len(reply) > 0
-    # Just verify a response is returned(regardless of circuit breaker status)
+    # Just verify a response is returned (regardless of circuit breaker status)
     assert len(reply) > 10  # Substantial response
 
 

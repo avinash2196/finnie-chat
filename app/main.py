@@ -35,24 +35,31 @@ import functools
 # can parse fields without regex. Falls back to plain text if library is absent.
 def _configure_logging():
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    try:
-        from pythonjsonlogger import jsonlogger  # type: ignore
-        handler = logging.StreamHandler()
-        handler.setFormatter(
-            jsonlogger.JsonFormatter(
+    log_format = os.getenv("LOG_FORMAT", "json").lower()
+
+    formatter = logging.Formatter(
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+    if log_format == "json":
+        try:
+            from pythonjsonlogger import jsonlogger  # type: ignore
+            formatter = jsonlogger.JsonFormatter(
                 fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
                 datefmt="%Y-%m-%dT%H:%M:%S",
             )
-        )
-        logging.root.handlers = []
-        logging.root.addHandler(handler)
-        logging.root.setLevel(log_level)
-    except ImportError:
-        logging.basicConfig(
-            level=log_level,
-            format="%(asctime)s %(name)s %(levelname)s %(message)s",
-            datefmt="%Y-%m-%dT%H:%M:%S",
-        )
+        except ImportError:
+            pass
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    if root_logger.handlers:
+        for handler in root_logger.handlers:
+            handler.setFormatter(formatter)
+    else:
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        root_logger.addHandler(handler)
 
 _configure_logging()
 
