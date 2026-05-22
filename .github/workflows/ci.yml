@@ -36,7 +36,6 @@ jobs:
           LOG_LEVEL: WARNING
         run: |
           pytest tests/ -q \
-            --no-cov \
             --ignore=tests/deepeval \
             --ignore=tests/manual \
             --ignore=tests/integration \
