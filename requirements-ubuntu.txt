@@ -1,3 +1,4 @@
 # requirements-ubuntu.txt
 # Use the project's main requirements but allow constraints to resolve low-level libs
+-c constraints-ubuntu.txt
 -r requirements.txt
