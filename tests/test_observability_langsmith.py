@@ -100,7 +100,7 @@ class TestLangSmithRunLifecycle:
                     mock_run.id = "child-run"
                     mock_langsmith_client.create_run.return_value = mock_run
 
-                    result = manager.start_langsmith_run(
+                    manager.start_langsmith_run(
                         name="child",
                         run_type="tool",
                         parent_run_id="parent-123"

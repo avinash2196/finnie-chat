@@ -61,7 +61,7 @@ def test_market_quote_redis_setex_failure_falls_back(monkeypatch):
 
     resp = client.post("/market/quote", json={"symbols": ["SPY"]})
     assert resp.status_code == 200
-    body = resp.json()
+    resp.json()
     # ensure fallback in-memory cache stored value
     key = tuple(sorted(["SPY"]))
     assert key in _quote_agg_cache

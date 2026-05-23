@@ -180,7 +180,7 @@ async def handle_tool_call(request: CallToolRequest) -> ToolResult:
 async def _get_portfolio(db: Session, args: dict) -> ToolResult:
     """Get complete portfolio snapshot"""
     user_id = args.get("user_id")
-    include_perf = args.get("include_performance", True)
+    args.get("include_performance", True)
 
     holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
 

@@ -149,7 +149,7 @@ def test_api_timeout_handling():
         mock_post.side_effect = requests.exceptions.Timeout("Connection timeout")
 
         try:
-            response = requests.post(
+            requests.post(
                 "http://localhost:8000/market/quote",
                 json={"symbols": ["^GSPC"]},
                 timeout=5

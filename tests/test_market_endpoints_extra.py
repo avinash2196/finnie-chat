@@ -1,4 +1,5 @@
 ﻿from unittest.mock import patch
+from types import SimpleNamespace
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool

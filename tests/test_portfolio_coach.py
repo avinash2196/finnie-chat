@@ -319,7 +319,7 @@ class TestPortfolioCoachAgent:
             'MSFT': {'quantity': 20, 'purchase_price': 100}   # 20%
         }
 
-        result = run("Is my portfolio too concentrated?", holdings)
+        run("Is my portfolio too concentrated?", holdings)
 
         assert mock_call_llm.called
         # Check that LLM was given concentration info

@@ -53,11 +53,11 @@ def run(message: str, user_id: Optional[str] = None) -> str:
     try:
         portfolio_client = get_portfolio_client(user_id)
         holdings_result = portfolio_client.get_holdings()
-        current_portfolio_value = sum(
+        sum(
             h.get("total_value", 0) for h in holdings_result.get("holdings", [])
         )
     except Exception:
-        current_portfolio_value = 0
+        pass
 
     # Calculate milestones and allocation suggestions
     if timeline_years and target_amount:

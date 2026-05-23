@@ -13,7 +13,7 @@ class TestObservabilityManager:
         """Test that ObservabilityManager initializes even without credentials."""
         with patch.dict('os.environ', {}, clear=True):
             obs = ObservabilityManager()
-            assert obs.langsmith_enabled == False
+            assert not obs.langsmith_enabled
 
     def test_get_status(self):
         """Test get_status returns correct structure."""

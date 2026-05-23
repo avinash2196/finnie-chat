@@ -96,7 +96,7 @@ async def test_orchestrator_news_compliance_check():
     # Compliance agent should add disclaimer
     # (Check for common disclaimer patterns)
     lower_reply = reply.lower()
-    has_disclaimer = any(word in lower_reply for word in ["disclaimer", "educational", "not advice", "consult"])
+    any(word in lower_reply for word in ["disclaimer", "educational", "not advice", "consult"])
     # If no explicit disclaimer, at least should have safe response
     assert len(reply) > 0
 

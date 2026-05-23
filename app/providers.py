@@ -326,7 +326,7 @@ async def sync_portfolio(
 
         # Update or create holdings
         existing_holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
-        existing_tickers = {h.ticker for h in existing_holdings}
+        {h.ticker for h in existing_holdings}
 
         for holding_data in holdings_data:
             ticker = holding_data["ticker"]

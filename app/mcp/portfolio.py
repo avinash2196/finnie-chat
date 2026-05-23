@@ -10,6 +10,7 @@ This server implements tools for:
 Uses hardcoded/mock data now; will connect to PostgreSQL database later.
 """
 
+import os
 from typing import Optional, Dict
 import logging
 from datetime import datetime, timedelta
@@ -701,10 +702,6 @@ class PortfolioClient:
     def record_dividend(self, ticker: str, amount: float, notes: str = "") -> Dict:
         """Record a dividend distribution."""
         return record_transaction(self.user_id, ticker, "dividend", 1, amount, notes)
-
-
-import os
-
 
 def get_portfolio_client(user_id: str = "user_123") -> PortfolioClient:
     """Factory function to get a portfolio client for a user.

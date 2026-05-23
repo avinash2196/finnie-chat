@@ -127,7 +127,6 @@ class TestPortfolioSync:
     @pytest.mark.asyncio
     async def test_sync_updates_user_portfolio_value(self, test_db, test_user):
         """Test that sync updates user's total portfolio value"""
-        initial_value = test_user.portfolio_value
 
         await sync_portfolio(test_user.id, test_db, "mock", {})
 
