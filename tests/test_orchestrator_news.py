@@ -1,4 +1,4 @@
-"""End-to-end orchestrator tests for ASK_NEWS intent.
+﻿"""End-to-end orchestrator tests for ASK_NEWS intent.
 Tests the full pipeline: intent classification -> agent routing -> news synthesis -> compliance.
 """
 import pytest
@@ -79,7 +79,7 @@ async def test_orchestrator_news_with_context():
     """Test orchestrator with conversation context for news query"""
     context = "User: What's AAPL's current price?\nAssistant: AAPL is trading at $185.50."
     message = "Any recent news about this stock?"
-    
+
     reply, intent, risk = await handle_message(message, conversation_context=context, user_id="user_123")
 
     assert isinstance(reply, str)

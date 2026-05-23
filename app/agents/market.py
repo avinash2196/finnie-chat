@@ -1,4 +1,4 @@
-import json
+﻿import json
 from app.llm import call_llm
 from app.mcp.market import get_client
 

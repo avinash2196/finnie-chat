@@ -1,8 +1,8 @@
-"""Additional tests to increase coverage for main API endpoints."""
+﻿"""Additional tests to increase coverage for main API endpoints."""
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

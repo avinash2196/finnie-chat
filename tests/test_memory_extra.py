@@ -1,4 +1,4 @@
-"""Extra tests for ConversationMemory clear/delete with persistence."""
+﻿"""Extra tests for ConversationMemory clear/delete with persistence."""
 
 import os
 import json

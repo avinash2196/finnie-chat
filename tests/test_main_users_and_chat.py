@@ -1,9 +1,7 @@
-from fastapi.testclient import TestClient
+﻿from fastapi.testclient import TestClient
 import pytest
-import os
-from types import SimpleNamespace
 
-from app.main import app, _quote_agg_cache
+from app.main import app
 
 client = TestClient(app)
 

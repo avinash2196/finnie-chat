@@ -1,4 +1,4 @@
-"""
+﻿"""
 Conversation memory system for maintaining chat history and context.
 Supports in-memory storage with optional file-based persistence.
 """
@@ -46,7 +46,7 @@ class Conversation:
 class ConversationMemory:
     """
     In-memory conversation memory with optional file persistence.
-    
+
     Stores complete chat history for each conversation session.
     Supports:
     - Per-conversation message history
@@ -58,7 +58,7 @@ class ConversationMemory:
     def __init__(self, max_messages_per_conversation: int = 100, persist_dir: Optional[str] = None):
         """
         Initialize conversation memory.
-        
+
         Args:
             max_messages_per_conversation: Max messages to keep per conversation (older messages dropped)
             persist_dir: Directory for file persistence (optional)
@@ -66,16 +66,16 @@ class ConversationMemory:
         self._conversations: Dict[str, Conversation] = {}
         self._max_messages = max_messages_per_conversation
         self._persist_dir = Path(persist_dir) if persist_dir else None
-        
+
         if self._persist_dir:
             self._persist_dir.mkdir(parents=True, exist_ok=True)
             self._load_persisted_conversations()
 
-    def add_message(self, conversation_id: str, role: str, content: str, 
+    def add_message(self, conversation_id: str, role: str, content: str,
                    intent: Optional[str] = None, risk: Optional[str] = None) -> None:
         """
         Add a message to conversation history.
-        
+
         Args:
             conversation_id: Unique identifier for conversation
             role: "user" or "assistant"
@@ -94,7 +94,7 @@ class ConversationMemory:
             )
 
         conv = self._conversations[conversation_id]
-        
+
         # Add message
         msg = Message(
             role=role,
@@ -105,12 +105,12 @@ class ConversationMemory:
         )
         conv.messages.append(msg)
         conv.updated_at = datetime.utcnow().isoformat()
-        
+
         # Prune if over limit (keep most recent)
         if len(conv.messages) > self._max_messages:
             conv.messages = conv.messages[-self._max_messages:]
             logger.info(f"Pruned conversation {conversation_id} to {self._max_messages} messages")
-        
+
         # Persist if enabled
         if self._persist_dir:
             self._save_conversation(conversation_id)
@@ -122,18 +122,18 @@ class ConversationMemory:
     def get_messages(self, conversation_id: str, limit: Optional[int] = None) -> List[Message]:
         """
         Get messages from conversation.
-        
+
         Args:
             conversation_id: Conversation ID
             limit: Max messages to return (most recent first)
-            
+
         Returns:
             List of Message objects
         """
         conv = self._conversations.get(conversation_id)
         if not conv:
             return []
-        
+
         messages = conv.messages
         if limit:
             messages = messages[-limit:]
@@ -142,23 +142,23 @@ class ConversationMemory:
     def get_context(self, conversation_id: str, limit: int = 10) -> str:
         """
         Get recent messages formatted as context for LLM.
-        
+
         Args:
             conversation_id: Conversation ID
             limit: Number of recent messages to include
-            
+
         Returns:
             Formatted conversation context as string
         """
         messages = self.get_messages(conversation_id, limit=limit)
         if not messages:
             return ""
-        
+
         context_lines = []
         for msg in messages:
             role = "User" if msg.role == "user" else "Assistant"
             context_lines.append(f"{role}: {msg.content}")
-        
+
         return "\n".join(context_lines)
 
     def clear_conversation(self, conversation_id: str) -> None:
@@ -166,7 +166,7 @@ class ConversationMemory:
         if conversation_id in self._conversations:
             self._conversations[conversation_id].messages = []
             self._conversations[conversation_id].updated_at = datetime.utcnow().isoformat()
-            
+
             if self._persist_dir:
                 # Delete persisted file
                 conv_file = self._persist_dir / f"{conversation_id}.json"
@@ -178,7 +178,7 @@ class ConversationMemory:
         """Delete entire conversation."""
         if conversation_id in self._conversations:
             del self._conversations[conversation_id]
-            
+
             if self._persist_dir:
                 conv_file = self._persist_dir / f"{conversation_id}.json"
                 if conv_file.exists():
@@ -193,11 +193,11 @@ class ConversationMemory:
         """Save conversation to file (if persistence enabled)."""
         if not self._persist_dir:
             return
-        
+
         conv = self._conversations.get(conversation_id)
         if not conv:
             return
-        
+
         conv_file = self._persist_dir / f"{conversation_id}.json"
         try:
             with open(conv_file, "w") as f:
@@ -209,12 +209,12 @@ class ConversationMemory:
         """Load conversations from disk (if persistence enabled)."""
         if not self._persist_dir:
             return
-        
+
         for conv_file in self._persist_dir.glob("*.json"):
             try:
                 with open(conv_file) as f:
                     data = json.load(f)
-                
+
                 messages = [
                     Message(
                         role=m["role"],
@@ -225,17 +225,17 @@ class ConversationMemory:
                     )
                     for m in data.get("messages", [])
                 ]
-                
+
                 conv = Conversation(
                     conversation_id=data["conversation_id"],
                     messages=messages,
                     created_at=data["created_at"],
                     updated_at=data["updated_at"]
                 )
-                
+
                 self._conversations[conv.conversation_id] = conv
                 logger.info(f"Loaded conversation {conv.conversation_id} from disk")
-                
+
             except Exception as e:
                 logger.error(f"Failed to load conversation from {conv_file}: {e}")
 

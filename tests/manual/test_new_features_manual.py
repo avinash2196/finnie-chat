@@ -1,4 +1,4 @@
-"""
+﻿"""
 Manual/integration tests that hit the running FastAPI server (localhost:8000).
 Skipped by default; set RUN_MANUAL_TESTS=1 to enable.
 """

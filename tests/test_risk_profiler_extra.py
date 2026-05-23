@@ -1,4 +1,4 @@
-"""Extra tests for Risk Profiler to cover missed branches."""
+﻿"""Extra tests for Risk Profiler to cover missed branches."""
 
 from unittest.mock import MagicMock, patch
 from app.agents.risk_profiler import calculate_portfolio_metrics, run

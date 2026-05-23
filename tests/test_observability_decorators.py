@@ -1,4 +1,4 @@
-"""Targeted tests for observability module decorators and logging paths."""
+﻿"""Targeted tests for observability module decorators and logging paths."""
 
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock

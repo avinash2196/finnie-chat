@@ -1,5 +1,4 @@
-import pytest
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 from app.agents import risk_profiler
 

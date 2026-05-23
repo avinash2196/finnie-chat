@@ -1,4 +1,4 @@
-from app.intent import classify_intent
+﻿from app.intent import classify_intent
 
 
 def test_intent_portfolio_keywords():

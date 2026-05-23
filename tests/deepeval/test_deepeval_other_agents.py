@@ -1,4 +1,4 @@
-"""
+﻿"""
 DeepEval sanity checks for remaining agents (strategy, portfolio_coach, risk_profiler, orchestrator).
 Runs only if deepeval is installed; all LLM calls are mocked for determinism.
 """

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Market data client and MCP integration.
 Provides typed access to market quotes via the MCP server.
 """

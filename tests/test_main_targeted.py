@@ -1,8 +1,7 @@
-import time
+﻿import time
 import json
 from types import SimpleNamespace
 from fastapi.testclient import TestClient
-import pytest
 
 from app.main import app, _quote_agg_cache
 

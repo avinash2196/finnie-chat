@@ -1,5 +1,4 @@
-"""Test Tax Education Agent"""
-import pytest
+﻿"""Test Tax Education Agent"""
 from app.agents.tax_education import run
 
 
@@ -10,7 +9,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with IRA question"""
         message = "What is a Roth IRA?"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
         assert "IRA" in result or "after-tax" in result or "tax-free" in result.lower()
@@ -19,7 +18,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with capital gains question"""
         message = "How are capital gains taxed?"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert "capital" in result.lower() or "gains" in result.lower() or "tax" in result.lower()
 
@@ -27,7 +26,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with Traditional IRA question"""
         message = "Tell me about Traditional IRAs"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -35,7 +34,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with 401k question"""
         message = "What are 401k accounts?"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -43,7 +42,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with generic tax question"""
         message = "How should I manage my taxes?"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert "tax" in result.lower() or "professional" in result.lower()
 
@@ -51,7 +50,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with empty message"""
         message = ""
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -59,7 +58,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with account type question"""
         message = "What types of tax-advantaged accounts exist?"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -67,7 +66,7 @@ class TestTaxEducationAgent:
         """Test tax education agent recognizes long-term capital gains"""
         message = "Are long-term capital gains taxed differently?"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert "long-term" in result.lower() or "preferential" in result.lower() or "rates" in result.lower()
 
@@ -75,7 +74,7 @@ class TestTaxEducationAgent:
         """Test tax education agent with user_id parameter"""
         message = "Explain Roth conversions"
         result = run(message, user_id="user_123")
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -86,7 +85,7 @@ class TestTaxEducationAgent:
             "IRA contribution limits?",
             "Tell me about taxable accounts",
         ]
-        
+
         for msg in messages:
             result = run(msg)
             assert isinstance(result, str)

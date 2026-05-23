@@ -1,4 +1,4 @@
-"""
+﻿"""
 Retriever abstraction layer for RAG systems.
 Provides a unified interface for different retrieval backends (TF-IDF, semantic, hybrid).
 """
@@ -18,7 +18,7 @@ class RetrievalResult:
 
 class Retriever(Protocol):
     """Protocol for retrieval backends."""
-    
+
     def retrieve(self, query: str, k: int = 3) -> List[RetrievalResult]:
         """Retrieve top-k documents for query."""
         ...
@@ -26,11 +26,11 @@ class Retriever(Protocol):
 
 class HybridRetriever:
     """Hybrid retriever using TF-IDF + semantic search with score blending."""
-    
+
     def __init__(self):
         from app.rag import store
         self._store = store
-    
+
     def retrieve(self, query: str, k: int = 3) -> List[RetrievalResult]:
         """
         Retrieve using hybrid search (semantic + TF-IDF).
@@ -38,19 +38,19 @@ class HybridRetriever:
         """
         # Use the store's query_rag which already does hybrid search
         documents = self._store.query_rag(query, k=k)
-        
+
         if not documents:
             return []
-        
+
         # Get similarity scores from the underlying methods
         results = []
-        
+
         # Try to get scores from TF-IDF (fallback scoring)
         if self._store.tfidf_embeddings is not None:
             from sklearn.metrics.pairwise import cosine_similarity
             query_vec = self._store.vectorizer.transform([query])
             similarities = cosine_similarity(query_vec, self._store.tfidf_embeddings)[0]
-            
+
             # Match returned documents to their indices
             for doc in documents:
                 try:
@@ -79,28 +79,28 @@ class HybridRetriever:
                     index=i,
                     source="hybrid"
                 ))
-        
+
         return results[:k]
 
 
 class TFIDFRetriever:
     """Pure TF-IDF retriever."""
-    
+
     def __init__(self):
         from app.rag import store
         self._store = store
-    
+
     def retrieve(self, query: str, k: int = 3) -> List[RetrievalResult]:
         """Retrieve using TF-IDF only."""
         if self._store.tfidf_embeddings is None or len(self._store.documents) == 0:
             return []
-        
+
         from sklearn.metrics.pairwise import cosine_similarity
         query_vec = self._store.vectorizer.transform([query])
         similarities = cosine_similarity(query_vec, self._store.tfidf_embeddings)[0]
-        
+
         top_indices = similarities.argsort()[-k:][::-1]
-        
+
         results = []
         for idx in top_indices:
             if idx < len(self._store.documents):
@@ -110,36 +110,36 @@ class TFIDFRetriever:
                     index=int(idx),
                     source="tfidf"
                 ))
-        
+
         return results
 
 
 class SemanticRetriever:
     """Pure semantic search retriever."""
-    
+
     def __init__(self):
         from app.rag import store
         self._store = store
-    
+
     def retrieve(self, query: str, k: int = 3) -> List[RetrievalResult]:
         """Retrieve using semantic embeddings only."""
         if self._store.semantic_embeddings is None or len(self._store.documents) == 0:
             return []
-        
+
         self._store._ensure_model()
         if not self._store.semantic_model:
             return []
-        
+
         import numpy as np
         query_vec = self._store.semantic_model.encode(
-            [query], 
-            normalize_embeddings=True, 
+            [query],
+            normalize_embeddings=True,
             show_progress_bar=False
         )[0]
-        
+
         sims = np.dot(self._store.semantic_embeddings, query_vec)
         top_indices = np.argsort(sims)[-k:][::-1]
-        
+
         results = []
         for idx in top_indices:
             if idx < len(self._store.documents):
@@ -149,7 +149,7 @@ class SemanticRetriever:
                     index=int(idx),
                     source="semantic"
                 ))
-        
+
         return results
 
 
@@ -160,15 +160,15 @@ _default_retriever: Optional[Retriever] = None
 def get_retriever(mode: str = "hybrid") -> Retriever:
     """
     Get retriever instance.
-    
+
     Args:
         mode: "hybrid" (default), "tfidf", or "semantic"
-    
+
     Returns:
         Retriever instance
     """
     global _default_retriever
-    
+
     if mode == "tfidf":
         return TFIDFRetriever()
     elif mode == "semantic":
@@ -182,18 +182,18 @@ def get_retriever(mode: str = "hybrid") -> Retriever:
 def query_rag_with_scores(query: str, k: int = 3, mode: str = "hybrid") -> List[Dict]:
     """
     Convenience function to query RAG and return results with scores.
-    
+
     Args:
         query: Query string
         k: Number of results to return
         mode: Retrieval mode ("hybrid", "tfidf", "semantic")
-    
+
     Returns:
         List of dicts with document, similarity_score, index, source
     """
     retriever = get_retriever(mode)
     results = retriever.retrieve(query, k=k)
-    
+
     return [
         {
             "document": r.document,

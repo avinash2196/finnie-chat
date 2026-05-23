@@ -1,9 +1,7 @@
-from fastapi.testclient import TestClient
+﻿from fastapi.testclient import TestClient
 import pytest
-import os
-from types import SimpleNamespace
 
-from app.main import app, _quote_agg_cache
+from app.main import app
 
 client = TestClient(app)
 
@@ -15,7 +13,7 @@ def test_user_crud_and_portfolio_flow():
     body = resp.json()
     if body.get("status") == "error":
         # User may already exist from previous runs; try to fetch by username
-        get_resp = client.get(f"/users/user_test")
+        get_resp = client.get("/users/user_test")
         assert get_resp.status_code == 200
         user_id = get_resp.json().get("user_id")
     else:

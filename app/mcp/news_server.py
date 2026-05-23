@@ -1,4 +1,4 @@
-"""
+﻿"""
 MCP Server for financial news via Alpha Vantage NEWS_SENTIMENT.
 Provides a tool to fetch recent news for tickers with simple normalization.
 """

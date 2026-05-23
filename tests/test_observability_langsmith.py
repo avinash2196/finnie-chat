@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for Non-blocking LangSmith Observability
 
 Covers:
@@ -10,8 +10,7 @@ Covers:
 """
 
 import pytest
-import time
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from app.observability import ObservabilityManager
 
 
@@ -60,7 +59,7 @@ class TestLangSmithRunLifecycle:
         """Test start_langsmith_run returns None when disabled"""
         manager = ObservabilityManager()
         manager.langsmith_enabled = False
-        
+
         result = manager.start_langsmith_run("test", "chain")
         assert result is None
 
@@ -72,19 +71,19 @@ class TestLangSmithRunLifecycle:
                     manager = ObservabilityManager()
                     manager.langsmith_enabled = True
                     manager.langsmith_client = mock_langsmith_client
-                    
+
                     # Setup mock return
                     mock_run = MagicMock()
                     mock_run.id = "run-123"
                     mock_langsmith_client.create_run.return_value = mock_run
-                    
+
                     result = manager.start_langsmith_run(
                         name="test-run",
                         run_type="chain",
                         inputs={"query": "test"},
                         tags=["test"]
                     )
-                    
+
                     assert result == "run-123"
                     mock_langsmith_client.create_run.assert_called_once()
 
@@ -96,17 +95,17 @@ class TestLangSmithRunLifecycle:
                     manager = ObservabilityManager()
                     manager.langsmith_enabled = True
                     manager.langsmith_client = mock_langsmith_client
-                    
+
                     mock_run = MagicMock()
                     mock_run.id = "child-run"
                     mock_langsmith_client.create_run.return_value = mock_run
-                    
+
                     result = manager.start_langsmith_run(
                         name="child",
                         run_type="tool",
                         parent_run_id="parent-123"
                     )
-                    
+
                     # Verify parent_run_id was passed
                     call_args = mock_langsmith_client.create_run.call_args
                     assert call_args[1]['parent_run_id'] == "parent-123"
@@ -115,7 +114,7 @@ class TestLangSmithRunLifecycle:
         """Test end_langsmith_run is safe when disabled"""
         manager = ObservabilityManager()
         manager.langsmith_enabled = False
-        
+
         # Should not raise an error
         manager.end_langsmith_run(
             run_id="test-run",
@@ -126,7 +125,7 @@ class TestLangSmithRunLifecycle:
         """Test end_langsmith_run is safe with None run_id"""
         manager = ObservabilityManager()
         manager.langsmith_enabled = True
-        
+
         # Should not raise an error
         manager.end_langsmith_run(
             run_id=None,
@@ -141,13 +140,13 @@ class TestLangSmithRunLifecycle:
                     manager = ObservabilityManager()
                     manager.langsmith_enabled = True
                     manager.langsmith_client = mock_langsmith_client
-                    
+
                     manager.end_langsmith_run(
                         run_id="run-123",
                         outputs={"result": "success"},
                         error=None
                     )
-                    
+
                     mock_langsmith_client.update_run.assert_called_once()
 
     def test_end_langsmith_run_includes_end_time(self, mock_langsmith_client):
@@ -158,12 +157,12 @@ class TestLangSmithRunLifecycle:
                     manager = ObservabilityManager()
                     manager.langsmith_enabled = True
                     manager.langsmith_client = mock_langsmith_client
-                    
+
                     manager.end_langsmith_run(
                         run_id="run-123",
                         outputs={"result": "success"}
                     )
-                    
+
                     # Check that update_run was called
                     mock_langsmith_client.update_run.assert_called_once()
                     call_kwargs = mock_langsmith_client.update_run.call_args[1]
@@ -178,12 +177,12 @@ class TestLangSmithRunLifecycle:
                     manager = ObservabilityManager()
                     manager.langsmith_enabled = True
                     manager.langsmith_client = mock_langsmith_client
-                    
+
                     manager.end_langsmith_run(
                         run_id="run-123",
                         error="Something went wrong"
                     )
-                    
+
                     # Verify error was passed
                     call_kwargs = mock_langsmith_client.update_run.call_args[1]
                     assert 'error' in call_kwargs or 'run_id' in call_kwargs
@@ -208,7 +207,7 @@ class TestTimeoutProtection:
         """Test LangSmith API key configuration"""
         manager = ObservabilityManager()
         assert hasattr(manager, 'langsmith_api_key')
-        
+
         # With no API key, should be disabled
         if not manager.langsmith_api_key:
             assert manager.langsmith_enabled is False
@@ -226,12 +225,12 @@ class TestErrorHandling:
         """Test create_run gracefully handles exceptions"""
         manager = ObservabilityManager()
         manager.langsmith_enabled = True
-        
+
         # Mock client that raises
         mock_client = MagicMock()
         mock_client.create_run.side_effect = Exception("API Error")
         manager.langsmith_client = mock_client
-        
+
         # Should return None instead of raising
         result = manager.start_langsmith_run("test", "chain")
         assert result is None
@@ -240,11 +239,11 @@ class TestErrorHandling:
         """Test update_run gracefully handles exceptions"""
         manager = ObservabilityManager()
         manager.langsmith_enabled = True
-        
+
         mock_client = MagicMock()
         mock_client.update_run.side_effect = Exception("API Error")
         manager.langsmith_client = mock_client
-        
+
         # Should not raise
         manager.end_langsmith_run("run-123", outputs={"test": "data"})
 
@@ -253,7 +252,7 @@ class TestErrorHandling:
         with patch.dict('os.environ', {'LANGSMITH_API_KEY': ''}):
             manager = ObservabilityManager()
             assert manager.langsmith_enabled is False
-            
+
             # All calls should be safe no-ops
             assert manager.start_langsmith_run("test", "chain") is None
             manager.end_langsmith_run("run-123")  # Should not raise
@@ -266,12 +265,12 @@ class TestObservabilityIntegration:
         """Test complete run lifecycle"""
         manager = ObservabilityManager()
         manager.langsmith_enabled = False  # Use safe no-op mode
-        
+
         # Start run
         run_id = manager.start_langsmith_run("test", "chain")
         # Should be None in disabled mode
         assert run_id is None
-        
+
         # End run (should be safe)
         manager.end_langsmith_run(
             run_id=run_id,
@@ -282,14 +281,14 @@ class TestObservabilityIntegration:
     def test_parent_child_run_relationship(self):
         """Test parent-child run relationships"""
         manager = ObservabilityManager()
-        
+
         if manager.langsmith_enabled:
             # Parent run
             parent_id = manager.start_langsmith_run(
                 name="parent",
                 run_type="chain"
             )
-            
+
             if parent_id:
                 # Child run
                 child_id = manager.start_langsmith_run(
@@ -297,11 +296,11 @@ class TestObservabilityIntegration:
                     run_type="tool",
                     parent_run_id=parent_id
                 )
-                
+
                 # Both should be created
                 assert parent_id is not None
                 assert child_id is not None
-                
+
                 # End runs
                 manager.end_langsmith_run(child_id)
                 manager.end_langsmith_run(parent_id)
@@ -313,11 +312,11 @@ class TestCompletionMarking:
     def test_end_run_marks_completion(self):
         """Test that ending a run marks it as complete"""
         manager = ObservabilityManager()
-        
+
         if not manager.langsmith_enabled:
             # Can't test with disabled manager
             pytest.skip("LangSmith not enabled")
-        
+
         # The actual marking is done via end_time parameter
         # This is verified in the update_run call
         # Test passes if no exception is raised
@@ -326,10 +325,10 @@ class TestCompletionMarking:
     def test_multiple_runs_independently_tracked(self):
         """Test multiple runs can be tracked independently"""
         manager = ObservabilityManager()
-        
+
         # Create multiple runs without starting
         run_ids = [f"run-{i}" for i in range(3)]
-        
+
         for run_id in run_ids:
             # Should handle each independently
             manager.end_langsmith_run(run_id, outputs={"index": run_ids.index(run_id)})

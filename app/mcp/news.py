@@ -1,4 +1,4 @@
-"""
+﻿"""
 Client for Alpha Vantage News MCP server, with short-TTL caching.
 Adds optional Redis cache with in-memory fallback.
 """
@@ -84,9 +84,8 @@ class NewsClient:
             return []
 
     def get_news(self, tickers: List[str], limit: int = 5) -> List[NewsArticle]:
-        import logging
         logger = logging.getLogger(__name__)
-        
+
         if not tickers:
             logger.warning("[NEWS_CLIENT] get_news called with empty tickers")
             return []
@@ -112,7 +111,7 @@ class NewsClient:
         logger.info(f"[NEWS_CLIENT] Cache MISS, calling MCP for tickers={tickers}")
         raw = self._server.call_tool("get_news", {"tickers": tickers, "limit": limit})
         logger.info(f"[NEWS_CLIENT] MCP returned: error={raw.get('error')}, article_count={len(raw.get('articles', []))}")
-        
+
         articles: List[NewsArticle] = []
         for a in (raw.get("articles") or []):
             articles.append(NewsArticle(
@@ -133,12 +132,11 @@ class NewsClient:
         return articles
 
     def get_general_news(self, limit: int = 5) -> List[NewsArticle]:
-        import logging
         logger = logging.getLogger(__name__)
-        
+
         key = f"general:{limit}"
         if self._is_fresh(key):
-            logger.debug(f"[NEWS_CLIENT] Cache HIT (memory) for general news")
+            logger.debug("[NEWS_CLIENT] Cache HIT (memory) for general news")
             return self._cache[key]["articles"]
 
         if self._redis:
@@ -147,16 +145,16 @@ class NewsClient:
                 if cached:
                     articles = self._deserialize(cached.decode("utf-8"))
                     if articles:
-                        logger.debug(f"[NEWS_CLIENT] Cache HIT (redis) for general news")
+                        logger.debug("[NEWS_CLIENT] Cache HIT (redis) for general news")
                         self._cache[key] = {"ts": time.time(), "articles": articles}
                         return articles
             except Exception:
                 pass
 
-        logger.info(f"[NEWS_CLIENT] Cache MISS, calling MCP for general news")
+        logger.info("[NEWS_CLIENT] Cache MISS, calling MCP for general news")
         raw = self._server.call_tool("get_general_news", {"limit": limit})
         logger.info(f"[NEWS_CLIENT] MCP returned: error={raw.get('error')}, article_count={len(raw.get('articles', []))}")
-        
+
         articles: List[NewsArticle] = []
         for a in (raw.get("articles") or []):
             articles.append(NewsArticle(

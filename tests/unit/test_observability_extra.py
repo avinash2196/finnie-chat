@@ -1,6 +1,4 @@
-import os
-import types
-from app.observability import ObservabilityManager
+﻿from app.observability import ObservabilityManager
 
 
 def test_langsmith_setup_and_run_update(monkeypatch):

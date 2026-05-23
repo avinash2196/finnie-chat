@@ -1,7 +1,6 @@
-"""Quick diagnostic script to test news MCP with general headlines.
+﻿"""Quick diagnostic script to test news MCP with general headlines.
 Run this to verify the news path works end-to-end.
 """
-import os
 import sys
 from pathlib import Path
 

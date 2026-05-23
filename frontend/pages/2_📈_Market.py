@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import requests
 import time
 import pandas as pd
@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Market Trends", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Market Trends", page_icon="ðŸ“ˆ", layout="wide")
 
 # API Configuration
 API_BASE_URL = "http://localhost:8000"
@@ -15,31 +15,31 @@ API_BASE_URL = "http://localhost:8000"
 if "user_id" not in st.session_state:
     st.session_state.user_id = "user_001"
 
-st.title("📈 Market — Overview & Trends")
-st.markdown("Overview: fast market snapshot. Trends: deeper analysis and sector insights — all data is fetched live from the backend.")
+st.title("ðŸ“ˆ Market â€” Overview & Trends")
+st.markdown("Overview: fast market snapshot. Trends: deeper analysis and sector insights â€” all data is fetched live from the backend.")
 
 # Sidebar
 with st.sidebar:
     st.subheader("Market Settings")
     user_id = st.text_input("User ID", value=st.session_state.user_id)
     st.session_state.user_id = user_id
-    
+
     market_view = st.selectbox(
         "View",
         ["Overview", "Screeners", "Strategy Ideas", "Sector Analysis"]
     )
-    
+
     st.markdown("---")
-    st.caption("💡 Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
-    with st.expander("ℹ️ Agents"):
+    st.caption("ðŸ’¡ Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
+    with st.expander("â„¹ï¸ Agents"):
         st.markdown("""
-        - 🧭 **Orchestrator** — routes requests and composes answers
-        - 🏦 **Market** — quotes, movers, sectors
-        - 🧮 **Strategy** — screeners and ideas
-        - 🎯 **Portfolio Coach** — improvement suggestions
-        - 🔎 **Risk Profiler** — risk from holdings
-        - 🎓 **Educator** — RAG-backed explanations
-        - ✅ **Compliance** — safe outputs & disclaimers
+        - ðŸ§­ **Orchestrator** â€” routes requests and composes answers
+        - ðŸ¦ **Market** â€” quotes, movers, sectors
+        - ðŸ§® **Strategy** â€” screeners and ideas
+        - ðŸŽ¯ **Portfolio Coach** â€” improvement suggestions
+        - ðŸ”Ž **Risk Profiler** â€” risk from holdings
+        - ðŸŽ“ **Educator** â€” RAG-backed explanations
+        - âœ… **Compliance** â€” safe outputs & disclaimers
         """)
 
 # Helper functions
@@ -145,15 +145,15 @@ def get_sectors_manual(ttl=30):
 
 # Main content
 if market_view == "Overview":
-    st.subheader("📊 Market Overview")
-    
+    st.subheader("ðŸ“Š Market Overview")
+
     # Major indices
     col1, col2, col3, col4 = st.columns(4)
-    
+
     # Fetch real-time indices data from backend
     index_symbols = ["^GSPC", "^DJI", "^IXIC", "^RUT"]
     index_names = ["S&P 500", "Dow Jones", "NASDAQ", "Russell 2000"]
-    
+
     try:
         with st.spinner("Fetching latest index values..."):
             data, err = fetch_market_data(index_symbols)
@@ -172,7 +172,7 @@ if market_view == "Overview":
     except Exception as e:
         indices_data = [{"price": 0, "change": 0, "change_pct": 0} for _ in index_symbols]
         st.warning(f"Market data unavailable: {str(e)}")
-    
+
     for col, idx_data, name in zip([col1, col2, col3, col4], indices_data, index_names):
         with col:
             delta_color = "normal" if idx_data['change'] >= 0 else "inverse"
@@ -185,11 +185,11 @@ if market_view == "Overview":
                 )
             else:
                 st.metric(name, "N/A", "...")
-    
+
     st.markdown("---")
 
     # Top movers - request precomputed movers from backend
-    st.markdown("#### 📈 Top Gainers & Losers")
+    st.markdown("#### ðŸ“ˆ Top Gainers & Losers")
     try:
         # fetch movers using manual short-lived cache (avoids showing internal function names)
         with st.spinner("Fetching top movers..."):
@@ -218,14 +218,14 @@ if market_view == "Overview":
                     st.dataframe(losers_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No losers available")
-        
+
     except Exception as e:
         st.warning(f"Top movers unavailable: {str(e)}")
 
     st.markdown("---")
 
     # Sector performance heatmap (request from backend)
-    st.markdown("#### 🗺️ Sector Performance")
+    st.markdown("#### ðŸ—ºï¸ Sector Performance")
     try:
         with st.spinner("Loading sector performance..."):
             data, err = get_sectors_manual()
@@ -252,28 +252,28 @@ if market_view == "Overview":
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No sector data available")
-        
+
     except Exception as e:
         st.warning(f"Sector data unavailable: {str(e)}")
 
 elif market_view == "Screeners":
-    st.subheader("🔍 Stock Screeners")
-    
+    st.subheader("ðŸ” Stock Screeners")
+
     screener_type = st.selectbox(
         "Select Screener",
         ["Dividend Yield", "Growth Stocks", "Value Stocks", "Momentum Plays", "High Volume"]
     )
-    
+
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         min_price = st.number_input("Min Price ($)", min_value=0.0, value=10.0)
     with col2:
         max_price = st.number_input("Max Price ($)", min_value=0.0, value=1000.0)
     with col3:
         min_volume = st.number_input("Min Volume (M)", min_value=0.0, value=1.0)
-    
-    if st.button("🔍 Run Screener", type="primary"):
+
+    if st.button("ðŸ” Run Screener", type="primary"):
         with st.spinner("Scanning markets..."):
             # Map frontend names to backend screener types
             screener_map = {
@@ -283,11 +283,11 @@ elif market_view == "Screeners":
                 "Momentum Plays": "value",  # Fallback to value
                 "High Volume": "growth"  # Fallback to growth
             }
-            
+
             try:
                 # Get user ID from session state for portfolio context
                 user_id = st.session_state.get("user_id", "user_001")
-                
+
                 response = requests.post(
                     f"{API_BASE_URL}/market/screen",
                     json={
@@ -296,21 +296,21 @@ elif market_view == "Screeners":
                     },
                     timeout=10
                 )
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     stocks = data.get("results", [])
-                    
+
                     if stocks:
                         # Convert to DataFrame
                         results = pd.DataFrame(stocks)
                         st.success(f"Found {len(results)} stocks matching criteria")
                         st.dataframe(results, use_container_width=True, hide_index=True)
-                        
+
                         # Export option
                         csv = results.to_csv(index=False)
                         st.download_button(
-                            label="📥 Download Results (CSV)",
+                            label="ðŸ“¥ Download Results (CSV)",
                             data=csv,
                             file_name=f"{screener_type.lower().replace(' ', '_')}_screener.csv",
                             mime="text/csv"
@@ -319,24 +319,24 @@ elif market_view == "Screeners":
                         st.info("No stocks found matching criteria")
                 else:
                     st.error(f"Screener unavailable (Status: {response.status_code})")
-                    
+
             except Exception as e:
                 st.error(f"Unable to run screener: {str(e)}")
                 st.info("Try asking Finnie in the Chat tab for stock recommendations")
 
 elif market_view == "Strategy Ideas":
-    st.subheader("💡 Investment Strategy Ideas")
-    
+    st.subheader("ðŸ’¡ Investment Strategy Ideas")
+
     risk_level = st.select_slider(
         "Risk Tolerance",
         options=["LOW", "MEDIUM", "HIGH"],
         value="MEDIUM"
     )
-    
+
     st.markdown("---")
 
     # Symbol lookup with debounce (auto-fetch)
-    st.markdown("#### 🔎 Lookup Symbols")
+    st.markdown("#### ðŸ”Ž Lookup Symbols")
     col_a, col_b = st.columns([3,1])
     with col_a:
         symbol_query = st.text_input("Tickers (comma-separated)", key="symbol_query")
@@ -368,18 +368,18 @@ elif market_view == "Strategy Ideas":
                         "change_pct": v.get("change_pct")
                     } for k, v in quotes.items()])
                     st.dataframe(df, use_container_width=True)
-    
-    
+
+
     # Strategy categories
     strategy_cat = st.radio(
         "Strategy Type",
         ["Income", "Growth", "Value", "Momentum", "Diversification"],
         horizontal=True
     )
-    
+
     if strategy_cat == "Income":
-        st.markdown("#### 💰 Dividend Income Strategies")
-        
+        st.markdown("#### ðŸ’° Dividend Income Strategies")
+
         strategies = [
             {
                 "name": "Dividend Aristocrats",
@@ -403,10 +403,10 @@ elif market_view == "Strategy Ideas":
                 "risk": "MEDIUM"
             }
         ]
-    
+
     elif strategy_cat == "Growth":
-        st.markdown("#### 🚀 Growth Strategies")
-        
+        st.markdown("#### ðŸš€ Growth Strategies")
+
         strategies = [
             {
                 "name": "AI & Technology",
@@ -430,10 +430,10 @@ elif market_view == "Strategy Ideas":
                 "risk": "MEDIUM"
             }
         ]
-    
+
     else:
-        st.markdown("#### 📊 Value Strategies")
-        
+        st.markdown("#### ðŸ“Š Value Strategies")
+
         strategies = [
             {
                 "name": "Deep Value",
@@ -450,12 +450,12 @@ elif market_view == "Strategy Ideas":
                 "risk": "LOW"
             }
         ]
-    
+
     for strategy in strategies:
-        with st.expander(f"📌 {strategy['name']}"):
+        with st.expander(f"ðŸ“Œ {strategy['name']}"):
             st.markdown(f"**Description:** {strategy['description']}")
             st.markdown(f"**Suggested Tickers:** {', '.join(strategy['tickers'])}")
-            
+
             metrics_col1, metrics_col2 = st.columns(2)
             with metrics_col1:
                 if 'avg_yield' in strategy:
@@ -464,23 +464,23 @@ elif market_view == "Strategy Ideas":
                     st.metric("Historical Return (1Y)", strategy['avg_return'])
                 elif 'avg_pe' in strategy:
                     st.metric("Average P/E Ratio", strategy['avg_pe'])
-            
+
             with metrics_col2:
-                risk_color = {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🔴"}
+                risk_color = {"LOW": "ðŸŸ¢", "MEDIUM": "ðŸŸ¡", "HIGH": "ðŸ”´"}
                 st.metric("Risk Level", f"{risk_color[strategy['risk']]} {strategy['risk']}")
 
 else:  # Sector Analysis
-    st.subheader("🏭 Sector Analysis")
-    
+    st.subheader("ðŸ­ Sector Analysis")
+
     sector = st.selectbox(
         "Select Sector",
         ["Technology", "Healthcare", "Financials", "Energy", "Consumer", "Industrials"]
     )
-    
+
     st.markdown(f"#### {sector} Sector Overview")
-    
+
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric("Sector Performance", "+2.4%", delta="+0.8%")
     with col2:
@@ -488,13 +488,13 @@ else:  # Sector Analysis
     with col3:
         st.metric("Top Performers", "67%", delta="+5%")
     with col4:
-        st.metric("Volume Trend", "High", delta="↑")
-    
+        st.metric("Volume Trend", "High", delta="â†‘")
+
     st.markdown("---")
-    
+
     # Top stocks in sector
-    st.markdown("#### 🏆 Sector Leaders")
-    
+    st.markdown("#### ðŸ† Sector Leaders")
+
     sector_stocks = pd.DataFrame([
         {"Ticker": "AAPL", "Name": "Apple Inc.", "Price": "$192.53", "Change": "+1.2%", "Market Cap": "$3.0T"},
         {"Ticker": "MSFT", "Name": "Microsoft Corp.", "Price": "$374.58", "Change": "+0.8%", "Market Cap": "$2.8T"},
@@ -502,8 +502,8 @@ else:  # Sector Analysis
         {"Ticker": "GOOGL", "Name": "Alphabet Inc.", "Price": "$140.93", "Change": "-0.3%", "Market Cap": "$1.8T"},
         {"Ticker": "META", "Name": "Meta Platforms", "Price": "$362.54", "Change": "+4.8%", "Market Cap": "$925B"},
     ])
-    
+
     st.dataframe(sector_stocks, use_container_width=True, hide_index=True)
 
 st.markdown("---")
-st.caption("Market Trends | Real-time market data and analysis 📈")
+st.caption("Market Trends | Real-time market data and analysis ðŸ“ˆ")

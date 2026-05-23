@@ -1,4 +1,4 @@
-"""
+﻿"""
 AI Gateway for managing LLM requests with resilience, caching, and routing.
 Supports multiple providers, fallbacks, and intelligent retry strategies.
 """
@@ -11,7 +11,6 @@ import time
 import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from enum import Enum
 
 from app.env import load_env_once
@@ -167,7 +166,7 @@ class AIGateway:
         """Call Gemini (or other REST-compatible) endpoint.
 
         Prefer using the official Google GenAI client (`google.generativeai`) when
-        available — it accepts an API key via `genai.configure(api_key=...)` —
+        available â€” it accepts an API key via `genai.configure(api_key=...)` â€”
         otherwise fall back to a raw HTTP POST to `config.base_url`.
         """
         # First try the official client if installed
@@ -289,15 +288,15 @@ class AIGateway:
     def call_llm(self, system: str, user: str, temperature: float = 0) -> str:
         """
         Call LLM with intelligent failover, caching, and resilience.
-        
+
         Args:
             system: System prompt
             user: User prompt
             temperature: Sampling temperature
-            
+
         Returns:
             LLM response
-            
+
         Raises:
             Exception: If all providers fail
         """
@@ -363,7 +362,7 @@ class AIGateway:
         total = self._metrics["total_requests"]
         cache_hits = self._metrics["cache_hits"]
         hit_rate = (cache_hits / total * 100) if total > 0 else 0
-        
+
         return {
             "total_requests": total,
             "cache_hits": cache_hits,
@@ -384,7 +383,7 @@ def get_gateway() -> AIGateway:
         # Ensure environment variables from .env are loaded before reading keys
         load_env_once()
         _gateway = AIGateway(cache_enabled=True)
-        
+
         # Load providers from environment
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key:
@@ -394,7 +393,7 @@ def get_gateway() -> AIGateway:
                 model="gpt-4o-mini",
                 priority=1
             ))
-        
+
         # Optional: Add Gemini as fallback (set GEMINI_API_KEY and GEMINI_ENDPOINT)
         gemini_key = os.getenv("GEMINI_API_KEY")
         gemini_endpoint = os.getenv("GEMINI_ENDPOINT")
@@ -406,7 +405,7 @@ def get_gateway() -> AIGateway:
                 base_url=gemini_endpoint,
                 priority=0  # Lower priority (fallback)
             ))
-        
+
         # Optional: Add Anthropic as additional fallback
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         if anthropic_key:
@@ -416,5 +415,5 @@ def get_gateway() -> AIGateway:
                 model="claude-3-5-sonnet-20241022",
                 priority=0
             ))
-    
+
     return _gateway

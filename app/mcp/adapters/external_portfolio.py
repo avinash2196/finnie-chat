@@ -1,4 +1,4 @@
-"""
+﻿"""
 External Portfolio Adapter (skeleton)
 
 This provides a drop-in client with the same methods as the internal `PortfolioClient`.

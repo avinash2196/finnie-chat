@@ -1,13 +1,13 @@
-"""
+﻿"""
 MCP Server for Portfolio Management with database integration
 Supports real Robinhood/Fidelity or mock data
 """
-from mcp.server import Server, Request, CallToolRequest
+from mcp.server import Server, CallToolRequest
 from mcp.types import (
-    Tool, TextContent, ToolResult, EmbeddedResource
+    Tool, TextContent, ToolResult
 )
-from app.database import init_db, get_db, User, Holding, Transaction, PortfolioSnapshot, SessionLocal
-from app.providers import PortfolioProviderFactory, sync_portfolio
+from app.database import init_db, Holding, Transaction, PortfolioSnapshot, SessionLocal
+from app.providers import sync_portfolio
 from datetime import datetime, timedelta
 import json
 import asyncio
@@ -147,7 +147,7 @@ async def handle_tool_call(request: CallToolRequest) -> ToolResult:
     try:
         tool_name = request.params["name"]
         args = request.params.get("arguments", {})
-        
+
         if tool_name == "get_portfolio":
             return await _get_portfolio(db, args)
         elif tool_name == "get_holdings":
@@ -168,7 +168,7 @@ async def handle_tool_call(request: CallToolRequest) -> ToolResult:
             return await _get_allocation(db, args)
         else:
             return ToolResult(content=[TextContent(type="text", text=f"Unknown tool: {tool_name}")], is_error=True)
-            
+
     except Exception as e:
         return ToolResult(content=[TextContent(type="text", text=f"Error: {str(e)}")], is_error=True)
     finally:
@@ -181,9 +181,9 @@ async def _get_portfolio(db: Session, args: dict) -> ToolResult:
     """Get complete portfolio snapshot"""
     user_id = args.get("user_id")
     include_perf = args.get("include_performance", True)
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
-    
+
     portfolio = {
         "total_value": sum(h.total_value for h in holdings),
         "total_gain_loss": sum(h.gain_loss for h in holdings),
@@ -203,10 +203,10 @@ async def _get_portfolio(db: Session, args: dict) -> ToolResult:
             for h in holdings
         ]
     }
-    
+
     if portfolio["total_value"] > 0:
         portfolio["total_return_pct"] = (portfolio["total_gain_loss"] / (portfolio["total_value"] - portfolio["total_gain_loss"]) * 100)
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps(portfolio, indent=2))],
         is_error=False
@@ -217,13 +217,13 @@ async def _get_holdings(db: Session, args: dict) -> ToolResult:
     """Get holdings list"""
     user_id = args.get("user_id")
     ticker_filter = args.get("ticker_filter")
-    
+
     query = db.query(Holding).filter(Holding.user_id == user_id)
     if ticker_filter:
         query = query.filter(Holding.ticker == ticker_filter.upper())
-    
+
     holdings = query.all()
-    
+
     result = {
         "holdings": [
             {
@@ -241,7 +241,7 @@ async def _get_holdings(db: Session, args: dict) -> ToolResult:
         ],
         "total_value": sum(h.total_value for h in holdings)
     }
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps(result, indent=2))],
         is_error=False
@@ -255,7 +255,7 @@ async def _add_holding(db: Session, args: dict) -> ToolResult:
     quantity = float(args.get("quantity"))
     purchase_price = float(args.get("purchase_price"))
     purchase_date_str = args.get("purchase_date", datetime.utcnow().isoformat())
-    
+
     holding = Holding(
         id=str(__import__("uuid").uuid4()),
         user_id=user_id,
@@ -267,9 +267,9 @@ async def _add_holding(db: Session, args: dict) -> ToolResult:
         total_value=quantity * purchase_price,
         gain_loss=0.0
     )
-    
+
     db.add(holding)
-    
+
     # Add transaction record
     txn = Transaction(
         id=str(__import__("uuid").uuid4()),
@@ -282,9 +282,9 @@ async def _add_holding(db: Session, args: dict) -> ToolResult:
         transaction_date=datetime.fromisoformat(purchase_date_str)
     )
     db.add(txn)
-    
+
     db.commit()
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps({
             "status": "success",
@@ -301,24 +301,24 @@ async def _sell_holding(db: Session, args: dict) -> ToolResult:
     holding_id = args.get("holding_id")
     quantity = float(args.get("quantity"))
     sale_price = float(args.get("sale_price"))
-    
+
     holding = db.query(Holding).filter(
         Holding.id == holding_id,
         Holding.user_id == user_id
     ).first()
-    
+
     if not holding:
         return ToolResult(
             content=[TextContent(type="text", text="Holding not found")],
             is_error=True
         )
-    
+
     if holding.quantity < quantity:
         return ToolResult(
             content=[TextContent(type="text", text=f"Not enough shares. Have {holding.quantity}, trying to sell {quantity}")],
             is_error=True
         )
-    
+
     # Add transaction
     txn = Transaction(
         id=str(__import__("uuid").uuid4()),
@@ -331,7 +331,7 @@ async def _sell_holding(db: Session, args: dict) -> ToolResult:
         transaction_date=datetime.utcnow()
     )
     db.add(txn)
-    
+
     # Update holding
     holding.quantity -= quantity
     if holding.quantity == 0:
@@ -339,11 +339,11 @@ async def _sell_holding(db: Session, args: dict) -> ToolResult:
     else:
         holding.total_value = holding.quantity * holding.current_price
         holding.updated_at = datetime.utcnow()
-    
+
     db.commit()
-    
+
     gain_loss = (sale_price - holding.purchase_price) * quantity
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps({
             "status": "success",
@@ -359,19 +359,19 @@ async def _get_transactions(db: Session, args: dict) -> ToolResult:
     user_id = args.get("user_id")
     days = args.get("days", 90)
     ticker_filter = args.get("ticker_filter")
-    
+
     cutoff_date = datetime.utcnow() - timedelta(days=days)
-    
+
     query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_date >= cutoff_date
     )
-    
+
     if ticker_filter:
         query = query.filter(Transaction.ticker == ticker_filter.upper())
-    
+
     txns = query.order_by(Transaction.transaction_date.desc()).all()
-    
+
     result = {
         "transactions": [
             {
@@ -387,7 +387,7 @@ async def _get_transactions(db: Session, args: dict) -> ToolResult:
         ],
         "count": len(txns)
     }
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps(result, indent=2))],
         is_error=False
@@ -399,16 +399,16 @@ async def _sync_external(db: Session, args: dict) -> ToolResult:
     user_id = args.get("user_id")
     provider = args.get("provider", "mock")
     api_token = args.get("api_token")
-    
+
     credentials = {}
     if api_token:
         if provider == "robinhood":
             credentials["robinhood_token"] = api_token
         elif provider == "fidelity":
             credentials["fidelity_token"] = api_token
-    
+
     result = await sync_portfolio(user_id, db, provider, credentials)
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps(result, indent=2))],
         is_error=result["status"] != "SUCCESS"
@@ -419,14 +419,14 @@ async def _get_snapshot(db: Session, args: dict) -> ToolResult:
     """Get portfolio snapshots"""
     user_id = args.get("user_id")
     days = args.get("days", 30)
-    
+
     cutoff_date = datetime.utcnow() - timedelta(days=days)
-    
+
     snapshots = db.query(PortfolioSnapshot).filter(
         PortfolioSnapshot.user_id == user_id,
         PortfolioSnapshot.snapshot_date >= cutoff_date
     ).order_by(PortfolioSnapshot.snapshot_date.desc()).all()
-    
+
     result = {
         "snapshots": [
             {
@@ -441,7 +441,7 @@ async def _get_snapshot(db: Session, args: dict) -> ToolResult:
         ],
         "count": len(snapshots)
     }
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps(result, indent=2))],
         is_error=False
@@ -451,19 +451,19 @@ async def _get_snapshot(db: Session, args: dict) -> ToolResult:
 async def _create_snapshot(db: Session, args: dict) -> ToolResult:
     """Create portfolio snapshot"""
     user_id = args.get("user_id")
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
     total_value = sum(h.total_value for h in holdings)
-    
+
     # Calculate simple daily return (compare to most recent snapshot)
     last_snapshot = db.query(PortfolioSnapshot).filter(
         PortfolioSnapshot.user_id == user_id
     ).order_by(PortfolioSnapshot.snapshot_date.desc()).first()
-    
+
     daily_return = 0.0
     if last_snapshot and last_snapshot.total_value > 0:
         daily_return = ((total_value - last_snapshot.total_value) / last_snapshot.total_value) * 100
-    
+
     snapshot = PortfolioSnapshot(
         id=str(__import__("uuid").uuid4()),
         user_id=user_id,
@@ -471,10 +471,10 @@ async def _create_snapshot(db: Session, args: dict) -> ToolResult:
         daily_return=daily_return,
         snapshot_date=datetime.utcnow()
     )
-    
+
     db.add(snapshot)
     db.commit()
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps({
             "status": "success",
@@ -489,10 +489,10 @@ async def _create_snapshot(db: Session, args: dict) -> ToolResult:
 async def _get_allocation(db: Session, args: dict) -> ToolResult:
     """Get asset allocation"""
     user_id = args.get("user_id")
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
     total_value = sum(h.total_value for h in holdings)
-    
+
     if total_value == 0:
         return ToolResult(
             content=[TextContent(type="text", text=json.dumps({
@@ -501,7 +501,7 @@ async def _get_allocation(db: Session, args: dict) -> ToolResult:
             }, indent=2))],
             is_error=False
         )
-    
+
     allocation = {
         "allocation": [
             {
@@ -515,7 +515,7 @@ async def _get_allocation(db: Session, args: dict) -> ToolResult:
         "total_value": total_value,
         "holding_count": len(holdings)
     }
-    
+
     return ToolResult(
         content=[TextContent(type="text", text=json.dumps(allocation, indent=2))],
         is_error=False

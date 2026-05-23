@@ -1,4 +1,4 @@
-from app.agents.compliance import run as compliance_run
+﻿from app.agents.compliance import run as compliance_run
 
 
 def test_no_disclaimer_for_low_risk():

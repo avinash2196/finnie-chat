@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for Retriever Abstraction Layer (RAG)
 
 Covers:
@@ -10,7 +10,6 @@ Covers:
 """
 
 import pytest
-from typing import List
 from app.rag.retriever import (
     HybridRetriever,
     TFIDFRetriever,
@@ -77,7 +76,7 @@ class TestHybridRetriever:
         """Test HybridRetriever retrieval"""
         retriever = HybridRetriever()
         results = retriever.retrieve("What is a bond?", k=2)
-        
+
         assert isinstance(results, list)
         assert len(results) > 0
         assert all(isinstance(r, RetrievalResult) for r in results)
@@ -87,10 +86,10 @@ class TestHybridRetriever:
     def test_hybrid_retriever_k_parameter(self):
         """Test k parameter limits results"""
         retriever = HybridRetriever()
-        
+
         results_k1 = retriever.retrieve("diversification", k=1)
         results_k3 = retriever.retrieve("diversification", k=3)
-        
+
         assert len(results_k1) <= 1
         assert len(results_k3) <= 3
         assert len(results_k1) <= len(results_k3)
@@ -99,7 +98,7 @@ class TestHybridRetriever:
         """Test HybridRetriever with empty query"""
         retriever = HybridRetriever()
         results = retriever.retrieve("", k=2)
-        
+
         # Should return something (even if empty query)
         assert isinstance(results, list)
 
@@ -131,7 +130,7 @@ class TestTFIDFRetriever:
         """Test TFIDFRetriever retrieval"""
         retriever = TFIDFRetriever()
         results = retriever.retrieve("What is a stock?", k=2)
-        
+
         assert isinstance(results, list)
         assert all(isinstance(r, RetrievalResult) for r in results)
         assert all(r.source == "tfidf" for r in results)
@@ -140,7 +139,7 @@ class TestTFIDFRetriever:
         """Test TFIDFRetriever returns scores"""
         retriever = TFIDFRetriever()
         results = retriever.retrieve("stock company ownership", k=3)
-        
+
         assert len(results) > 0
         assert all(hasattr(r, 'similarity_score') for r in results)
         assert all(r.similarity_score >= 0 for r in results)
@@ -173,7 +172,7 @@ class TestSemanticRetriever:
         """Test SemanticRetriever retrieval"""
         retriever = SemanticRetriever()
         results = retriever.retrieve("equity investments", k=2)
-        
+
         assert isinstance(results, list)
         if len(results) > 0:
             assert all(isinstance(r, RetrievalResult) for r in results)
@@ -183,7 +182,7 @@ class TestSemanticRetriever:
         """Test SemanticRetriever with no documents"""
         retriever = SemanticRetriever()
         store.semantic_embeddings = None
-        
+
         results = retriever.retrieve("test", k=2)
         assert isinstance(results, list)
 
@@ -253,7 +252,7 @@ class TestQueryRAGWithScores:
     def test_query_rag_with_scores_hybrid(self):
         """Test query_rag_with_scores with hybrid mode"""
         results = query_rag_with_scores("What are bonds?", k=2, mode="hybrid")
-        
+
         assert isinstance(results, list)
         assert all("document" in r for r in results)
         assert all("similarity_score" in r for r in results)
@@ -263,7 +262,7 @@ class TestQueryRAGWithScores:
     def test_query_rag_with_scores_tfidf(self):
         """Test query_rag_with_scores with tfidf mode"""
         results = query_rag_with_scores("stock ownership company", k=2, mode="tfidf")
-        
+
         assert isinstance(results, list)
         if len(results) > 0:
             assert all(r["source"] == "tfidf" for r in results)
@@ -271,7 +270,7 @@ class TestQueryRAGWithScores:
     def test_query_rag_with_scores_semantic(self):
         """Test query_rag_with_scores with semantic mode"""
         results = query_rag_with_scores("investment pool fund", k=2, mode="semantic")
-        
+
         assert isinstance(results, list)
         if len(results) > 0:
             assert all(r["source"] == "semantic" for r in results)
@@ -279,7 +278,7 @@ class TestQueryRAGWithScores:
     def test_query_rag_with_scores_returns_documents(self):
         """Test that results contain actual documents"""
         results = query_rag_with_scores("diversification asset allocation", k=3)
-        
+
         assert len(results) > 0
         for result in results:
             assert isinstance(result["document"], str)
@@ -288,7 +287,7 @@ class TestQueryRAGWithScores:
     def test_query_rag_with_scores_similarity_range(self):
         """Test similarity scores are in valid range"""
         results = query_rag_with_scores("bonds", k=3)
-        
+
         for result in results:
             assert 0 <= result["similarity_score"] <= 1, \
                 f"Similarity score {result['similarity_score']} out of range"
@@ -296,7 +295,7 @@ class TestQueryRAGWithScores:
     def test_query_rag_with_scores_sorted(self):
         """Test results are sorted by similarity (descending)"""
         results = query_rag_with_scores("bonds mutual funds stocks", k=3)
-        
+
         scores = [r["similarity_score"] for r in results]
         assert scores == sorted(scores, reverse=True)
 
@@ -321,11 +320,11 @@ class TestRetrieverBackendSwitching:
     def test_all_backends_return_results(self):
         """Test all backends return results for same query"""
         query = "What is risk management?"
-        
+
         hybrid_results = get_retriever("hybrid").retrieve(query, k=2)
         tfidf_results = get_retriever("tfidf").retrieve(query, k=2)
         semantic_results = get_retriever("semantic").retrieve(query, k=2)
-        
+
         assert len(hybrid_results) > 0
         assert len(tfidf_results) > 0
         # Semantic may be empty if model not available
@@ -334,10 +333,10 @@ class TestRetrieverBackendSwitching:
     def test_different_backends_may_rank_differently(self):
         """Test that different backends might rank results differently"""
         query = "emergency fund expenses"
-        
+
         hybrid_results = query_rag_with_scores(query, k=3, mode="hybrid")
         tfidf_results = query_rag_with_scores(query, k=3, mode="tfidf")
-        
+
         # They might return different top results due to different scoring
         if len(hybrid_results) > 0 and len(tfidf_results) > 0:
             # Just verify we get results; exact ranking may differ

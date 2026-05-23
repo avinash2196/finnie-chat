@@ -1,6 +1,4 @@
-import types
-from types import SimpleNamespace
-import pytest
+﻿import pytest
 
 from app.mcp import market_server
 

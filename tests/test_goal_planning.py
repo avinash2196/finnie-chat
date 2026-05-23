@@ -1,5 +1,4 @@
-"""Test Goal Planning Agent"""
-import pytest
+﻿"""Test Goal Planning Agent"""
 from app.agents.goal_planning import run
 
 
@@ -10,7 +9,7 @@ class TestGoalPlanningAgent:
         """Test goal planning agent with retirement target"""
         message = "I want to save $1M for retirement in 20 years"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
         # Can return either goals or clarification requests
@@ -20,7 +19,7 @@ class TestGoalPlanningAgent:
         """Test goal planning agent with savings goal"""
         message = "I need $50,000 in 5 years for a house down payment"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
         # Can return either the number or clarification
@@ -30,7 +29,7 @@ class TestGoalPlanningAgent:
         """Test goal planning agent with generic message"""
         message = "Help me plan my finances"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -38,7 +37,7 @@ class TestGoalPlanningAgent:
         """Test goal planning agent with empty message"""
         message = ""
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -46,7 +45,7 @@ class TestGoalPlanningAgent:
         """Test that goal planning extracts numeric targets"""
         message = "I want $500,000 in 15 years"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0  # Just verify it returns something
 
@@ -54,7 +53,7 @@ class TestGoalPlanningAgent:
         """Test that goal planning extracts timeframe"""
         message = "I want to retire in 30 years with plenty of savings"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0  # Just verify response
 
@@ -62,7 +61,7 @@ class TestGoalPlanningAgent:
         """Test that goal planning returns suggested steps"""
         message = "Planning for retirement"
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0  # Just verify response
 
@@ -70,6 +69,6 @@ class TestGoalPlanningAgent:
         """Test goal planning agent with user_id parameter"""
         message = "I want to save $250K in 10 years"
         result = run(message, user_id="user_123")
-        
+
         assert isinstance(result, str)
         assert len(result) > 0

@@ -1,5 +1,4 @@
-import pytest
-
+﻿
 def test_pii_blocked(chat_system):
     """Test that PII is detected and blocked"""
     output = chat_system("My SSN is 123-45-6789, should I invest it?")

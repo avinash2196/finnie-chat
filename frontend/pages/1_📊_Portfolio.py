@@ -1,4 +1,4 @@
-"""
+﻿"""
 Portfolio Tab - Portfolio tracking and analysis
 """
 import streamlit as st
@@ -11,7 +11,7 @@ from datetime import datetime
 # Page configuration
 st.set_page_config(
     page_title="Portfolio - Finnie Chat",
-    page_icon="📊",
+    page_icon="ðŸ“Š",
     layout="wide"
 )
 
@@ -85,7 +85,7 @@ def sync_portfolio(user_id, provider):
     except requests.exceptions.RequestException as e:
         return False, str(e)
 
-st.title("📊 Portfolio Insights")
+st.title("ðŸ“Š Portfolio Insights")
 st.markdown("Track and analyze your investment portfolio")
 st.caption(f"Active User: {st.session_state.user_id}")
 
@@ -94,24 +94,24 @@ with st.sidebar:
     st.subheader("Portfolio Controls")
     user_id = st.text_input("User ID", value=st.session_state.user_id, key="portfolio_user_id")
     st.session_state.user_id = user_id
-    
+
     st.markdown("---")
-    
+
     # Sync controls
     st.subheader("Sync Portfolio")
     provider = st.selectbox("Provider", ["mock", "robinhood", "fidelity"])
-    
-    if st.button("🔄 Sync Now", type="primary"):
+
+    if st.button("ðŸ”„ Sync Now", type="primary"):
         with st.spinner("Syncing portfolio..."):
             success, result = sync_portfolio(user_id, provider)
             if success:
-                st.success(f"✅ Synced {result.get('synced_items', 0)} items in {result.get('sync_time_ms', 0)}ms")
+                st.success(f"âœ… Synced {result.get('synced_items', 0)} items in {result.get('sync_time_ms', 0)}ms")
                 st.rerun()
             else:
-                st.error(f"❌ Sync failed: {result}")
-    
+                st.error(f"âŒ Sync failed: {result}")
+
     st.markdown("---")
-    
+
     # User creation
     with st.expander("Create New User"):
         new_email = st.text_input("Email", value=f"{user_id}@example.com")
@@ -119,23 +119,23 @@ with st.sidebar:
         if st.button("Create User"):
             success, result = create_user(new_username, new_email)
             if success:
-                st.success("✅ User created!")
+                st.success("âœ… User created!")
                 st.rerun()
             else:
-                st.error(f"❌ {result}")
+                st.error(f"âŒ {result}")
 
     st.markdown("---")
-    st.caption("💡 Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
-    with st.expander("ℹ️ Agents & Docs"):
+    st.caption("ðŸ’¡ Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
+    with st.expander("â„¹ï¸ Agents & Docs"):
         st.markdown("""
-        - 🧭 **Orchestrator** — routes requests and composes answers
-        - 🏦 **Market** — quotes, movers, sectors
-        - 🧮 **Strategy** — screeners and ideas
-        - 🎯 **Portfolio Coach** — improvement suggestions
-        - 🔎 **Risk Profiler** — risk from holdings
-        - 🎓 **Educator** — RAG-backed explanations
-        - ✅ **Compliance** — safe outputs & disclaimers
-        
+        - ðŸ§­ **Orchestrator** â€” routes requests and composes answers
+        - ðŸ¦ **Market** â€” quotes, movers, sectors
+        - ðŸ§® **Strategy** â€” screeners and ideas
+        - ðŸŽ¯ **Portfolio Coach** â€” improvement suggestions
+        - ðŸ”Ž **Risk Profiler** â€” risk from holdings
+        - ðŸŽ“ **Educator** â€” RAG-backed explanations
+        - âœ… **Compliance** â€” safe outputs & disclaimers
+
         **Useful Links:**
         - [API Docs (FastAPI)](http://localhost:8000/docs)
         - [Streamlit App (Home)](http://localhost:8501)
@@ -145,12 +145,12 @@ with st.sidebar:
 portfolio_data, error = fetch_portfolio_data(user_id)
 
 if error:
-    st.warning(f"⚠️ {error}")
-    st.info("💡 Tip: Create a user and sync with the 'mock' provider to see sample data")
+    st.warning(f"âš ï¸ {error}")
+    st.info("ðŸ’¡ Tip: Create a user and sync with the 'mock' provider to see sample data")
     st.stop()
 
 if not portfolio_data:
-    st.error("❌ No portfolio data available")
+    st.error("âŒ No portfolio data available")
     st.stop()
 
 st.markdown("---")
@@ -198,14 +198,14 @@ with col4:
 st.markdown("---")
 
 # Tabs for different views
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Holdings", "🎯 Allocation", "📊 Transactions", "📉 Performance", "⚙️ Manage"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["ðŸ“ˆ Holdings", "ðŸŽ¯ Allocation", "ðŸ“Š Transactions", "ðŸ“‰ Performance", "âš™ï¸ Manage"])
 
 with tab1:
     st.subheader("Your Holdings")
-    
+
     holdings = portfolio_data.get('holdings', [])
     total_portfolio = portfolio_data.get('total_value', 1)  # Avoid division by zero
-    
+
     if holdings:
         # Create DataFrame for holdings
         holdings_df = pd.DataFrame([
@@ -221,14 +221,14 @@ with tab1:
             }
             for h in holdings
         ])
-        
+
         # Display holdings table
         st.dataframe(holdings_df, use_container_width=True, hide_index=True)
-        
+
         # Holding details in expandable sections
         st.markdown("#### Holding Details")
         for h in holdings:
-            gain_loss_color = "🟢" if h['gain_loss'] >= 0 else "🔴"
+            gain_loss_color = "ðŸŸ¢" if h['gain_loss'] >= 0 else "ðŸ”´"
             with st.expander(f"{gain_loss_color} {h['ticker']} - ${h['total_value']:.2f} ({h['gain_loss_pct']:+.2f}%)"):
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -245,15 +245,15 @@ with tab1:
 
 with tab2:
     st.subheader("Asset Allocation")
-    
+
     allocation_data, alloc_error = fetch_allocation(user_id)
-    
+
     if allocation_data and allocation_data.get('allocation'):
         # Create pie chart from allocation response
         tickers = [a['ticker'] for a in allocation_data['allocation']]
         values = [a['value'] for a in allocation_data['allocation']]
         percentages = [a['percentage'] for a in allocation_data['allocation']]
-        
+
         fig = px.pie(
             values=values,
             names=tickers,
@@ -262,27 +262,27 @@ with tab2:
             hover_data={'values': values},
             labels={'values': 'Value ($)'}
         )
-        
+
         fig.update_traces(
             textposition='inside',
             texttemplate='%{label}<br>%{percent:.1%}',
             hovertemplate='<b>%{label}</b><br>Value: $%{value:,.2f}<br>Percentage: %{percent:.1%}<extra></extra>'
         )
-        
+
         st.plotly_chart(fig, use_container_width=True)
-        
+
         # Allocation summary
         st.markdown("#### Allocation Summary")
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.metric("Total Portfolio Value", f"${allocation_data['total_value']:,.2f}")
             st.metric("Number of Holdings", len(allocation_data['allocation']))
-        
+
         with col2:
             # Calculate concentration (largest holding percentage)
             max_concentration = max(percentages) if percentages else 0
-            concentration_status = "⚠️ High" if max_concentration > 30 else "✅ Balanced"
+            concentration_status = "âš ï¸ High" if max_concentration > 30 else "âœ… Balanced"
             st.metric("Largest Position", f"{max_concentration:.1f}%")
             st.metric("Concentration Risk", concentration_status)
     else:
@@ -290,9 +290,9 @@ with tab2:
 
 with tab3:
     st.subheader("Transaction History")
-    
+
     transactions_data, trans_error = fetch_transactions(user_id)
-    
+
     if transactions_data:
         # Ensure transactions_data is a list
         if isinstance(transactions_data, list) and len(transactions_data) > 0:
@@ -308,17 +308,17 @@ with tab3:
                 }
                 for t in transactions_data
             ])
-            
+
             st.dataframe(trans_df, use_container_width=True, hide_index=True)
-            
+
             # Transaction summary
             st.markdown("#### Transaction Summary")
             col1, col2, col3 = st.columns(3)
-            
+
             buys = [t for t in transactions_data if t.get('type', t.get('transaction_type')) == 'BUY']
             sells = [t for t in transactions_data if t.get('type', t.get('transaction_type')) == 'SELL']
             dividends = [t for t in transactions_data if t.get('type', t.get('transaction_type')) == 'DIVIDEND']
-            
+
             with col1:
                 st.metric("Total Transactions", len(transactions_data))
             with col2:
@@ -335,20 +335,20 @@ with tab3:
         st.info("No transaction history available.")
 
 with tab4:
-    st.subheader("📉 Performance & Analytics")
-    
+    st.subheader("ðŸ“‰ Performance & Analytics")
+
     # Fetch analytics
     try:
         analytics_response = requests.get(f"{API_BASE_URL}/users/{user_id}/analytics", timeout=5)
         if analytics_response.status_code == 200:
             analytics = analytics_response.json()
-            
+
             # Analytics metrics
             st.markdown("#### Portfolio Metrics")
             col1, col2, col3, col4 = st.columns(4)
-            
+
             with col1:
-                st.metric("Sharpe Ratio", f"{analytics.get('sharpe_ratio', 0):.2f}", 
+                st.metric("Sharpe Ratio", f"{analytics.get('sharpe_ratio', 0):.2f}",
                          help="Risk-adjusted return (higher is better)")
             with col2:
                 st.metric("Volatility", f"{analytics.get('volatility', 0):.1f}%",
@@ -359,24 +359,24 @@ with tab4:
             with col4:
                 st.metric("Largest Position", f"{analytics.get('largest_position', 0):.1f}%",
                          help="Percentage of largest holding")
-            
+
             st.markdown("---")
-            
+
             # Performance history chart
             perf_response = requests.get(f"{API_BASE_URL}/users/{user_id}/performance?days=30", timeout=5)
             if perf_response.status_code == 200:
                 perf_data = perf_response.json()
                 snapshots = perf_data.get('snapshots', [])
-                
+
                 if snapshots:
                     st.markdown("#### 30-Day Performance")
-                    
+
                     # Create performance chart
                     import plotly.graph_objects as go
-                    
+
                     dates = [s['date'][:10] for s in snapshots]
                     values = [s['value'] for s in snapshots]
-                    
+
                     fig = go.Figure()
                     fig.add_trace(go.Scatter(
                         x=dates,
@@ -387,7 +387,7 @@ with tab4:
                         fill='tozeroy',
                         fillcolor='rgba(31, 119, 180, 0.1)'
                     ))
-                    
+
                     fig.update_layout(
                         title="Portfolio Value Over Time",
                         xaxis_title="Date",
@@ -395,16 +395,16 @@ with tab4:
                         height=400,
                         hovermode='x unified'
                     )
-                    
+
                     st.plotly_chart(fig, use_container_width=True)
-                    
+
                     # Returns analysis
                     if len(snapshots) >= 2:
                         first_value = snapshots[0]['value']
                         last_value = snapshots[-1]['value']
                         change = last_value - first_value
                         change_pct = (change / first_value * 100) if first_value > 0 else 0
-                        
+
                         col1, col2, col3 = st.columns(3)
                         with col1:
                             st.metric("30-Day Change", f"${change:,.2f}", delta=f"{change_pct:+.2f}%")
@@ -422,23 +422,23 @@ with tab4:
         st.error(f"Error loading analytics: {str(e)}")
 
 with tab5:
-    st.subheader("⚙️ Manage Holdings")
-    
+    st.subheader("âš™ï¸ Manage Holdings")
+
     st.markdown("#### Add New Holding")
-    
+
     with st.form("add_holding_form"):
         col1, col2 = st.columns(2)
-        
+
         with col1:
             ticker = st.text_input("Ticker Symbol", placeholder="AAPL").upper()
             quantity = st.number_input("Quantity", min_value=0.01, value=1.0, step=0.01)
-        
+
         with col2:
             purchase_price = st.number_input("Purchase Price ($)", min_value=0.01, value=100.0, step=0.01)
             purchase_date = st.date_input("Purchase Date", value=datetime.now())
-        
-        submit = st.form_submit_button("➕ Add Holding", type="primary")
-        
+
+        submit = st.form_submit_button("âž• Add Holding", type="primary")
+
         if submit and ticker:
             try:
                 response = requests.post(
@@ -451,21 +451,21 @@ with tab5:
                     },
                     timeout=5
                 )
-                
+
                 if response.status_code == 200:
-                    st.success(f"✅ Added {quantity} shares of {ticker}")
+                    st.success(f"âœ… Added {quantity} shares of {ticker}")
                     st.rerun()
                 else:
                     st.error(f"Failed to add holding: {response.text}")
             except Exception as e:
                 st.error(f"Error: {str(e)}")
-    
+
     st.markdown("---")
-    
+
     # Manual sync section
     st.markdown("#### Update Prices")
-    
-    if st.button("🔄 Update Current Prices", help="Fetch latest prices for all holdings"):
+
+    if st.button("ðŸ”„ Update Current Prices", help="Fetch latest prices for all holdings"):
         try:
             response = requests.post(
                 f"{API_BASE_URL}/users/{user_id}/sync/prices",
@@ -473,7 +473,7 @@ with tab5:
             )
             if response.status_code == 200:
                 result = response.json()
-                st.success(f"✅ Updated prices for {result.get('updated_holdings', 0)} holdings")
+                st.success(f"âœ… Updated prices for {result.get('updated_holdings', 0)} holdings")
                 st.rerun()
             else:
                 st.error("Failed to update prices")
@@ -487,5 +487,5 @@ if portfolio_data:
     last_sync = portfolio_data.get('last_sync')
     if last_sync:
         st.caption(f"Last synced: {last_sync}")
-    st.caption("Portfolio Tab | Connected to Database ✅")
-    st.caption("💡 Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")
+    st.caption("Portfolio Tab | Connected to Database âœ…")
+    st.caption("ðŸ’¡ Powered by Orchestrator, Market, Strategy, Portfolio Coach, Risk Profiler, Educator & Compliance Agents")

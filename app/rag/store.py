@@ -1,4 +1,4 @@
-"""RAG store with hybrid TF-IDF + semantic search (sentence-transformers).
+﻿"""RAG store with hybrid TF-IDF + semantic search (sentence-transformers).
 
 Falls back to TF-IDF if semantic model/embeddings are unavailable.
 """

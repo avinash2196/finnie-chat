@@ -1,4 +1,4 @@
-from app.env import load_env_once
+﻿from app.env import load_env_once
 
 # Ensure .env is loaded before other imports need the keys
 load_env_once()
@@ -15,10 +15,10 @@ from app.mcp.market import get_client
 from app.agents.strategy import run_dividend_screener, run_growth_screener, run_value_screener
 from app.llm import get_gateway_metrics
 from app.memory import get_memory
-from app.rag.verification import query_rag_with_scores, categorize_answer_source, format_answer_with_sources
+from app.rag.verification import query_rag_with_scores, categorize_answer_source
 from app.database import get_db, User, Holding, Transaction, PortfolioSnapshot, init_db, engine
 from app.sync_tasks import SyncTaskRunner
-from app.observability import observability, track_agent_execution
+from app.observability import observability
 import os
 import json
 try:
@@ -166,14 +166,14 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    """Liveness probe — returns 200 when the process is running."""
+    """Liveness probe â€” returns 200 when the process is running."""
     return {"status": "ok", "version": os.getenv("SERVICE_VERSION", "1.0.0")}
 
 
 @app.get("/ready")
 def ready():
     """
-    Readiness probe — returns 200 only when all dependencies are reachable.
+    Readiness probe â€” returns 200 only when all dependencies are reachable.
     Returns 503 with a degraded status when any dependency is unavailable.
     Used by load balancers and k8s readiness probes.
     """
@@ -245,11 +245,11 @@ class SyncRequest(BaseModel):
 def get_user_by_id_or_username(user_id: str, db: Session) -> Optional[User]:
     """
     Resolve user by UUID or username for flexible API access.
-    
+
     Allows frontend users to reference accounts using either:
     - UUID (e.g., "abc123-def-456...") - auto-generated on user creation
     - Username (e.g., "user_002") - user-friendly identifier
-    
+
     This enables simpler frontend UX where users can type "user_002"
     instead of remembering complex UUIDs.
     """
@@ -268,7 +268,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter((User.email == user.email) | (User.username == user.username)).first()
     if existing:
         return {"error": "User already exists", "status": "error"}
-    
+
     new_user = User(
         email=user.email,
         username=user.username,
@@ -277,7 +277,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     return {
         "status": "success",
         "user_id": new_user.id,
@@ -292,7 +292,7 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     return {
         "user_id": user.id,
         "email": user.email,
@@ -309,9 +309,9 @@ def get_portfolio(user_id: str, db: Session = Depends(get_db)):
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
-    
+
     portfolio = {
         "user_id": user.id,
         "total_value": sum(h.total_value for h in holdings),
@@ -331,10 +331,10 @@ def get_portfolio(user_id: str, db: Session = Depends(get_db)):
             for h in holdings
         ]
     }
-    
+
     if portfolio["total_value"] > 0:
         portfolio["total_return_pct"] = round((portfolio["total_gain_loss"] / (portfolio["total_value"] - portfolio["total_gain_loss"]) * 100), 2)
-    
+
     return portfolio
 
 
@@ -344,7 +344,7 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     purchase_date = datetime.fromisoformat(holding.purchase_date) if holding.purchase_date else datetime.utcnow()
     ticker = holding.ticker.upper()
 
@@ -373,7 +373,7 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
             purchase_date=purchase_date
         )
         db.add(holding_record)
-    
+
     # Add transaction record
     txn = Transaction(
         user_id=user.id,
@@ -385,15 +385,15 @@ def add_holding(user_id: str, holding: HoldingCreate, db: Session = Depends(get_
         transaction_date=purchase_date
     )
     db.add(txn)
-    
+
     # Update user portfolio value
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     user.portfolio_value = sum(h.total_value for h in holdings)
     user.updated_at = datetime.utcnow()
-    
+
     db.commit()
     db.refresh(holding_record)
-    
+
     return {
         "status": "success",
         "holding_id": holding_record.id,
@@ -407,13 +407,13 @@ def list_holdings(user_id: str, ticker: Optional[str] = None, db: Session = Depe
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     query = db.query(Holding).filter(Holding.user_id == user.id)
     if ticker:
         query = query.filter(Holding.ticker == ticker.upper())
-    
+
     holdings = query.all()
-    
+
     return {
         "holdings": [
             {
@@ -438,14 +438,14 @@ def delete_holding(user_id: str, holding_id: str, db: Session = Depends(get_db))
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     holding = db.query(Holding).filter(Holding.id == holding_id, Holding.user_id == user.id).first()
     if not holding:
         return {"error": "Holding not found", "status": "error"}
-    
+
     db.delete(holding)
     db.commit()
-    
+
     return {"status": "success", "message": f"Deleted {holding.ticker}"}
 
 
@@ -453,18 +453,18 @@ def delete_holding(user_id: str, holding_id: str, db: Session = Depends(get_db))
 def list_transactions(user_id: str, days: int = 3650, db: Session = Depends(get_db)):
     """List transactions (supports UUID or username)"""
     from datetime import timedelta
-    
+
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     cutoff = datetime.utcnow() - timedelta(days=days)
-    
+
     txns = db.query(Transaction).filter(
         or_(Transaction.user_id == user.id, Transaction.user_id == user.username),
         Transaction.transaction_date >= cutoff
     ).order_by(Transaction.transaction_date.desc()).all()
-    
+
     return {
         "transactions": [
             {
@@ -488,7 +488,7 @@ async def sync_portfolio(user_id: str, sync_req: SyncRequest, db: Session = Depe
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     credentials = {}
     if sync_req.api_token:
         if sync_req.provider == "robinhood":
@@ -498,10 +498,10 @@ async def sync_portfolio(user_id: str, sync_req: SyncRequest, db: Session = Depe
             user.fidelity_token = sync_req.api_token
             credentials["fidelity_token"] = sync_req.api_token
         db.commit()
-    
+
     # Trigger sync
     result = await SyncTaskRunner.sync_now(user.id, sync_req.provider, credentials)
-    
+
     return result
 
 
@@ -511,18 +511,18 @@ def create_snapshot(user_id: str, db: Session = Depends(get_db)):
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     total_value = sum(h.total_value for h in holdings)
-    
+
     snapshot = PortfolioSnapshot(
         user_id=user.id,
         total_value=total_value
     )
-    
+
     db.add(snapshot)
     db.commit()
-    
+
     return {
         "status": "success",
         "snapshot_id": snapshot.id,
@@ -537,13 +537,13 @@ def get_allocation(user_id: str, db: Session = Depends(get_db)):
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     total_value = sum(h.total_value for h in holdings)
-    
+
     if total_value == 0:
         return {"allocation": [], "total_value": 0}
-    
+
     return {
         "allocation": [
             {
@@ -563,10 +563,10 @@ def get_allocation(user_id: str, db: Session = Depends(get_db)):
 async def chat(req: ChatRequest, db: Session = Depends(get_db)):
     import time
     start_time = time.time()
-    
+
     # Use provided conversation_id or generate new one
     conversation_id = req.conversation_id or str(uuid.uuid4())
-    
+
     try:
         # Start LangSmith root run for this request
         import os
@@ -700,7 +700,7 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
             "risk": risk,
             "verification": verification
         }
-        
+
     except Exception as e:
         duration = time.time() - start_time
         observability.track_exception(e, {
@@ -719,7 +719,7 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
         except Exception:
             pass
         raise
-    
+
 
 
 @app.get("/observability/status")
@@ -747,7 +747,7 @@ async def sync_prices(user_id: str, db: Session = Depends(get_db)):
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     result = await SyncTaskRunner.sync_price_update(user.id)
     return result
 
@@ -756,24 +756,24 @@ async def sync_prices(user_id: str, db: Session = Depends(get_db)):
 def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
     """Get portfolio analytics including Sharpe ratio, volatility, diversification (supports UUID or username)"""
     import numpy as np
-    
+
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
     snapshots = db.query(PortfolioSnapshot).filter(
         PortfolioSnapshot.user_id == user.id
     ).order_by(PortfolioSnapshot.snapshot_date.desc()).limit(30).all()
-    
+
     if not holdings:
         return {"error": "No holdings found"}
-    
+
     # Calculate basic metrics
     total_value = sum(h.total_value for h in holdings)
     total_cost = sum(h.purchase_price * h.quantity for h in holdings)
     total_gain_loss = total_value - total_cost
-    
+
     # Diversification (Herfindahl index)
     if total_value > 0:
         concentrations = [(h.total_value / total_value) ** 2 for h in holdings]
@@ -781,7 +781,7 @@ def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
         diversification_score = (1 - herfindahl) * 100  # 0-100 scale
     else:
         diversification_score = 0
-    
+
     # Volatility calculation from snapshots
     if len(snapshots) >= 2:
         returns = []
@@ -789,7 +789,7 @@ def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
             if snapshots[i+1].total_value > 0:
                 daily_return = (snapshots[i].total_value - snapshots[i+1].total_value) / snapshots[i+1].total_value
                 returns.append(daily_return)
-        
+
         if returns:
             volatility = np.std(returns) * np.sqrt(252) * 100  # Annualized
             avg_return = np.mean(returns) * 252 * 100  # Annualized
@@ -802,7 +802,7 @@ def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
         volatility = 0
         avg_return = 0
         sharpe = 0
-    
+
     return {
         "total_value": round(total_value, 2),
         "total_cost": round(total_cost, 2),
@@ -820,17 +820,17 @@ def get_portfolio_analytics(user_id: str, db: Session = Depends(get_db)):
 def get_performance_history(user_id: str, days: int = 30, db: Session = Depends(get_db)):
     """Get portfolio performance history (supports UUID or username)"""
     from datetime import timedelta
-    
+
     user = get_user_by_id_or_username(user_id, db)
     if not user:
         return {"error": "User not found", "status": "error"}
-    
+
     cutoff = datetime.utcnow() - timedelta(days=days)
     snapshots = db.query(PortfolioSnapshot).filter(
         PortfolioSnapshot.user_id == user.id,
         PortfolioSnapshot.snapshot_date >= cutoff
     ).order_by(PortfolioSnapshot.snapshot_date.asc()).all()
-    
+
     return {
         "snapshots": [
             {
@@ -855,7 +855,7 @@ def verify_rag(query: str):
     """
     rag_results = query_rag_with_scores(query)
     verification = categorize_answer_source(rag_results, "")
-    
+
     return {
         "query": query,
         "rag_documents_found": len(rag_results),
@@ -947,13 +947,13 @@ def run_screener(req: ScreenerRequest, db: Session = Depends(get_db)):
         # Get user's holdings for context
         user_id_param = req.params.get("user_id", "user_001")
         user = get_user_by_id_or_username(user_id_param, db)
-        
+
         if user:
             holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
             holdings_dict = {h.ticker: {"quantity": h.quantity, "purchase_price": h.purchase_price} for h in holdings}
         else:
             holdings_dict = {}
-        
+
         if req.screener_type.lower() == "dividend":
             results = run_dividend_screener(holdings_dict)
         elif req.screener_type.lower() == "growth":
@@ -962,7 +962,7 @@ def run_screener(req: ScreenerRequest, db: Session = Depends(get_db)):
             results = run_value_screener(holdings_dict)
         else:
             results = {"error": "Unknown screener type"}
-        
+
         return results
     except Exception as e:
         return {"error": str(e), "results": []}
@@ -1094,7 +1094,7 @@ def get_strategy_ideas(risk_level: str = "MEDIUM"):
             }
         ]
     }
-    
+
     return {
         "risk_level": risk_level,
         "strategies": strategies.get(risk_level, strategies["MEDIUM"])

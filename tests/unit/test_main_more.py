@@ -1,6 +1,4 @@
-from fastapi.testclient import TestClient
-import time
-import json
+﻿from fastapi.testclient import TestClient
 from types import SimpleNamespace
 
 from app.main import app, _quote_agg_cache
@@ -35,7 +33,7 @@ def test_market_sectors_returns_etf_prices(monkeypatch):
     body = resp.json()
     assert "sectors" in body
     assert len(body["sectors"]) > 0
-    assert all("price" in s for s in body["sectors"]) 
+    assert all("price" in s for s in body["sectors"])
 
 
 def test_market_screen_unknown_type():

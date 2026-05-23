@@ -1,4 +1,4 @@
-"""Extra tests for Market MCP server singleton and error path."""
+﻿"""Extra tests for Market MCP server singleton and error path."""
 
 import pytest
 from app.mcp.market_server import get_server

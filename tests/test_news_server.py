@@ -1,7 +1,6 @@
-"""Unit tests for Alpha Vantage News MCP server.
+﻿"""Unit tests for Alpha Vantage News MCP server.
 Uses monkeypatch to avoid external network calls.
 """
-import pytest
 from app.mcp.news_server import get_server
 
 
@@ -56,7 +55,6 @@ def test_get_news_normalization(monkeypatch):
 
 def test_get_news_missing_api_key(monkeypatch):
     """Test behavior when ALPHA_VANTAGE_API_KEY is missing"""
-    import os
     monkeypatch.delenv("ALPHA_VANTAGE_API_KEY", raising=False)
 
     server = get_server()

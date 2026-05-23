@@ -1,4 +1,4 @@
-"""
+﻿"""
 DeepEval-based sanity tests to exercise key response paths with deterministic expectations.
 Runs only if deepeval is installed; does not call external LLMs.
 """

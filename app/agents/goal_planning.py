@@ -1,4 +1,4 @@
-"""Goal Planning Agent
+﻿"""Goal Planning Agent
 
 Assists with financial goal-setting and planning by extracting goals, timelines, and risk tolerance,
 producing structured plans with milestones, suggested allocations (educational), and learning next steps.
@@ -24,7 +24,7 @@ def run(message: str, user_id: Optional[str] = None) -> str:
     # Extract goal parameters
     amount_match = re.search(r"\$?([0-9,.]+)", msg)
     years_match = re.search(r"(\d{1,2})\s*(years|yrs|y)", msg, re.IGNORECASE)
-    
+
     target_amount = amount_match.group(1) if amount_match else None
     timeline_years = int(years_match.group(1)) if years_match else None
 
@@ -45,7 +45,7 @@ def run(message: str, user_id: Optional[str] = None) -> str:
         clarifications.append("What's your risk tolerance? (conservative, moderate, aggressive)")
 
     if clarifications:
-        return f"To create your personalized plan, please clarify:\n" + "\n".join(
+        return "To create your personalized plan, please clarify:\n" + "\n".join(
             f"- {q}" for q in clarifications
         )
 
@@ -64,7 +64,7 @@ def run(message: str, user_id: Optional[str] = None) -> str:
         try:
             target_num = float(target_amount.replace(",", ""))
             monthly_savings = target_num / (timeline_years * 12)
-            
+
             allocations = {
                 "conservative": {"stocks": "40-50%", "bonds": "40-50%", "cash": "10%"},
                 "moderate": {"stocks": "60%", "bonds": "30%", "cash": "10%"},
@@ -104,9 +104,9 @@ def run(message: str, user_id: Optional[str] = None) -> str:
 
     # Fallback
     return (
-        f"I can help you plan your goal. Please provide:\n"
-        f"- **Target amount** (e.g., $1,000,000)\n"
-        f"- **Timeline** (e.g., 20 years)\n"
-        f"- **Risk tolerance** (conservative, moderate, aggressive)\n"
-        f"Example: 'I want $500K in 15 years with moderate risk.'"
+        "I can help you plan your goal. Please provide:\n"
+        "- **Target amount** (e.g., $1,000,000)\n"
+        "- **Timeline** (e.g., 20 years)\n"
+        "- **Risk tolerance** (conservative, moderate, aggressive)\n"
+        "Example: 'I want $500K in 15 years with moderate risk.'"
     )

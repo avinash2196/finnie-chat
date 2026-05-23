@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import json
 import logging
 from app.llm import call_llm
@@ -101,7 +101,7 @@ def handle_message(message: str, conversation_context: str = "", user_id: str = 
 async def _handle_message_async(message: str, conversation_context: str = "", user_id: str = "user_123", root_run_id: str | None = None):
     """
     Full agentic orchestration with support for all 6 agents and Portfolio MCP.
-    
+
     Args:
         message: Current user message
         conversation_context: Recent conversation history for context-aware responses
