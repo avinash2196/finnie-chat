@@ -1,8 +1,6 @@
-import time
-from types import SimpleNamespace
+﻿import time
 import json
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app import main as app_main

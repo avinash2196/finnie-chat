@@ -1,11 +1,11 @@
-"""
+﻿"""
 Chat Page - Streamlit multipage entry with icon
 """
 import streamlit as st
 import requests
 from datetime import datetime
 
-st.set_page_config(page_title="💬 Chat", page_icon="💬", layout="wide")
+st.set_page_config(page_title="ðŸ’¬ Chat", page_icon="ðŸ’¬", layout="wide")
 
 API_BASE_URL = "http://localhost:8000"
 
@@ -15,7 +15,7 @@ if "user_id" not in st.session_state:
     st.session_state.user_id = "user_001"
 
 with st.sidebar:
-    st.title("💬 Chat")
+    st.title("ðŸ’¬ Chat")
     st.markdown("---")
     st.subheader("Settings")
     st.session_state.user_id = st.text_input(
@@ -29,18 +29,18 @@ with st.sidebar:
     try:
         response = requests.get(f"{API_BASE_URL}/health", timeout=2)
         if response.status_code == 200:
-            st.success("🟢 Backend Connected")
+            st.success("ðŸŸ¢ Backend Connected")
         else:
-            st.error("🔴 Backend Error")
+            st.error("ðŸ”´ Backend Error")
     except:
-        st.error("🔴 Backend Offline")
+        st.error("ðŸ”´ Backend Offline")
 
     st.markdown("---")
-    if st.button("🗑️ Clear Conversation", use_container_width=True):
+    if st.button("ðŸ—‘ï¸ Clear Conversation", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-st.title("💬 Chat with Finnie")
+st.title("ðŸ’¬ Chat with Finnie")
 st.caption(f"Active User: {st.session_state.user_id}")
 st.markdown("Ask me about stocks, portfolio analysis, risk assessment, or financial concepts!")
 
@@ -89,7 +89,7 @@ if prompt := st.chat_input("Ask about your portfolio, stocks, or financial conce
                         "timestamp": response_time
                     })
                 else:
-                    error_msg = f"❌ Error: Backend returned status {response.status_code}"
+                    error_msg = f"âŒ Error: Backend returned status {response.status_code}"
                     st.error(error_msg)
                     st.session_state.messages.append({
                         "role": "assistant",
@@ -98,7 +98,7 @@ if prompt := st.chat_input("Ask about your portfolio, stocks, or financial conce
                     })
 
             except requests.exceptions.ConnectionError:
-                error_msg = "❌ Cannot connect to backend. Make sure the FastAPI server is running on http://localhost:8000"
+                error_msg = "âŒ Cannot connect to backend. Make sure the FastAPI server is running on http://localhost:8000"
                 st.error(error_msg)
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -106,7 +106,7 @@ if prompt := st.chat_input("Ask about your portfolio, stocks, or financial conce
                     "timestamp": datetime.now().strftime("%I:%M %p")
                 })
             except requests.exceptions.Timeout:
-                error_msg = "⏱️ Request timed out. The server might be processing a complex query."
+                error_msg = "â±ï¸ Request timed out. The server might be processing a complex query."
                 st.error(error_msg)
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -114,7 +114,7 @@ if prompt := st.chat_input("Ask about your portfolio, stocks, or financial conce
                     "timestamp": datetime.now().strftime("%I:%M %p")
                 })
             except Exception as e:
-                error_msg = f"❌ Unexpected error: {str(e)}"
+                error_msg = f"âŒ Unexpected error: {str(e)}"
                 st.error(error_msg)
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -123,14 +123,14 @@ if prompt := st.chat_input("Ask about your portfolio, stocks, or financial conce
                 })
 
 if not st.session_state.messages:
-    st.markdown("### 💡 Try asking:")
+    st.markdown("### ðŸ’¡ Try asking:")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.info("📊 **Portfolio Questions**\n\n- How is my portfolio diversified?\n- What's my risk level?\n- Analyze my holdings")
+        st.info("ðŸ“Š **Portfolio Questions**\n\n- How is my portfolio diversified?\n- What's my risk level?\n- Analyze my holdings")
     with col2:
-        st.info("📈 **Market Queries**\n\n- What's the price of AAPL?\n- Show me tech stock trends\n- Market overview today")
+        st.info("ðŸ“ˆ **Market Queries**\n\n- What's the price of AAPL?\n- Show me tech stock trends\n- Market overview today")
     with col3:
-        st.info("🎓 **Learn Finance**\n\n- What is a dividend?\n- Explain P/E ratio\n- How do bonds work?")
+        st.info("ðŸŽ“ **Learn Finance**\n\n- What is a dividend?\n- Explain P/E ratio\n- How do bonds work?")
 
 st.markdown("---")
 st.caption("Finnie Chat | Powered by FastAPI + Streamlit")

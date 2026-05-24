@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for Hybrid RAG with Semantic Search
 
 Covers:
@@ -12,7 +12,6 @@ Covers:
 import pytest
 import os
 import numpy as np
-from unittest.mock import patch, MagicMock
 from app.rag import store
 
 
@@ -33,7 +32,7 @@ class TestSemanticEmbeddings:
         """Test _ensure_model loads the sentence-transformers model"""
         # This requires the model to be available
         store._ensure_model()
-        
+
         # If SentenceTransformer available, model should be loaded
         if store.SentenceTransformer:
             # Model might be None if download fails, but should have tried
@@ -50,9 +49,9 @@ class TestSemanticEmbeddings:
             "A stock represents ownership",
             "A mutual fund pools resources"
         ]
-        
+
         store.add_documents(documents)
-        
+
         assert store.documents == documents
         if store.semantic_embeddings is not None:
             # Should have embeddings for each document
@@ -66,9 +65,9 @@ class TestSemanticEmbeddings:
             "Financial security through diversification",
             "Asset allocation strategy"
         ]
-        
+
         store.add_documents(documents)
-        
+
         if store.semantic_embeddings is not None:
             # Check L2 norm of each embedding (should be ~1.0 for normalized)
             norms = np.linalg.norm(store.semantic_embeddings, axis=1)
@@ -99,9 +98,9 @@ class TestTFIDFSearch:
             "Bond investments provide steady returns"
         ]
         store.add_documents(documents)
-        
+
         indices = store._tfidf_search("bond", k=2)
-        
+
         assert isinstance(indices, list)
         assert len(indices) <= 2
         assert all(isinstance(i, (int, np.integer)) for i in indices)
@@ -114,10 +113,10 @@ class TestTFIDFSearch:
             f"Document about topic {i}" for i in range(10)
         ]
         store.add_documents(documents)
-        
+
         k1 = store._tfidf_search("topic", k=1)
         k5 = store._tfidf_search("topic", k=5)
-        
+
         assert len(k1) <= 1
         assert len(k5) <= 5
 
@@ -128,7 +127,7 @@ class TestTFIDFSearch:
             "jumps over the lazy dog"
         ]
         store.add_documents(documents)
-        
+
         assert store.tfidf_embeddings is not None
         assert store.tfidf_embeddings.shape[0] == len(documents)
 
@@ -153,10 +152,10 @@ class TestSemanticSearch:
             "Portfolio diversification benefits"
         ]
         store.add_documents(documents)
-        
+
         if store.semantic_embeddings is not None:
             indices = store._semantic_search("investment strategy", k=2)
-            
+
             assert isinstance(indices, list)
             assert len(indices) <= 2
             assert all(i < len(documents) for i in indices)
@@ -169,7 +168,7 @@ class TestSemanticSearch:
             "A fox is an animal"
         ]
         store.add_documents(documents)
-        
+
         if store.semantic_embeddings is not None:
             # Query about fox should rank fox docs higher
             indices = store._semantic_search("fox animal", k=1)
@@ -197,9 +196,9 @@ class TestHybridSearch:
             "Diversification reduces portfolio risk through asset allocation"
         ]
         store.add_documents(documents)
-        
+
         results = store.query_rag("bond security", k=2)
-        
+
         assert isinstance(results, list)
         assert len(results) > 0
         assert all(isinstance(doc, str) for doc in results)
@@ -210,11 +209,11 @@ class TestHybridSearch:
         """Test query_rag respects k parameter"""
         documents = [f"Document number {i} about finance" for i in range(10)]
         store.add_documents(documents)
-        
+
         k1 = store.query_rag("finance", k=1)
         k3 = store.query_rag("finance", k=3)
         k5 = store.query_rag("finance", k=5)
-        
+
         assert len(k1) <= 1
         assert len(k3) <= 3
         assert len(k5) <= 5
@@ -222,9 +221,9 @@ class TestHybridSearch:
     def test_hybrid_query_rag_with_no_documents(self):
         """Test query_rag handles empty document store"""
         store.documents = []
-        
+
         results = store.query_rag("test query", k=2)
-        
+
         assert isinstance(results, list)
         # Should return a message about no documents
         assert len(results) > 0
@@ -238,10 +237,10 @@ class TestHybridSearch:
             "Portfolio performance depends on many factors"
         ]
         store.add_documents(documents)
-        
+
         # Query should use both methods
         results = store.query_rag("portfolio risk diversification", k=2)
-        
+
         assert len(results) > 0
         # Results should be top documents (blend of both scores)
         assert all(doc in documents for doc in results)
@@ -254,14 +253,14 @@ class TestHybridSearch:
             "Mixed portfolios balance income and growth"
         ]
         store.add_documents(documents)
-        
+
         # Temporarily remove semantic embeddings
         semantic_backup = store.semantic_embeddings
         store.semantic_embeddings = None
-        
+
         try:
             results = store.query_rag("bonds income", k=2)
-            
+
             # Should still return results using TF-IDF fallback
             assert len(results) > 0
             assert all(doc in documents for doc in results)
@@ -276,14 +275,14 @@ class TestHybridSearch:
             "Investment strategies vary by goals"
         ]
         store.add_documents(documents)
-        
+
         # Temporarily remove TF-IDF embeddings
         tfidf_backup = store.tfidf_embeddings
         store.tfidf_embeddings = None
-        
+
         try:
             results = store.query_rag("investment wealth growth", k=2)
-            
+
             # Should use semantic fallback
             assert isinstance(results, list)
         finally:
@@ -309,7 +308,7 @@ class TestPersistence:
             "Test document two"
         ]
         store.add_documents(documents)
-        
+
         # Pickle file should exist
         assert os.path.exists(store.store_path)
 
@@ -322,14 +321,14 @@ class TestPersistence:
             "Persisted document C"
         ]
         store.add_documents(documents)
-        
+
         # Clear memory
         store.documents = []
         store.tfidf_embeddings = None
-        
+
         # Load from disk
         store.load_documents()
-        
+
         assert len(store.documents) > 0
         assert all(doc in store.documents for doc in documents)
 
@@ -337,10 +336,10 @@ class TestPersistence:
         """Test vectorizer is persisted"""
         documents = ["Training document one", "Training document two"]
         store.add_documents(documents)
-        
+
         # Vectorizer should be in the pickle
         assert os.path.exists(store.store_path)
-        
+
         # Load and check
         store.load_documents()
         assert store.vectorizer is not None
@@ -366,11 +365,11 @@ class TestQueryRAGWithScoresIntegration:
             "Value stocks trade below intrinsic value"
         ]
         store.add_documents(documents)
-        
+
         from app.rag.verification import query_rag_with_scores as rag_query_scores
-        
+
         results = rag_query_scores("dividend income", k=2, mode="hybrid")
-        
+
         for result in results:
             assert "document" in result
             assert "similarity_score" in result
@@ -385,11 +384,11 @@ class TestQueryRAGWithScoresIntegration:
             "Allocation strategies vary"
         ]
         store.add_documents(documents)
-        
+
         from app.rag.verification import query_rag_with_scores as rag_query_scores
-        
+
         results = rag_query_scores("asset allocation strategy", k=3, mode="hybrid")
-        
+
         if len(results) > 1:
             scores = [r["similarity_score"] for r in results]
             assert scores == sorted(scores, reverse=True)

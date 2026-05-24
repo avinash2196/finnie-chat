@@ -1,4 +1,4 @@
-from app.providers import PortfolioProviderFactory, PortfolioProvider
+﻿from app.providers import PortfolioProviderFactory, PortfolioProvider
 
 
 class DummyProvider(PortfolioProvider):

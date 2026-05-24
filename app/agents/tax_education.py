@@ -1,4 +1,4 @@
-"""Tax Education Agent
+﻿"""Tax Education Agent
 
 Provides retrieval-only education on account types and tax concepts.
 Must: ask clarifying jurisdiction (US vs other) OR default to US with clear disclaimer.
@@ -68,7 +68,7 @@ def run(message: str, user_id: Optional[str] = None) -> str:
     # If non-US, ask for clarification
     if is_non_us:
         return (
-            "📍 **Jurisdiction Notice**: Tax rules vary significantly by country.\n\n"
+            "ðŸ“ **Jurisdiction Notice**: Tax rules vary significantly by country.\n\n"
             "I'm trained on **US tax concepts** (IRAs, 401(k)s, capital gains, etc.).\n\n"
             "For non-US tax advice, please consult a tax professional in your jurisdiction.\n"
             "Still want general US tax education? I can help with that."
@@ -101,10 +101,10 @@ def run(message: str, user_id: Optional[str] = None) -> str:
             if rag_docs and len(rag_docs) > 0 and "No documents available" not in rag_docs[0]:
                 response += "\n\n**Trusted Sources (RAG)**:\n" + "\n".join(f"- {d}" for d in rag_docs[:3])
 
-            response += f"""
+            response += """
 
-📍 **Jurisdiction**: United States (US tax law)
-**⚠️ Disclaimer**: This is educational information only. For personalized tax advice, consult a tax professional or CPA.
+ðŸ“ **Jurisdiction**: United States (US tax law)
+**âš ï¸ Disclaimer**: This is educational information only. For personalized tax advice, consult a tax professional or CPA.
 """
             return response.strip()
 
@@ -116,7 +116,7 @@ def run(message: str, user_id: Optional[str] = None) -> str:
     )
 
     return f"""
-📍 **Tax Education (US-Focused)**
+ðŸ“ **Tax Education (US-Focused)**
 
 I can explain these US tax concepts:
 - **Accounts**: IRA, Roth IRA, 401(k), HSA
@@ -133,5 +133,5 @@ I didn't find a match. Try asking about:
 **Trusted Sources (RAG)**:
 {sources_text}
 
-**⚠️ Disclaimer**: This is educational only. Consult a tax professional for personalized advice.
+**âš ï¸ Disclaimer**: This is educational only. Consult a tax professional for personalized advice.
 """

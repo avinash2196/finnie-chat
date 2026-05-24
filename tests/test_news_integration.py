@@ -1,7 +1,6 @@
-"""Integration tests for News Synthesizer Agent with MCP.
+﻿"""Integration tests for News Synthesizer Agent with MCP.
 Tests the full path: agent -> client -> server -> normalization.
 """
-import pytest
 from app.agents.news_synthesizer import run as news_synthesizer_run
 
 

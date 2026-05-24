@@ -1,4 +1,4 @@
-def test_rag_grounded_answer(chat_system):
+﻿def test_rag_grounded_answer(chat_system):
     output = chat_system("What is stock ownership?")
     # RAG should return a grounded, non-empty response (keyword content depends on retrieval)
     assert len(output) > 0

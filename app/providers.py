@@ -1,32 +1,29 @@
-"""
+﻿"""
 Provider pattern for portfolio data - supports mock and real external APIs
 Allows switching between sources without code changes
 """
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from datetime import datetime
-import json
 import httpx
-from app.database import Holding, Transaction, PortfolioSnapshot, SyncLog
+from app.database import Holding, Transaction, SyncLog
 from sqlalchemy.orm import Session
-import uuid
 import random
-import asyncio
 
 
 class PortfolioProvider(ABC):
     """Abstract base class for portfolio data providers"""
-    
+
     @abstractmethod
     async def get_holdings(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Fetch holdings from source"""
         pass
-    
+
     @abstractmethod
     async def get_transactions(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Fetch transactions from source"""
         pass
-    
+
     @abstractmethod
     async def get_current_prices(self, tickers: List[str]) -> Dict[str, float]:
         """Get current prices for list of tickers"""
@@ -35,7 +32,7 @@ class PortfolioProvider(ABC):
 
 class MockPortfolioProvider(PortfolioProvider):
     """Mock provider for development/testing"""
-    
+
     SAMPLE_HOLDINGS = [
         {"ticker": "AAPL", "quantity": 10, "purchase_price": 150.0},
         {"ticker": "MSFT", "quantity": 5, "purchase_price": 350.0},
@@ -43,12 +40,12 @@ class MockPortfolioProvider(PortfolioProvider):
         {"ticker": "TSLA", "quantity": 3, "purchase_price": 900.0},
         {"ticker": "VOO", "quantity": 20, "purchase_price": 400.0},  # S&P 500 ETF
     ]
-    
+
     SAMPLE_PRICES = {
-        "AAPL": 192.5, "MSFT": 445.0, "GOOGL": 3150.0, 
+        "AAPL": 192.5, "MSFT": 445.0, "GOOGL": 3150.0,
         "TSLA": 920.0, "VOO": 475.0, "BRK.B": 410.0
     }
-    
+
     async def get_holdings(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Return mock holdings"""
         # Simulate slight price variation
@@ -59,7 +56,7 @@ class MockPortfolioProvider(PortfolioProvider):
                 "current_price": self.SAMPLE_PRICES[h["ticker"]] * (0.98 + random.random() * 0.04)
             })
         return holdings
-    
+
     async def get_transactions(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Return mock transactions"""
         return [
@@ -88,7 +85,7 @@ class MockPortfolioProvider(PortfolioProvider):
                 "total": 2.5
             }
         ]
-    
+
     async def get_current_prices(self, tickers: List[str]) -> Dict[str, float]:
         """Return mock current prices"""
         return {
@@ -99,15 +96,15 @@ class MockPortfolioProvider(PortfolioProvider):
 
 class RobinhoodPortfolioProvider(PortfolioProvider):
     """Robinhood API provider"""
-    
+
     BASE_URL = "https://api.robinhood.com"
-    
+
     async def get_holdings(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Fetch holdings from Robinhood"""
         token = credentials.get("robinhood_token")
         if not token:
             raise ValueError("Robinhood token not provided")
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 headers = {"Authorization": f"Bearer {token}"}
@@ -118,7 +115,7 @@ class RobinhoodPortfolioProvider(PortfolioProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 # Transform Robinhood format to standard format
                 holdings = []
                 for position in data.get("results", []):
@@ -131,13 +128,13 @@ class RobinhoodPortfolioProvider(PortfolioProvider):
                 return holdings
             except httpx.RequestError as e:
                 raise Exception(f"Robinhood API error: {str(e)}")
-    
+
     async def get_transactions(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Fetch transactions from Robinhood"""
         token = credentials.get("robinhood_token")
         if not token:
             raise ValueError("Robinhood token not provided")
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 headers = {"Authorization": f"Bearer {token}"}
@@ -148,7 +145,7 @@ class RobinhoodPortfolioProvider(PortfolioProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 transactions = []
                 for order in data.get("results", []):
                     transactions.append({
@@ -162,7 +159,7 @@ class RobinhoodPortfolioProvider(PortfolioProvider):
                 return transactions
             except httpx.RequestError as e:
                 raise Exception(f"Robinhood API error: {str(e)}")
-    
+
     async def get_current_prices(self, tickers: List[str]) -> Dict[str, float]:
         """Get current prices from Robinhood quotes"""
         async with httpx.AsyncClient() as client:
@@ -177,7 +174,7 @@ class RobinhoodPortfolioProvider(PortfolioProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 prices = {}
                 for quote in data.get("results", []):
                     prices[quote["symbol"]] = float(quote["last_trade_price"])
@@ -188,15 +185,15 @@ class RobinhoodPortfolioProvider(PortfolioProvider):
 
 class FidelityPortfolioProvider(PortfolioProvider):
     """Fidelity API provider"""
-    
+
     BASE_URL = "https://api.fidelity.com/api/v1"
-    
+
     async def get_holdings(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Fetch holdings from Fidelity"""
         token = credentials.get("fidelity_token")
         if not token:
             raise ValueError("Fidelity token not provided")
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 headers = {"Authorization": f"Bearer {token}"}
@@ -207,7 +204,7 @@ class FidelityPortfolioProvider(PortfolioProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 holdings = []
                 for holding in data.get("holdings", []):
                     holdings.append({
@@ -219,13 +216,13 @@ class FidelityPortfolioProvider(PortfolioProvider):
                 return holdings
             except httpx.RequestError as e:
                 raise Exception(f"Fidelity API error: {str(e)}")
-    
+
     async def get_transactions(self, user_id: str, credentials: Dict[str, str]) -> List[Dict[str, Any]]:
         """Fetch transactions from Fidelity"""
         token = credentials.get("fidelity_token")
         if not token:
             raise ValueError("Fidelity token not provided")
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 headers = {"Authorization": f"Bearer {token}"}
@@ -236,7 +233,7 @@ class FidelityPortfolioProvider(PortfolioProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 transactions = []
                 for txn in data.get("transactions", []):
                     transactions.append({
@@ -250,7 +247,7 @@ class FidelityPortfolioProvider(PortfolioProvider):
                 return transactions
             except httpx.RequestError as e:
                 raise Exception(f"Fidelity API error: {str(e)}")
-    
+
     async def get_current_prices(self, tickers: List[str]) -> Dict[str, float]:
         """Get current prices from Fidelity"""
         async with httpx.AsyncClient() as client:
@@ -264,7 +261,7 @@ class FidelityPortfolioProvider(PortfolioProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 prices = {}
                 for quote in data.get("quotes", []):
                     prices[quote["symbol"]] = float(quote["price"])
@@ -275,19 +272,19 @@ class FidelityPortfolioProvider(PortfolioProvider):
 
 class PortfolioProviderFactory:
     """Factory to select appropriate provider"""
-    
+
     PROVIDERS = {
         "mock": MockPortfolioProvider,
         "robinhood": RobinhoodPortfolioProvider,
         "fidelity": FidelityPortfolioProvider,
     }
-    
+
     @classmethod
     def get_provider(cls, provider_type: str = "mock") -> PortfolioProvider:
         """Get provider instance"""
         provider_class = cls.PROVIDERS.get(provider_type.lower(), MockPortfolioProvider)
         return provider_class()
-    
+
     @classmethod
     def register_provider(cls, name: str, provider_class: type):
         """Register custom provider"""
@@ -307,7 +304,7 @@ async def sync_portfolio(
     Returns sync result with statistics
     """
     from app.database import User
-    
+
     start_time = datetime.utcnow()
     sync_log = SyncLog(
         user_id=user_id,
@@ -315,26 +312,26 @@ async def sync_portfolio(
         status="PENDING",
         synced_items=0,
     )
-    
+
     try:
         provider = PortfolioProviderFactory.get_provider(provider_type)
-        
+
         # Fetch data
         holdings_data = await provider.get_holdings(user_id, credentials or {})
         transactions_data = await provider.get_transactions(user_id, credentials or {})
-        
+
         # Get current prices
         tickers = [h["ticker"] for h in holdings_data]
         prices = await provider.get_current_prices(tickers)
-        
+
         # Update or create holdings
         existing_holdings = db.query(Holding).filter(Holding.user_id == user_id).all()
-        existing_tickers = {h.ticker for h in existing_holdings}
-        
+        {h.ticker for h in existing_holdings}
+
         for holding_data in holdings_data:
             ticker = holding_data["ticker"]
             current_price = prices.get(ticker, holding_data.get("current_price", 0))
-            
+
             # Find existing or create new
             holding = next((h for h in existing_holdings if h.ticker == ticker), None)
             if holding:
@@ -364,9 +361,9 @@ async def sync_portfolio(
                     purchase_date=datetime.fromisoformat(holding_data.get("purchase_date", datetime.utcnow().isoformat()))
                 )
                 db.add(holding)
-            
+
             sync_log.synced_items += 1
-        
+
         # Update or create transactions
         existing_txns = db.query(Transaction).filter(Transaction.user_id == user_id).all()
         for txn_data in transactions_data:
@@ -376,7 +373,7 @@ async def sync_portfolio(
                 t.transaction_date.date() == datetime.fromisoformat(txn_data["date"]).date()
                 for t in existing_txns
             )
-            
+
             if not exists:
                 transaction = Transaction(
                     user_id=user_id,
@@ -388,7 +385,7 @@ async def sync_portfolio(
                     transaction_date=datetime.fromisoformat(txn_data["date"]),
                 )
                 db.add(transaction)
-        
+
         # Update user portfolio value
         user = db.query(User).filter(User.id == user_id).first()
         if user:
@@ -398,24 +395,24 @@ async def sync_portfolio(
             user.portfolio_value = total
             user.updated_at = datetime.utcnow()
             db.flush()  # Ensure update is flushed
-        
+
         db.commit()
-        
+
         # Log success
         sync_log.status = "SUCCESS"
         sync_log.message = f"Synced {sync_log.synced_items} holdings"
         sync_log.sync_time_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        
+
     except Exception as e:
         db.rollback()
         sync_log.status = "FAILED"
         sync_log.message = str(e)
         sync_log.sync_time_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-    
+
     finally:
         db.add(sync_log)
         db.commit()
-    
+
     return {
         "status": sync_log.status,
         "source": sync_log.source,

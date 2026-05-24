@@ -1,5 +1,4 @@
-import pytest
-from types import SimpleNamespace
+﻿import pytest
 
 from app import observability as obs_mod
 

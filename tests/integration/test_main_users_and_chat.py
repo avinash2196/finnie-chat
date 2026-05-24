@@ -1,9 +1,7 @@
-from fastapi.testclient import TestClient
+﻿from fastapi.testclient import TestClient
 import pytest
-import os
-from types import SimpleNamespace
 
-from app.main import app, _quote_agg_cache
+from app.main import app
 
 client = TestClient(app)
 
@@ -15,7 +13,7 @@ def test_user_crud_and_portfolio_flow():
     body = resp.json()
     if body.get("status") == "error":
         # User may already exist from previous runs; try to fetch by username
-        get_resp = client.get(f"/users/user_test")
+        get_resp = client.get("/users/user_test")
         assert get_resp.status_code == 200
         user_id = get_resp.json().get("user_id")
     else:
@@ -88,7 +86,7 @@ def test_chat_guardrail_and_exception(monkeypatch):
     def fake_guard(msg):
         return True, msg
     monkeypatch.setattr("app.main.input_guardrails", fake_guard)
-    def broken_handle_message(msg, conversation_context=None, user_id=None, root_run_id=None):
+    async def broken_handle_message(msg, conversation_context=None, user_id=None, root_run_id=None):
         raise RuntimeError("boom")
     monkeypatch.setattr("app.main.handle_message", broken_handle_message)
 

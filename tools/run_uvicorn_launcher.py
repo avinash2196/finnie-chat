@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 sys.path.append(r"C:\Users\avina\Codes\finnie-chat")
 from app.main import app
 import uvicorn

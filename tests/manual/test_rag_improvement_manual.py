@@ -1,4 +1,4 @@
-"""
+﻿"""
 Manual RAG verification test. Re-ingests KB and evaluates verification outputs.
 Skipped by default; enable with RUN_MANUAL_TESTS=1.
 """

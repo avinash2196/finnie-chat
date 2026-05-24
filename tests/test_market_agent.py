@@ -1,6 +1,5 @@
-import types
-from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+﻿from types import SimpleNamespace
+from unittest.mock import patch
 
 from app.agents import market as market_agent
 

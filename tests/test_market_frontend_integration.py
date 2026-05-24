@@ -1,4 +1,4 @@
-"""
+﻿"""
 Integration tests for Market frontend pages.
 Tests verify that frontend can successfully call backend API endpoints.
 """
@@ -12,7 +12,7 @@ def test_market_quote_api_call():
     # This test verifies the API request format used by frontend pages
     api_url = "http://localhost:8000/market/quote"
     symbols = ["^GSPC", "^DJI", "^IXIC", "^RUT"]
-    
+
     # Mock the requests.post call
     with patch('requests.post') as mock_post:
         mock_response = MagicMock()
@@ -27,15 +27,15 @@ def test_market_quote_api_call():
             "count": 4
         }
         mock_post.return_value = mock_response
-        
+
         # Simulate frontend API call
         response = requests.post(api_url, json={"symbols": symbols}, timeout=5)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "quotes" in data
         assert len(data["quotes"]) == 4
-        
+
         # Verify data structure matches frontend expectations
         for symbol in symbols:
             quote = data["quotes"][symbol]
@@ -56,18 +56,18 @@ def test_market_quote_handles_none_values():
             "count": 1
         }
         mock_post.return_value = mock_response
-        
-        response = requests.post("http://localhost:8000/market/quote", 
+
+        response = requests.post("http://localhost:8000/market/quote",
                                json={"symbols": ["^GSPC"]}, timeout=5)
-        
+
         data = response.json()
         quote = data["quotes"]["^GSPC"]
-        
+
         # Frontend should use `or 0` to handle None values
         price = quote.get("price") or 0
         change = quote.get("change") or 0
         change_pct = quote.get("change_pct") or 0
-        
+
         assert price == 0
         assert change == 0
         assert change_pct == 0
@@ -76,7 +76,7 @@ def test_market_quote_handles_none_values():
 def test_screener_api_call():
     """Test that screener API call structure matches frontend usage"""
     api_url = "http://localhost:8000/market/screen"
-    
+
     with patch('requests.post') as mock_post:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -87,7 +87,7 @@ def test_screener_api_call():
             ]
         }
         mock_post.return_value = mock_response
-        
+
         # Simulate frontend screener call
         response = requests.post(
             api_url,
@@ -97,7 +97,7 @@ def test_screener_api_call():
             },
             timeout=10
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "results" in data
@@ -111,16 +111,16 @@ def test_screener_handles_empty_results():
         mock_response.status_code = 200
         mock_response.json.return_value = {"results": []}
         mock_post.return_value = mock_response
-        
+
         response = requests.post(
             "http://localhost:8000/market/screen",
             json={"screener_type": "dividend", "params": {}},
             timeout=10
         )
-        
+
         data = response.json()
         stocks = data.get("results", [])
-        
+
         # Frontend should handle empty results gracefully
         assert stocks == []
         assert len(stocks) == 0
@@ -132,13 +132,13 @@ def test_api_error_handling():
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_post.return_value = mock_response
-        
+
         response = requests.post(
             "http://localhost:8000/market/quote",
             json={"symbols": ["^GSPC"]},
             timeout=5
         )
-        
+
         # Frontend should check status code
         assert response.status_code != 200
 
@@ -147,9 +147,9 @@ def test_api_timeout_handling():
     """Test that API timeouts are handled correctly"""
     with patch('requests.post') as mock_post:
         mock_post.side_effect = requests.exceptions.Timeout("Connection timeout")
-        
+
         try:
-            response = requests.post(
+            requests.post(
                 "http://localhost:8000/market/quote",
                 json={"symbols": ["^GSPC"]},
                 timeout=5

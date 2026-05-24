@@ -1,6 +1,4 @@
-import os
-import types
-from app.observability import ObservabilityManager
+﻿from app.observability import ObservabilityManager
 
 
 def test_langsmith_setup_and_run_update(monkeypatch):
@@ -33,7 +31,6 @@ def test_langsmith_setup_and_run_update(monkeypatch):
 
 def test_arize_client_log_and_emit_fallback(monkeypatch):
     # Test that arize_log_chat_response handles exceptions gracefully
-    import app.observability as ob
     mgr = ObservabilityManager()
 
     class BadClient:
@@ -49,10 +46,9 @@ def test_arize_client_log_and_emit_fallback(monkeypatch):
 
 def test_instrumentation_attempts(monkeypatch):
     # Test that instrumentation methods are safe no-ops
-    import app.observability as ob
 
     mgr = ObservabilityManager()
-    
+
     # These should return None (no-op)
     assert mgr.instrument_fastapi(object()) is None
     assert mgr.instrument_httpx() is None

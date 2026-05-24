@@ -1,11 +1,11 @@
-"""
+﻿"""
 About Page - Global overview and agents list
 """
 import streamlit as st
 
-st.set_page_config(page_title="ℹ️ About", page_icon="ℹ️", layout="wide")
+st.set_page_config(page_title="â„¹ï¸ About", page_icon="â„¹ï¸", layout="wide")
 
-st.title("ℹ️ About Finnie Chat")
+st.title("â„¹ï¸ About Finnie Chat")
 st.markdown("Finnie Chat is an AI-powered financial assistant built with FastAPI + Streamlit.")
 
 st.markdown("---")
@@ -13,16 +13,16 @@ st.markdown("---")
 st.subheader("Agents (9 Specialized)")
 st.markdown(
     """
-- 🧭 **Orchestrator** — intelligently routes requests to specialized agents
-- 🎓 **Educator** — explains financial concepts via RAG-backed knowledge base
-- 🏦 **Market** — real-time quotes, market data, and trends
-- 🎯 **Portfolio Coach** — analyzes diversification and allocation
-- 🔎 **Risk Profiler** — assesses portfolio risk and volatility
-- 📈 **Strategy** — identifies investment opportunities (dividend, growth, value)
-- 🎯 **Goal Planning** — assists with financial goal-setting and retirement planning
-- 📰 **News Synthesizer** — summarizes and contextualizes financial news
-- 💰 **Tax Education** — explains tax concepts and account types
-- ✅ **Compliance** — applies safety guardrails and regulatory disclaimers
+- ðŸ§­ **Orchestrator** â€” intelligently routes requests to specialized agents
+- ðŸŽ“ **Educator** â€” explains financial concepts via RAG-backed knowledge base
+- ðŸ¦ **Market** â€” real-time quotes, market data, and trends
+- ðŸŽ¯ **Portfolio Coach** â€” analyzes diversification and allocation
+- ðŸ”Ž **Risk Profiler** â€” assesses portfolio risk and volatility
+- ðŸ“ˆ **Strategy** â€” identifies investment opportunities (dividend, growth, value)
+- ðŸŽ¯ **Goal Planning** â€” assists with financial goal-setting and retirement planning
+- ðŸ“° **News Synthesizer** â€” summarizes and contextualizes financial news
+- ðŸ’° **Tax Education** â€” explains tax concepts and account types
+- âœ… **Compliance** â€” applies safety guardrails and regulatory disclaimers
     """
 )
 

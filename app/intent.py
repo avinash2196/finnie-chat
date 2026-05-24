@@ -1,5 +1,4 @@
-import json
-import os
+﻿import json
 from app.llm import call_llm
 
 INTENT_SYSTEM_PROMPT = """
@@ -23,13 +22,13 @@ Also assign risk level:
 - HIGH (direct buy/sell, tax, legal, urgent, specific recommendations)
 
 Rules:
-- If message contains "goal", "retirement", "plan", "target", "save" → ASK_GOAL
-- If message contains "news", "headline", "article", "summary", "what happened" → ASK_NEWS
-- If message contains "tax", "ira", "roth", "401k", "capital gains", "account type" → ASK_TAX
-- If message contains "diversify", "allocation", "concentration", "rebalance" → ASK_PORTFOLIO
-- If message contains "risk", "volatility", "sharpe", "beta", "downside" → ASK_RISK
-- If message contains "dividend", "growth", "value", "screen", "find stocks" → ASK_STRATEGY
-- If message contains "should I buy", "which stock", "how much" with specific action → ADVICE
+- If message contains "goal", "retirement", "plan", "target", "save" -> ASK_GOAL
+- If message contains "news", "headline", "article", "summary", "what happened" -> ASK_NEWS
+- If message contains "tax", "ira", "roth", "401k", "capital gains", "account type" -> ASK_TAX
+- If message contains "diversify", "allocation", "concentration", "rebalance" -> ASK_PORTFOLIO
+- If message contains "risk", "volatility", "sharpe", "beta", "downside" -> ASK_RISK
+- If message contains "dividend", "growth", "value", "screen", "find stocks" -> ASK_STRATEGY
+- If message contains "should I buy", "which stock", "how much" with specific action -> ADVICE
 
 Respond ONLY in valid JSON:
 {
@@ -84,11 +83,18 @@ def _rule_based_intent(message: str):
   return "OTHER", "LOW"
 
 
-def classify_intent(message: str):
+def classify_intent(message: str, use_llm: bool = True):
+  """Classify message intent and risk level.
+
+  Args:
+      message: User message to classify.
+      use_llm: When False, skip the LLM classifier and use rule-based fallback
+               directly. Pass False in test fixtures to keep tests deterministic
+               without environment variable checks in production code.
+  """
   rule_intent, rule_risk = _rule_based_intent(message)
 
-  # In test runs, prefer deterministic rule-based to avoid flaky LLM outputs
-  if os.getenv("PYTEST_CURRENT_TEST"):
+  if not use_llm:
     return rule_intent, rule_risk
 
   try:

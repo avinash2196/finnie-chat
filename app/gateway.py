@@ -1,14 +1,16 @@
-"""
+﻿"""
 AI Gateway for managing LLM requests with resilience, caching, and routing.
 Supports multiple providers, fallbacks, and intelligent retry strategies.
 """
 
+import asyncio
+import hashlib
 import os
+import threading
 import time
 import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from enum import Enum
 
 from app.env import load_env_once
@@ -55,7 +57,8 @@ class RequestCache:
         self._max_size = max_size
 
     def _cache_key(self, system: str, user: str, model: str) -> str:
-        return f"{model}:{hash(system + user)}"
+        digest = hashlib.sha256(f"{system}\x00{user}".encode("utf-8")).hexdigest()
+        return f"{model}:{digest}"
 
     def get(self, system: str, user: str, model: str) -> Optional[str]:
         """Retrieve cached response if valid."""
@@ -86,35 +89,39 @@ class CircuitBreaker:
         self._failure_count = 0
         self._failure_threshold = failure_threshold
         self._reset_timeout = reset_timeout_seconds
-        self._last_failure_time = None
+        self._last_failure_time: Optional[float] = None
         self._is_open = False
+        self._lock = threading.Lock()
 
     def record_success(self):
         """Reset breaker on success."""
-        self._failure_count = 0
-        self._is_open = False
+        with self._lock:
+            self._failure_count = 0
+            self._is_open = False
 
     def record_failure(self):
-        """Increment failure count."""
-        self._failure_count += 1
-        self._last_failure_time = time.time()
-        if self._failure_count >= self._failure_threshold:
-            self._is_open = True
-            logger.warning(f"Circuit breaker opened after {self._failure_count} failures")
+        """Increment failure count, open breaker when threshold is reached."""
+        with self._lock:
+            self._failure_count += 1
+            self._last_failure_time = time.time()
+            if self._failure_count >= self._failure_threshold:
+                self._is_open = True
+                logger.warning(f"Circuit breaker opened after {self._failure_count} failures")
 
     def is_open(self) -> bool:
         """Check if breaker is open (and potentially ready to close)."""
-        if not self._is_open:
-            return False
-        
-        # Check if reset timeout has elapsed
-        if self._last_failure_time and time.time() - self._last_failure_time > self._reset_timeout:
-            logger.info("Circuit breaker attempting reset")
-            self._is_open = False
-            self._failure_count = 0
-            return False
-        
-        return True
+        with self._lock:
+            if not self._is_open:
+                return False
+
+            # Check if reset timeout has elapsed
+            if self._last_failure_time and time.time() - self._last_failure_time > self._reset_timeout:
+                logger.info("Circuit breaker attempting reset")
+                self._is_open = False
+                self._failure_count = 0
+                return False
+
+            return True
 
 
 class AIGateway:
@@ -159,7 +166,7 @@ class AIGateway:
         """Call Gemini (or other REST-compatible) endpoint.
 
         Prefer using the official Google GenAI client (`google.generativeai`) when
-        available — it accepts an API key via `genai.configure(api_key=...)` —
+        available â€” it accepts an API key via `genai.configure(api_key=...)` â€”
         otherwise fall back to a raw HTTP POST to `config.base_url`.
         """
         # First try the official client if installed
@@ -281,15 +288,15 @@ class AIGateway:
     def call_llm(self, system: str, user: str, temperature: float = 0) -> str:
         """
         Call LLM with intelligent failover, caching, and resilience.
-        
+
         Args:
             system: System prompt
             user: User prompt
             temperature: Sampling temperature
-            
+
         Returns:
             LLM response
-            
+
         Raises:
             Exception: If all providers fail
         """
@@ -346,12 +353,16 @@ class AIGateway:
         logger.error(error_msg)
         raise Exception(error_msg)
 
+    async def acall_llm(self, system: str, user: str, temperature: float = 0) -> str:
+        """Async wrapper: runs call_llm in a thread pool so the event loop is not blocked."""
+        return await asyncio.to_thread(self.call_llm, system, user, temperature)
+
     def get_metrics(self) -> Dict[str, Any]:
         """Get gateway metrics."""
         total = self._metrics["total_requests"]
         cache_hits = self._metrics["cache_hits"]
         hit_rate = (cache_hits / total * 100) if total > 0 else 0
-        
+
         return {
             "total_requests": total,
             "cache_hits": cache_hits,
@@ -372,7 +383,7 @@ def get_gateway() -> AIGateway:
         # Ensure environment variables from .env are loaded before reading keys
         load_env_once()
         _gateway = AIGateway(cache_enabled=True)
-        
+
         # Load providers from environment
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key:
@@ -382,7 +393,7 @@ def get_gateway() -> AIGateway:
                 model="gpt-4o-mini",
                 priority=1
             ))
-        
+
         # Optional: Add Gemini as fallback (set GEMINI_API_KEY and GEMINI_ENDPOINT)
         gemini_key = os.getenv("GEMINI_API_KEY")
         gemini_endpoint = os.getenv("GEMINI_ENDPOINT")
@@ -394,7 +405,7 @@ def get_gateway() -> AIGateway:
                 base_url=gemini_endpoint,
                 priority=0  # Lower priority (fallback)
             ))
-        
+
         # Optional: Add Anthropic as additional fallback
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         if anthropic_key:
@@ -404,5 +415,5 @@ def get_gateway() -> AIGateway:
                 model="claude-3-5-sonnet-20241022",
                 priority=0
             ))
-    
+
     return _gateway

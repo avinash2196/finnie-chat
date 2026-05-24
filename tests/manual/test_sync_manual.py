@@ -1,11 +1,10 @@
-"""
+﻿"""
 Manual sync test hitting the providers sync logic.
 Skipped by default; enable with RUN_MANUAL_TESTS=1.
 """
 import os
 import uuid
 import pytest
-import asyncio
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("RUN_MANUAL_TESTS"),

@@ -1,5 +1,4 @@
-"""Test News Synthesizer Agent"""
-import pytest
+﻿"""Test News Synthesizer Agent"""
 from app.agents.news_synthesizer import run
 
 
@@ -14,7 +13,7 @@ class TestNewsSynthesizerAgent:
             "Stock price jumped 5% on the news."
         )
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -22,7 +21,7 @@ class TestNewsSynthesizerAgent:
         """Test news synthesizer with short text"""
         message = "Tech stocks are up today."
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -30,7 +29,7 @@ class TestNewsSynthesizerAgent:
         """Test news synthesizer with empty message"""
         message = ""
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0  # Just verify it returns something
 
@@ -42,7 +41,7 @@ class TestNewsSynthesizerAgent:
             "Cloud division is now 30% of revenue."
         )
         result = run(message)
-        
+
         assert isinstance(result, str)
         # Should include context about source credibility or portfolio impact
         assert len(result) > 50  # Substantial response
@@ -53,7 +52,7 @@ class TestNewsSynthesizerAgent:
             "Sentence 1. Sentence 2. Sentence 3. Sentence 4. Sentence 5."
         )
         result = run(message, max_sentences=2)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -65,7 +64,7 @@ class TestNewsSynthesizerAgent:
             "CFO guided for strong growth next quarter."
         )
         result = run(message)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -73,7 +72,7 @@ class TestNewsSynthesizerAgent:
         """Test news synthesizer with user_id parameter"""
         message = "Fed announces rate cut decision"
         result = run(message, user_id="user_123")
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -84,7 +83,7 @@ class TestNewsSynthesizerAgent:
             "",
             "Breaking: stock market surge",
         ]
-        
+
         for msg in messages:
             result = run(msg)
             assert isinstance(result, str)

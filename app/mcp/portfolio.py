@@ -1,4 +1,4 @@
-"""Portfolio MCP Server - Provides portfolio data to agents.
+﻿"""Portfolio MCP Server - Provides portfolio data to agents.
 
 This server implements tools for:
 - Getting user holdings
@@ -10,10 +10,10 @@ This server implements tools for:
 Uses hardcoded/mock data now; will connect to PostgreSQL database later.
 """
 
-from typing import Optional, Dict, List
+import os
+from typing import Optional, Dict
 import logging
 from datetime import datetime, timedelta
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ MOCK_PERFORMANCE = {
     "user_123": {
         "AAPL": {
             "current_price": 180,
-            "prices_last_30_days": [150, 155, 160, 158, 162, 165, 168, 170, 172, 175, 
+            "prices_last_30_days": [150, 155, 160, 158, 162, 165, 168, 170, 172, 175,
                                     178, 180, 179, 181, 180, 182, 184, 183, 185, 187,
                                     189, 188, 190, 192, 194, 195, 196, 197, 198, 180],
             "dividend_yield": 0.5,
@@ -185,23 +185,23 @@ MOCK_PERFORMANCE = {
 
 def get_user_holdings(user_id: str) -> Dict:
     """Get current holdings for a user from the database.
-    
+
     Args:
         user_id: Unique user identifier (UUID or username)
-    
+
     Returns:
         dict with holdings data
     """
     try:
         from app.database import SessionLocal, User, Holding
-        
+
         db = SessionLocal()
         try:
             # Resolve user by UUID or username
             user = db.query(User).filter(
                 (User.id == user_id) | (User.username == user_id)
             ).first()
-            
+
             if not user:
                 # Fallback to mock holdings if DB has no such user
                 holdings_data = MOCK_HOLDINGS.get(user_id)
@@ -261,21 +261,21 @@ def get_user_holdings(user_id: str) -> Dict:
                     "total_portfolio_value": round(total_shares_value + total_cash, 2),
                     "timestamp": datetime.now().isoformat()
                 }
-            
+
             # Get holdings from database
             holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
-            
+
             total_shares_value = 0.0
             formatted_holdings = {}
-            
+
             for h in holdings:
                 current_price = h.current_price if h.current_price > 0 else h.purchase_price
                 current_value = h.quantity * current_price
                 gain_loss = (current_price - h.purchase_price) * h.quantity
                 gain_loss_pct = ((current_price - h.purchase_price) / h.purchase_price * 100) if h.purchase_price > 0 else 0
-                
+
                 total_shares_value += current_value
-                
+
                 formatted_holdings[h.ticker] = {
                     "quantity": h.quantity,
                     "purchase_price": round(h.purchase_price, 2),
@@ -285,7 +285,7 @@ def get_user_holdings(user_id: str) -> Dict:
                     "gain_loss_pct": round(gain_loss_pct, 2),
                     "purchase_date": h.purchase_date.isoformat() if h.purchase_date else None
                 }
-            
+
             return {
                 "error": None,
                 "user_id": user.id,
@@ -298,7 +298,7 @@ def get_user_holdings(user_id: str) -> Dict:
             }
         finally:
             db.close()
-    
+
     except Exception as e:
         logger.error(f"Error getting holdings for user {user_id}: {e}")
         return {
@@ -312,23 +312,23 @@ def get_user_holdings(user_id: str) -> Dict:
 
 def get_user_profile(user_id: str) -> Dict:
     """Get user profile including risk tolerance from database.
-    
+
     Args:
         user_id: Unique user identifier (UUID or username)
-    
+
     Returns:
         dict with user profile data
     """
     try:
         from app.database import SessionLocal, User
-        
+
         db = SessionLocal()
         try:
             # Resolve user by UUID or username
             user = db.query(User).filter(
                 (User.id == user_id) | (User.username == user_id)
             ).first()
-            
+
             if not user:
                 # Fallback to mock profile when DB has no such user
                 profile = MOCK_USER_PROFILES.get(user_id)
@@ -345,7 +345,7 @@ def get_user_profile(user_id: str) -> Dict:
                     "profile": profile,
                     "timestamp": datetime.now().isoformat()
                 }
-            
+
             profile = {
                 "user_id": user.id,
                 "username": user.username,
@@ -355,7 +355,7 @@ def get_user_profile(user_id: str) -> Dict:
                 "created_at": user.created_at.isoformat() if user.created_at else None,
                 "updated_at": user.updated_at.isoformat() if user.updated_at else None
             }
-            
+
             return {
                 "error": None,
                 "user_id": user.id,
@@ -364,7 +364,7 @@ def get_user_profile(user_id: str) -> Dict:
             }
         finally:
             db.close()
-    
+
     except Exception as e:
         logger.error(f"Error getting profile for user {user_id}: {e}")
         return {
@@ -373,10 +373,10 @@ def get_user_profile(user_id: str) -> Dict:
         }
 
 
-def record_transaction(user_id: str, ticker: str, transaction_type: str, 
+def record_transaction(user_id: str, ticker: str, transaction_type: str,
                       quantity: int, price: float, notes: str = "") -> Dict:
     """Record a transaction (buy, sell, dividend, etc).
-    
+
     Args:
         user_id: Unique user identifier
         ticker: Stock ticker symbol
@@ -384,7 +384,7 @@ def record_transaction(user_id: str, ticker: str, transaction_type: str,
         quantity: Number of shares or amount
         price: Price per share
         notes: Optional notes
-    
+
     Returns:
         dict with transaction confirmation
     """
@@ -395,15 +395,15 @@ def record_transaction(user_id: str, ticker: str, transaction_type: str,
                 "error": f"Invalid transaction type: {transaction_type}",
                 "transaction": None
             }
-        
+
         # Initialize user transactions if not exists
         if user_id not in MOCK_TRANSACTIONS:
             MOCK_TRANSACTIONS[user_id] = []
-        
+
         # Create transaction
         txn_id = f"txn_{len(MOCK_TRANSACTIONS[user_id]) + 1:03d}"
         amount = quantity * price
-        
+
         transaction = {
             "id": txn_id,
             "date": datetime.now().strftime("%Y-%m-%d"),
@@ -414,16 +414,16 @@ def record_transaction(user_id: str, ticker: str, transaction_type: str,
             "amount": round(amount, 2),
             "notes": notes
         }
-        
+
         # Add to transactions
         MOCK_TRANSACTIONS[user_id].append(transaction)
-        
+
         # Update holdings (simplified - in production, use database)
         if user_id not in MOCK_HOLDINGS:
             MOCK_HOLDINGS[user_id] = {}
-        
+
         holdings = MOCK_HOLDINGS[user_id]
-        
+
         if transaction_type == "buy":
             if ticker not in holdings:
                 holdings[ticker] = {
@@ -432,22 +432,22 @@ def record_transaction(user_id: str, ticker: str, transaction_type: str,
                     "purchase_date": datetime.now().strftime("%Y-%m-%d")
                 }
             holdings[ticker]["quantity"] += quantity
-        
+
         elif transaction_type == "sell":
             if ticker in holdings:
                 holdings[ticker]["quantity"] -= quantity
                 if holdings[ticker]["quantity"] <= 0:
                     del holdings[ticker]
-        
+
         logger.info(f"Transaction recorded: {txn_id} for user {user_id}")
-        
+
         return {
             "error": None,
             "transaction": transaction,
             "user_id": user_id,
             "timestamp": datetime.now().isoformat()
         }
-    
+
     except Exception as e:
         logger.error(f"Error recording transaction for user {user_id}: {e}")
         return {
@@ -456,28 +456,28 @@ def record_transaction(user_id: str, ticker: str, transaction_type: str,
         }
 
 
-def get_transaction_history(user_id: str, days: Optional[int] = None, 
+def get_transaction_history(user_id: str, days: Optional[int] = None,
                            transaction_type: Optional[str] = None) -> Dict:
     """Get transaction history for a user from database.
-    
+
     Args:
         user_id: Unique user identifier (UUID or username)
         days: Optional - filter to last N days (None = all)
         transaction_type: Optional - filter by type (BUY, SELL, DIVIDEND, etc)
-    
+
     Returns:
         dict with transactions
     """
     try:
         from app.database import SessionLocal, User, Transaction
-        
+
         db = SessionLocal()
         try:
             # Resolve user by UUID or username
             user = db.query(User).filter(
                 (User.id == user_id) | (User.username == user_id)
             ).first()
-            
+
             if not user:
                 # Fallback to mock transactions
                 txns = MOCK_TRANSACTIONS.get(user_id, [])
@@ -503,24 +503,24 @@ def get_transaction_history(user_id: str, days: Optional[int] = None,
                     "transactions": filtered,
                     "total_transactions": len(filtered)
                 }
-            
+
             # Build query
             query = db.query(Transaction).filter(
                 (Transaction.user_id == user.id) | (Transaction.user_id == user.username)
             )
-            
+
             # Filter by date if specified
             if days:
                 cutoff_date = datetime.now() - timedelta(days=days)
                 query = query.filter(Transaction.transaction_date >= cutoff_date)
-            
+
             # Filter by type if specified
             if transaction_type:
                 query = query.filter(Transaction.transaction_type == transaction_type.upper())
-            
+
             # Sort by date descending (newest first)
             transactions = query.order_by(Transaction.transaction_date.desc()).all()
-            
+
             formatted = [
                 {
                     "id": t.id,
@@ -534,7 +534,7 @@ def get_transaction_history(user_id: str, days: Optional[int] = None,
                 }
                 for t in transactions
             ]
-            
+
             return {
                 "error": None,
                 "user_id": user.id,
@@ -544,7 +544,7 @@ def get_transaction_history(user_id: str, days: Optional[int] = None,
             }
         finally:
             db.close()
-    
+
     except Exception as e:
         logger.error(f"Error getting transaction history for user {user_id}: {e}")
         return {
@@ -556,25 +556,25 @@ def get_transaction_history(user_id: str, days: Optional[int] = None,
 
 def get_dividend_history(user_id: str, days: Optional[int] = 365) -> Dict:
     """Get dividend history for a user.
-    
+
     Args:
         user_id: Unique user identifier
         days: Optional - filter to last N days (default: 365 = 1 year)
-    
+
     Returns:
         dict with dividend transactions
     """
     try:
         # Get transaction history filtered for dividends
         history = get_transaction_history(user_id, days=days, transaction_type="dividend")
-        
+
         if history['error']:
             return history
-        
+
         # Calculate dividend summary
         total_dividends = sum(t['amount'] for t in history['transactions'])
         dividends_by_ticker = {}
-        
+
         for txn in history['transactions']:
             ticker = txn['ticker']
             if ticker not in dividends_by_ticker:
@@ -586,7 +586,7 @@ def get_dividend_history(user_id: str, days: Optional[int] = 365) -> Dict:
             dividends_by_ticker[ticker]["total_amount"] += txn['amount']
             dividends_by_ticker[ticker]["transaction_count"] += 1
             dividends_by_ticker[ticker]["latest_date"] = txn['date']
-        
+
         return {
             "error": None,
             "user_id": user_id,
@@ -596,7 +596,7 @@ def get_dividend_history(user_id: str, days: Optional[int] = 365) -> Dict:
             "period_days": days,
             "timestamp": datetime.now().isoformat()
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting dividend history for user {user_id}: {e}")
         return {
@@ -609,11 +609,11 @@ def get_dividend_history(user_id: str, days: Optional[int] = 365) -> Dict:
 
 def get_performance_metrics(user_id: str, ticker: Optional[str] = None) -> Dict:
     """Get performance metrics for user's holdings.
-    
+
     Args:
         user_id: Unique user identifier
         ticker: Optional - get metrics for specific ticker (None = all)
-    
+
     Returns:
         dict with performance data
     """
@@ -623,16 +623,16 @@ def get_performance_metrics(user_id: str, ticker: Optional[str] = None) -> Dict:
                 "error": f"No performance data for user {user_id}",
                 "metrics": {}
             }
-        
+
         performance_data = MOCK_PERFORMANCE[user_id]
-        
+
         if ticker:
             if ticker not in performance_data:
                 return {
                     "error": f"No performance data for ticker {ticker}",
                     "metrics": {}
                 }
-            
+
             metrics = performance_data[ticker]
             return {
                 "error": None,
@@ -641,7 +641,7 @@ def get_performance_metrics(user_id: str, ticker: Optional[str] = None) -> Dict:
                 "metrics": metrics,
                 "timestamp": datetime.now().isoformat()
             }
-        
+
         # Return all metrics
         return {
             "error": None,
@@ -649,7 +649,7 @@ def get_performance_metrics(user_id: str, ticker: Optional[str] = None) -> Dict:
             "metrics": performance_data,
             "timestamp": datetime.now().isoformat()
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting performance metrics for user {user_id}: {e}")
         return {
@@ -664,48 +664,44 @@ def get_performance_metrics(user_id: str, ticker: Optional[str] = None) -> Dict:
 
 class PortfolioClient:
     """Client for accessing portfolio data.
-    
+
     Agents use this to fetch user data without direct database access.
     """
-    
+
     def __init__(self, user_id: str):
         self.user_id = user_id
-    
+
     def get_holdings(self) -> Dict:
         """Get user's current holdings."""
         return get_user_holdings(self.user_id)
-    
+
     def get_profile(self) -> Dict:
         """Get user's profile."""
         return get_user_profile(self.user_id)
-    
+
     def get_transactions(self, days: Optional[int] = None) -> Dict:
         """Get user's transaction history."""
         return get_transaction_history(self.user_id, days=days)
-    
+
     def get_dividends(self, days: Optional[int] = 365) -> Dict:
         """Get user's dividend history."""
         return get_dividend_history(self.user_id, days=days)
-    
+
     def get_performance(self, ticker: Optional[str] = None) -> Dict:
         """Get user's performance metrics."""
         return get_performance_metrics(self.user_id, ticker=ticker)
-    
+
     def record_buy(self, ticker: str, quantity: int, price: float, notes: str = "") -> Dict:
         """Record a buy transaction."""
         return record_transaction(self.user_id, ticker, "buy", quantity, price, notes)
-    
+
     def record_sell(self, ticker: str, quantity: int, price: float, notes: str = "") -> Dict:
         """Record a sell transaction."""
         return record_transaction(self.user_id, ticker, "sell", quantity, price, notes)
-    
+
     def record_dividend(self, ticker: str, amount: float, notes: str = "") -> Dict:
         """Record a dividend distribution."""
         return record_transaction(self.user_id, ticker, "dividend", 1, amount, notes)
-
-
-import os
-
 
 def get_portfolio_client(user_id: str = "user_123") -> PortfolioClient:
     """Factory function to get a portfolio client for a user.

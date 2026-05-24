@@ -1,10 +1,9 @@
-"""
+﻿"""
 Database Models for Finnie Chat
 Uses SQLAlchemy ORM with PostgreSQL (or SQLite for development)
 """
-from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Enum, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, ForeignKey
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from datetime import datetime
 import uuid
 import os
@@ -19,14 +18,17 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+
+
+class Base(DeclarativeBase):
+    pass
 
 # ==================== MODELS ====================
 
 class User(Base):
     """User account model"""
     __tablename__ = "users"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
@@ -34,12 +36,12 @@ class User(Base):
     portfolio_value = Column(Float, default=0.0)  # Cached total
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # External API credentials (encrypted in production)
     robinhood_token = Column(String, nullable=True)
     fidelity_token = Column(String, nullable=True)
     schwab_token = Column(String, nullable=True)
-    
+
     # Relationships
     holdings = relationship("Holding", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
@@ -49,7 +51,7 @@ class User(Base):
 class Holding(Base):
     """Stock holding in user's portfolio"""
     __tablename__ = "holdings"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), index=True)
     ticker = Column(String, index=True)
@@ -61,7 +63,7 @@ class Holding(Base):
     gain_loss = Column(Float, default=0.0)  # (current - purchase) * quantity
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationship
     user = relationship("User", back_populates="holdings")
 
@@ -69,7 +71,7 @@ class Holding(Base):
 class Transaction(Base):
     """Buy/Sell/Dividend transactions"""
     __tablename__ = "transactions"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), index=True)
     ticker = Column(String, index=True)
@@ -80,7 +82,7 @@ class Transaction(Base):
     transaction_date = Column(DateTime, index=True)
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationship
     user = relationship("User", back_populates="transactions")
 
@@ -88,24 +90,24 @@ class Transaction(Base):
 class PortfolioSnapshot(Base):
     """Historical snapshot of portfolio (for analytics)"""
     __tablename__ = "portfolio_snapshots"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), index=True)
     total_value = Column(Float)
     cash_balance = Column(Float, default=0.0)
     snapshot_date = Column(DateTime, index=True, default=datetime.utcnow)
-    
+
     # Performance metrics (cached)
     daily_return = Column(Float, default=0.0)
     monthly_return = Column(Float, default=0.0)
     yearly_return = Column(Float, default=0.0)
-    
+
     # Risk metrics (cached)
     volatility = Column(Float, default=0.0)
     sharpe_ratio = Column(Float, default=0.0)
-    
+
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationship
     user = relationship("User", back_populates="snapshots")
 
@@ -113,7 +115,7 @@ class PortfolioSnapshot(Base):
 class SyncLog(Base):
     """Track external API syncs"""
     __tablename__ = "sync_logs"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), index=True)
     source = Column(String)  # ROBINHOOD, FIDELITY, SCHWAB, MOCK
@@ -129,7 +131,7 @@ class SyncLog(Base):
 def init_db():
     """Initialize database tables"""
     Base.metadata.create_all(bind=engine)
-    logging.info("✅ Database tables created")
+    logging.info("Database tables created")
 
 
 def get_db():

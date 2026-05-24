@@ -1,9 +1,8 @@
-"""
+﻿"""
 MCP Server for market data operations.
 Implements tools for fetching stock quotes, market trends, and portfolio data.
 """
 
-import json
 import logging
 import time
 from typing import Any
@@ -62,7 +61,7 @@ class GetQuoteTool(MarketTool):
             price = info.get("regularMarketPrice")
             currency = info.get("currency") or info.get("financialCurrency") or "USD"
             prev_close = info.get("regularMarketPreviousClose")
-            
+
             change_pct = None
             if price is not None and prev_close is not None:
                 change_pct = ((price - prev_close) / prev_close) * 100 if prev_close else None
@@ -215,7 +214,7 @@ class MarketMCPServer:
         """Call a tool by name with arguments."""
         if name not in self.tools:
             raise ValueError(f"Tool {name} not found")
-        
+
         tool = self.tools[name]
         return tool.execute(**arguments)
 

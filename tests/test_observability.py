@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for observability module.
 """
 import pytest
@@ -8,24 +8,24 @@ from app.observability import ObservabilityManager, track_agent_execution, track
 
 class TestObservabilityManager:
     """Test ObservabilityManager initialization and status."""
-    
+
     def test_initialization_without_credentials(self):
         """Test that ObservabilityManager initializes even without credentials."""
         with patch.dict('os.environ', {}, clear=True):
             obs = ObservabilityManager()
-            assert obs.langsmith_enabled == False
-    
+            assert not obs.langsmith_enabled
+
     def test_get_status(self):
         """Test get_status returns correct structure."""
         obs = ObservabilityManager()
         status = obs.get_status()
-        
+
         assert "langsmith_available" in status
         assert "langsmith_enabled" in status
         assert "arize_enabled" in status
         assert "service_version" in status
 
-    
+
     def test_langsmith_setup_with_api_key(self):
         """Test LangSmith setup with API key."""
         with patch.dict('os.environ', {
@@ -40,59 +40,59 @@ class TestObservabilityManager:
 
 class TestTrackingDecorators:
     """Test tracking decorators."""
-    
+
     def test_track_agent_execution_success(self):
         """Test agent execution tracking on success."""
         @track_agent_execution("TestAgent")
         def dummy_agent():
             return "success"
-        
+
         result = dummy_agent()
         assert result == "success"
-    
+
     def test_track_agent_execution_failure(self):
         """Test agent execution tracking on failure."""
         @track_agent_execution("TestAgent")
         def failing_agent():
             raise ValueError("Test error")
-        
+
         with pytest.raises(ValueError, match="Test error"):
             failing_agent()
-    
+
     def test_track_llm_call_success(self):
         """Test LLM call tracking on success."""
         @track_llm_call("openai")
         def dummy_llm_call():
             return "LLM response"
-        
+
         result = dummy_llm_call()
         assert result == "LLM response"
-    
+
     def test_track_llm_call_failure(self):
         """Test LLM call tracking on failure."""
         @track_llm_call("openai")
         def failing_llm_call():
             raise RuntimeError("API timeout")
-        
+
         with pytest.raises(RuntimeError, match="API timeout"):
             failing_llm_call()
 
 
 class TestObservabilityIntegration:
     """Test observability integration methods."""
-    
+
     def test_track_event(self):
         """Test track_event doesn't crash without Azure."""
         obs = ObservabilityManager()
         # Should not raise even if Azure not configured
         obs.track_event("test_event", {"key": "value"})
-    
+
     def test_track_metric(self):
         """Test track_metric doesn't crash without Azure."""
         obs = ObservabilityManager()
         # Should not raise even if Azure not configured
         obs.track_metric("test_metric", 123.45, {"key": "value"})
-    
+
     def test_track_exception(self):
         """Test track_exception doesn't crash without Azure."""
         obs = ObservabilityManager()
@@ -101,20 +101,20 @@ class TestObservabilityIntegration:
         except Exception as e:
             # Should not raise even if Azure not configured
             obs.track_exception(e, {"context": "test"})
-    
+
     def test_instrument_fastapi(self):
         """Test FastAPI instrumentation returns None (no-op)."""
         obs = ObservabilityManager()
         mock_app = MagicMock()
         result = obs.instrument_fastapi(mock_app)
         assert result is None  # Safe no-op
-    
+
     def test_instrument_httpx(self):
         """Test HTTPX instrumentation returns None (no-op)."""
         obs = ObservabilityManager()
         result = obs.instrument_httpx()
         assert result is None  # Safe no-op
-    
+
     def test_instrument_sqlalchemy(self):
         """Test SQLAlchemy instrumentation returns None (no-op)."""
         obs = ObservabilityManager()
@@ -125,7 +125,7 @@ class TestObservabilityIntegration:
 
 class TestObservabilityExtras:
     """Additional tests to increase coverage for observability module."""
-    
+
     def test_arize_log_chat_response_noop_and_emit(self):
         obs = ObservabilityManager()
         # No-op path when disabled
@@ -137,7 +137,7 @@ class TestObservabilityExtras:
             response_text="r",
             tags={}, quality={}, safety={}
         )
-        
+
         # Enabled path with mock client
         class DummyClient:
             def emit(self, payload):

@@ -1,4 +1,4 @@
-"""News Synthesizer Agent
+﻿"""News Synthesizer Agent
 
 Summarizes and contextualizes financial news with:
 - Tool: news fetcher (Alpha Vantage API via MCP server) + recency filter
@@ -30,7 +30,7 @@ def run(message: str, user_id: Optional[str] = None, max_sentences: Optional[int
     # COMPLIANCE GATE: Refuse buy/sell recommendations
     if any(kw in msg for kw in ["should i buy", "should i sell", "what should i buy today"]):
         return (
-            "⚠️ **COMPLIANCE GATE**: I cannot recommend specific buy/sell actions.\n\n"
+            "âš ï¸ **COMPLIANCE GATE**: I cannot recommend specific buy/sell actions.\n\n"
             "However, I can help you:\n"
             "- Summarize news and its market impact\n"
             "- Explain what the news means for your portfolio\n"
@@ -42,10 +42,10 @@ def run(message: str, user_id: Optional[str] = None, max_sentences: Optional[int
     # Extract potential tickers (1-5 uppercase letters)
     potential_tickers = re.findall(r"\b([A-Z]{1,5})\b", (message or "").upper())
     potential_tickers = [t for t in potential_tickers if t.isalpha()]
-    
+
     # Filter out common English words that look like tickers
-    COMMON_WORDS = {'SHOW', 'ME', 'WHAT', 'ARE', 'THE', 'FOR', 'NEWS', 'GIVE', 'GET', 'TELL', 
-                    'ABOUT', 'LATEST', 'TODAY', 'NOW', 'MARKET', 'STOCK', 'STOCKS', 'ANY', 
+    COMMON_WORDS = {'SHOW', 'ME', 'WHAT', 'ARE', 'THE', 'FOR', 'NEWS', 'GIVE', 'GET', 'TELL',
+                    'ABOUT', 'LATEST', 'TODAY', 'NOW', 'MARKET', 'STOCK', 'STOCKS', 'ANY',
                     'SOME', 'THIS', 'THAT', 'WITH', 'FROM', 'HAVE', 'HAS', 'HAD', 'WILL',
                     'CAN', 'COULD', 'SHOULD', 'WOULD', 'WHAT', 'WHERE', 'WHEN', 'WHO', 'HOW',
                     'ON', 'IN', 'AT', 'TO', 'OF', 'AND', 'OR', 'BUT', 'IF', 'THEN', 'ELSE'}
@@ -55,17 +55,17 @@ def run(message: str, user_id: Optional[str] = None, max_sentences: Optional[int
 
     articles: List = []
     client = get_news_client()
-    
+
     if tickers:
         try:
             logger.info(f"[NEWS_AGENT] Calling MCP news client for {len(tickers)} tickers")
             articles = client.get_news(tickers, limit=max_sentences or 3)
             logger.info(f"[NEWS_AGENT] MCP returned {len(articles)} articles")
             observability.track_event("news_mcp_fetch", {"ticker_count": len(tickers), "article_count": len(articles)})
-            
+
             # If ticker-specific search returns nothing, try general news
             if not articles:
-                logger.info(f"[NEWS_AGENT] No articles for tickers, trying general news")
+                logger.info("[NEWS_AGENT] No articles for tickers, trying general news")
                 articles = client.get_general_news(limit=max_sentences or 3)
                 logger.info(f"[NEWS_AGENT] General news returned {len(articles)} articles")
                 observability.track_event("news_mcp_general_fallback", {"original_ticker_count": len(tickers), "article_count": len(articles)})
@@ -75,7 +75,7 @@ def run(message: str, user_id: Optional[str] = None, max_sentences: Optional[int
             articles = []
     else:
         # No tickers found - fetch general market headlines
-        logger.info(f"[NEWS_AGENT] No tickers found, fetching general market headlines")
+        logger.info("[NEWS_AGENT] No tickers found, fetching general market headlines")
         try:
             articles = client.get_general_news(limit=max_sentences or 3)
             logger.info(f"[NEWS_AGENT] MCP returned {len(articles)} general headlines")
@@ -86,13 +86,13 @@ def run(message: str, user_id: Optional[str] = None, max_sentences: Optional[int
             articles = []
 
     if articles:
-        logger.info(f"[NEWS_AGENT] Using MCP articles path")
+        logger.info("[NEWS_AGENT] Using MCP articles path")
         # Build summary from fetched articles
         bullets = []
         for a in articles[: (max_sentences or 3)]:
             title = (a.title or "Untitled").strip()
             src = f" ({a.source})" if a.source else ""
-            tp = f" — {a.time_published}" if a.time_published else ""
+            tp = f" â€” {a.time_published}" if a.time_published else ""
             bullets.append(f"- {title}{src}{tp}")
         summary = "\n".join(bullets)
         cited = sorted({sym for a in articles for sym in (a.tickers or [])})
@@ -103,12 +103,12 @@ def run(message: str, user_id: Optional[str] = None, max_sentences: Optional[int
             "Review relevance to your holdings and strategy."
         )
     else:
-        logger.warning(f"[NEWS_AGENT] No MCP articles, using fallback text summarization")
+        logger.warning("[NEWS_AGENT] No MCP articles, using fallback text summarization")
         observability.track_event("news_fallback", {"ticker_count": len(tickers)})
         # Fallback: summarize provided text
         sentences = [s.strip() for s in (message or "").split('.') if s.strip()]
         if len(sentences) == 0:
-            logger.warning(f"[NEWS_AGENT] No sentences extracted from message")
+            logger.warning("[NEWS_AGENT] No sentences extracted from message")
             return "No news content found. Please paste a news snippet or describe an event."
         summary_sentences = sentences[: (max_sentences or 3)]
         summary = ". ".join(summary_sentences) + "."
