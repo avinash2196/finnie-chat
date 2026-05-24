@@ -257,7 +257,10 @@ async def _handle_message_async(message: str, conversation_context: str = "", us
     logger = logging.getLogger(__name__)
     for item in step_results:
         if isinstance(item, Exception):
-            logger.exception("agent_step_failed", exc_info=item)
+            logger.error(
+                "agent_step_failed",
+                exc_info=(type(item), item, item.__traceback__),
+            )
             context.setdefault("agent_errors", []).append(str(item))
             continue
         if isinstance(item, tuple):

@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install python-json-logger>=2.0.7 ruff pytest-cov pytest-asyncio
+          pip install 'python-json-logger>=2.0.7' ruff pytest-cov pytest-asyncio
 
       - name: Lint
         run: ruff check app/ tests/ --select=E,W,F --ignore=E501
@@ -45,6 +45,7 @@ jobs:
             --ignore=tests/deepeval \
             --ignore=tests/manual \
             --ignore=tests/integration \
+            --no-cov \
             -x --tb=short
 
       - name: Coverage report

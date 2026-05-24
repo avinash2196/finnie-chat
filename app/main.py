@@ -34,8 +34,17 @@ import functools
 # Configure structured JSON logging so log parsers (Datadog, Splunk, CloudWatch)
 # can parse fields without regex. Falls back to plain text if library is absent.
 def _configure_logging():
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_level_raw = os.getenv("LOG_LEVEL", "INFO").upper()
     log_format = os.getenv("LOG_FORMAT", "json").lower()
+    level_map = logging.getLevelNamesMapping()
+    invalid_log_level = False
+    if log_level_raw.isdigit():
+        log_level = int(log_level_raw)
+    else:
+        log_level = level_map.get(log_level_raw)
+        if log_level is None:
+            log_level = logging.INFO
+            invalid_log_level = True
 
     formatter = logging.Formatter(
         fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
@@ -60,6 +69,9 @@ def _configure_logging():
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
         root_logger.addHandler(handler)
+
+    if invalid_log_level:
+        root_logger.warning("Invalid LOG_LEVEL '%s'; defaulting to INFO", log_level_raw)
 
 _configure_logging()
 

@@ -57,13 +57,12 @@ def main():
     print("-" * 80)
 
     from app.agents.orchestrator import handle_message
-    import asyncio
 
     message3 = "What are the latest market headlines?"
     print(f"Message: {message3}")
     print("\nCalling orchestrator...\n")
 
-    reply, intent, risk = asyncio.run(handle_message(message3, user_id="user_123"))
+    reply, intent, risk = handle_message(message3, user_id="user_123")
 
     print("\n" + "="*80)
     print(f"Intent: {intent}")

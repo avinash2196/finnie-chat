@@ -33,10 +33,10 @@ def test_market_quote_endpoint():
             for symbol in symbols:
                 quote = data.get("quotes", {}).get(symbol, {})
                 price = quote.get("price") or 0
-                quote.get("change") or 0
+                change = quote.get("change") or 0
                 change_pct = quote.get("change_pct") or 0
 
-                print(f"{symbol:8} | Price: ${price:>10,.2f} | Change: {change_pct:>+6.2f}%")
+                print(f"{symbol:8} | Price: ${price:>10,.2f} | Delta: {change:>+10,.2f} | Change: {change_pct:>+6.2f}%")
 
                 # Verify None handling
                 if price > 0:

@@ -38,7 +38,7 @@ def input_guardrails(message: str):
 def output_guardrails(text: str, risk_level: str):
     if risk_level == "HIGH":
         return (
-            "I canâ€™t provide direct investment instructions. "
+            "I can't provide direct investment instructions. "
             "I can explain concepts or help you understand options instead.\n\n"
             + text
         )

@@ -2,7 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from app.main import app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -38,7 +38,10 @@ def client(test_db):
     """FastAPI test client."""
     return TestClient(app)
 
-    @patch('app.main.handle_message')
+class TestChatEndpoints:
+    """Test chat endpoints."""
+
+    @patch('app.main.handle_message', new_callable=AsyncMock)
     def test_chat_without_user_id(self, mock_handle, client):
         """Test chat without user_id uses default."""
         mock_handle.return_value = ("Response", "ASK_CONCEPT", "LOW")
@@ -51,7 +54,7 @@ def client(test_db):
         # Should use default user_id
         mock_handle.assert_called_once()
 
-    @patch('app.main.handle_message')
+    @patch('app.main.handle_message', new_callable=AsyncMock)
     def test_chat_high_risk_intent(self, mock_handle, client):
         """Test chat with high risk intent."""
         mock_handle.return_value = (
@@ -69,7 +72,7 @@ def client(test_db):
         data = response.json()
         assert data["risk"] == "HIGH"
 
-    @patch('app.main.handle_message')
+    @patch('app.main.handle_message', new_callable=AsyncMock)
     def test_chat_error_handling(self, mock_handle, client):
         """Test chat raises exception on error."""
         mock_handle.side_effect = Exception("Processing error")
@@ -80,7 +83,7 @@ def client(test_db):
                 "user_id": "error_user"
             })
 
-    @patch('app.main.handle_message')
+    @patch('app.main.handle_message', new_callable=AsyncMock)
     @patch('app.main.input_guardrails')
     def test_chat_empty_message(self, mock_guardrails, mock_handle, client):
         """Test chat with empty message blocked by guardrails."""
@@ -97,7 +100,7 @@ def client(test_db):
             data = response.json()
             assert "reply" in data
 
-    @patch('app.main.handle_message')
+    @patch('app.main.handle_message', new_callable=AsyncMock)
     def test_chat_long_message(self, mock_handle, client):
         """Test chat with very long message."""
         mock_handle.return_value = ("Response to long message", "ASK_CONCEPT", "LOW")
@@ -110,7 +113,7 @@ def client(test_db):
 
         assert response.status_code == 200
 
-    @patch('app.main.handle_message')
+    @patch('app.main.handle_message', new_callable=AsyncMock)
     @patch('app.main.query_rag_with_scores')
     @patch('app.main.categorize_answer_source')
     def test_chat_with_verification(self, mock_categorize, mock_query_rag, mock_handle, client):

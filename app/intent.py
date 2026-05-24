@@ -22,13 +22,13 @@ Also assign risk level:
 - HIGH (direct buy/sell, tax, legal, urgent, specific recommendations)
 
 Rules:
-- If message contains "goal", "retirement", "plan", "target", "save" â†’ ASK_GOAL
-- If message contains "news", "headline", "article", "summary", "what happened" â†’ ASK_NEWS
-- If message contains "tax", "ira", "roth", "401k", "capital gains", "account type" â†’ ASK_TAX
-- If message contains "diversify", "allocation", "concentration", "rebalance" â†’ ASK_PORTFOLIO
-- If message contains "risk", "volatility", "sharpe", "beta", "downside" â†’ ASK_RISK
-- If message contains "dividend", "growth", "value", "screen", "find stocks" â†’ ASK_STRATEGY
-- If message contains "should I buy", "which stock", "how much" with specific action â†’ ADVICE
+- If message contains "goal", "retirement", "plan", "target", "save" -> ASK_GOAL
+- If message contains "news", "headline", "article", "summary", "what happened" -> ASK_NEWS
+- If message contains "tax", "ira", "roth", "401k", "capital gains", "account type" -> ASK_TAX
+- If message contains "diversify", "allocation", "concentration", "rebalance" -> ASK_PORTFOLIO
+- If message contains "risk", "volatility", "sharpe", "beta", "downside" -> ASK_RISK
+- If message contains "dividend", "growth", "value", "screen", "find stocks" -> ASK_STRATEGY
+- If message contains "should I buy", "which stock", "how much" with specific action -> ADVICE
 
 Respond ONLY in valid JSON:
 {
