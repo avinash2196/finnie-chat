@@ -1,6 +1,7 @@
-﻿![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
+﻿[![CI](https://github.com/avinash2196/finnie-chat/actions/workflows/ci.yml/badge.svg)](https://github.com/avinash2196/finnie-chat/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-453%20passed-brightgreen?logo=pytest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-pytest-brightgreen?logo=pytest&logoColor=white)
 ![DeepEval](https://img.shields.io/badge/DeepEval-LLM%20eval-blueviolet)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
@@ -448,7 +449,7 @@ pytest tests/ --cov=app --cov-report=term-missing
 pytest tests/deepeval/ -v
 ```
 
-**Test isolation:** All observability integrations are no-ops during tests. External APIs (yFinance, Alpha Vantage, OpenAI) are mocked at the HTTP client level. The intent classifier detects `PYTEST_CURRENT_TEST` to bypass the LLM call — this avoids flaky test-ordering issues but also means the LLM classifier path is not covered by the unit suite. A targeted integration test for the LLM classifier path is a known gap.
+**Test isolation:** All observability integrations are no-ops during tests. External APIs (yFinance, Alpha Vantage, OpenAI) are mocked at the HTTP client level. The intent classifier uses the explicit non-LLM test mode (`use_llm=False`) to bypass the LLM call — this avoids flaky test-ordering issues but also means the LLM classifier path is not covered by the unit suite. A targeted integration test for the LLM classifier path is a known gap.
 
 **DeepEval test matrix:**
 
@@ -708,7 +709,7 @@ finnie-chat/
 │   ├── env.py               # .env loader (called once at startup)
 │   ├── portfolio_mcp_db.py  # DB-backed portfolio MCP server (not yet wired to agents)
 │   ├── agents/
-│   │   ├── orchestrator.py  # LLM planner + sequential agent dispatch + synthesis
+│   │   ├── orchestrator.py  # LLM planner + concurrent agent dispatch + synthesis
 │   │   ├── educator.py      # EducatorAgent — hybrid RAG retrieval
 │   │   ├── market.py        # MarketAgent — market MCP client
 │   │   ├── risk_profiler.py # RiskProfilerAgent — volatility, Sharpe, concentration
@@ -734,7 +735,7 @@ finnie-chat/
 │   └── pages/               # Chat, Portfolio, Market, About pages
 ├── data/
 │   └── finance_kb.txt       # Curated financial knowledge base (source for RAG)
-├── tests/                   # 453 tests: unit / integration / deepeval / manual
+├── tests/                   # test suite: unit / integration / deepeval / manual
 ├── deploy/                  # systemd unit files + startup scripts
 ├── scripts/                 # DB utilities, RAG ingestion, improvement scripts
 ├── tools/                   # Benchmarking and profiling utilities
@@ -770,7 +771,7 @@ Relevant signals: hybrid RAG with score blending across two retrieval methods, D
 | [AI Gateway Design](docs/architecture/GATEWAY.md) | LLM routing, circuit-breaker mechanics, caching, provider config |
 | [Database Guide](docs/architecture/DATABASE_GUIDE.md) | SQLAlchemy models, provider pattern, DB-backed MCP variant |
 | [Observability Guide](docs/architecture/OBSERVABILITY.md) | LangSmith + Arize setup, trace hierarchy |
-| [Test Coverage](docs/testing/TEST_COVERAGE.md) | Per-module breakdown of all 453 tests |
+| [Test Coverage](docs/testing/TEST_COVERAGE.md) | Per-module breakdown of the test suite |
 | [Performance Roadmap](docs/PERFORMANCE_ROADMAP.md) | Latency targets, bottleneck analysis, planned optimisations |
 
 ---
